@@ -1,5 +1,11 @@
 # Crafter's Journal
 
+## Unreleased
+
+- **New Inventory tab (bag icon).** What to sell from your bags, where and how much you get. Items sell on the Auction House when that leaves you more than the vendor, after the cut and deposit; the rest go to the vendor. Items that went up in price are listed at the top ("sell it now"). What your started routes still need is kept, not sold. With the vendor open, one button sells everything that goes to the vendor. Clicking a row lists it on the AH or sells it, depending on which is open.
+- **Make money: no more gold budget.** The "Budget (gold)" box is gone: the batch always picks the best recipes, up to its usual size.
+- **The addon no longer reads or saves anything from your mailbox.** Make money no longer has the "Your auctions" list, the "Sold (7 days, mailbox)" figure or the mailbox notes on each idea. What was saved by earlier versions is deleted the first time you log in.
+
 ## 0.36.0
 
 - **Crafted tools in the right place, and required steps can't be removed.** A tool you craft (Runed Golden Rod) now shows up at the step that needs it instead of at the start of the route. When a crafted item can't be bought (it binds when picked up, or nobody sells it), its row says so and has no ✕.

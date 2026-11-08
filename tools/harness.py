@@ -9,14 +9,19 @@ sys.path.insert(0, os.environ.get("ESLUA", r"C:\Users\bruno\AppData\Local\Temp\e
 from lupa import lua51
 
 ADDON = Path(__file__).resolve().parent.parent  # el repositorio (no depende del enlace en AddOns)
-SV = next(Path(r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\WTF\Account").glob("*/SavedVariables/CraftersJournal.lua"))
+# Tus datos guardados: los de Forever (su carpeta desde el lanzamiento); si no, los de la beta
+_WOW = Path(r"C:\Program Files (x86)\World of Warcraft")
+SV = next(p for folder in ("_forever_", "_classic_beta_")
+          for p in (_WOW / folder / "WTF" / "Account").glob("*/SavedVariables/CraftersJournal.lua"))
 
 lua = lua51.LuaRuntime(unpack_returned_tuples=True)
 lua.globals().py_clock = pytime.perf_counter
 
 # --- API de WoW simulada -----------------------------------------------------
 lua.execute(r"""
-NOW = 1800000000
+-- Reloj real: los datos son los de tu SavedVariables (escaneos e historial con su
+-- hora); con uno inventado todo el historial parecería caducado
+NOW = os.time()
 time = function() return math.floor(NOW) end
 BAGS = {}
 GetItemCount = function(id) return BAGS[id] or 0 end

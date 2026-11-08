@@ -405,6 +405,8 @@ function ES:RefreshAllViews()
   if self.RefreshProfessionPages then self:RefreshProfessionPages() end -- planes de cada profesión
   if self.Earn then self.Earn:Clear() end                       -- Ganar dinero
   if self.RenderEarn then self:RenderEarn() end
+  if self.RenderInventory then self:RenderInventory() end      -- Inventario
+  if self.RenderFlipping then self:RenderFlipping() end        -- Flipping
   if self.RefreshPatternPages then self:RefreshPatternPages() end -- Colección de recetas
   if self.ahOpen and self.RefreshAuctionPlan and self.AuctionPanelShown and self:AuctionPanelShown() then
     self:RefreshAuctionPlan()                                   -- lista de compra de la AH
@@ -557,6 +559,8 @@ events:SetScript("OnEvent", function(_, event, arg1)
     ES.DEV = ES.DEV_BUILD and not ES.db.userPreview -- vista de jugador guardada (copia de desarrollo)
     ES.db.lastGetAll, ES.db.serverLimit = nil, nil -- claves de versiones anteriores (ver Scanner.lua)
     ES.db.useGPS = nil -- (/cj gps de las pruebas: el GPS ya es el planificador de todos)
+    ES.db.mail = nil   -- (lo que se leía del buzón en versiones anteriores: ya no se guarda nada del correo)
+    ES.db.earnBudget = nil -- (presupuesto de Ganar dinero: ya no existe)
     ES.ApplyLocalization()
     ES:LocalizeRecipeNames()
   elseif event == "PLAYER_LOGOUT" then

@@ -316,35 +316,13 @@ step("lista de compra en la AH", function()
   ES.ItemCount = real
   ES.GetItemData = realData
 end)
-step("ganar dinero y buzón", function()
+step("ganar dinero (sin correo)", function()
   -- Peletería al 150 sabiendo todas sus recetas de instructor
   local realSkill, realKnown = ES.GetProfessionSkill, ES.IsRecipeKnown
   ES.GetProfessionSkill = function(self, line) if line == ES.Data.Leatherworking.skillLine then return 150, 225 end end
   ES.IsRecipeKnown = function(self, id) local r = ES.Data.Leatherworking.recipes[id] return r ~= nil and r.fee ~= nil end
-  -- Buzón: una venta y una caducada de algo de peletería
-  local out
-  for _, r in pairs(ES.Data.Leatherworking.recipes) do if r.out and r.fee then out = r.out[1] break end end
-  ES.db.mail = { [ES:CharKey()] = { seen = {}, events = { { NOW - 3600, out, "sold", 1234, "X" }, { NOW - 7200, out, "expired", 0, "X" } } } }
-  local st = ES.Mail:Stats(out)
-  assert(st.sold == 1 and st.expired == 1 and st.money == 1234, "stats buzón")
-  -- Lectura real del buzón: asuntos con el formato del juego (con caracteres especiales)
-  AUCTION_SOLD_MAIL_SUBJECT, AUCTION_EXPIRED_MAIL_SUBJECT = "Auction successful: %s", "Auction expired: %s"
-  assert(("Auction successful: Heavy Armor Kit (x2)"):match(ES.Mail.SubjectPattern(AUCTION_SOLD_MAIL_SUBJECT)) == "Heavy Armor Kit (x2)", "patrón de asunto")
-  local inbox = {
-    { "Auction House", "Auction successful: Copper Bar", 5000, 29 },
-    { "Auction House", "Auction expired: Copper Bar", 0, 28 },
-    { "Bob", "hola", 0, 10 },
-  }
-  GetInboxNumItems = function() return #inbox end
-  GetInboxHeaderInfo = function(i) local m = inbox[i] return nil, nil, m[1], m[2], m[3], nil, m[4] end
-  GetInboxItem = function() return "Copper Bar", 2840, nil, 5 end
-  ES.db.mail = nil
-  assert(ES.Mail:Scan() == 2, "debería leer 2 correos de subasta")
-  assert(ES.Mail:Scan() == 0, "no debe contar dos veces el mismo correo")
-  local sum = ES.Mail:Summary()
-  assert(sum.sold == 1 and sum.expired == 1 and sum.money == 5000, "resumen del buzón")
-  GetInboxNumItems, GetInboxHeaderInfo, GetInboxItem = nil, nil, nil
-  ES.db.mail = { [ES:CharKey()] = { seen = {}, events = { { NOW - 3600, out, "sold", 1234, "X" }, { NOW - 7200, out, "expired", 0, "X" } } } }
+  -- El buzón no se lee ni se guarda (ni el módulo existe)
+  assert(ES.Mail == nil, "el addon no debería leer el correo")
   ES.Earn:Clear()
   local res = ES.Earn:Ideas()
   assert(res.known > 0, "no detecta recetas conocidas")
@@ -353,16 +331,6 @@ step("ganar dinero y buzón", function()
   for i = 1, math.min(3, #res.batch) do
     local idea = res.batch[i]
     log[#log+1] = string.format("       %dx %s +%s (%s, %s)", idea.crafts, idea.e.recipe.name, ES.Money(idea.profit), tostring(idea.verdict or idea.sellWhere), idea.why)
-  end
-  -- Presupuesto: con poco oro, el lote invierte como mucho eso
-  if #res.batch > 1 then
-    local first = res.batch[1]
-    ES.db.earnBudget = tostring(math.max(1, math.ceil(first.invest / 10000)))
-    ES.Earn:Clear()
-    local small = ES.Earn:Ideas()
-    log[#log+1] = string.format("     con presupuesto de %so: %d recetas, invierte %s", ES.db.earnBudget, #small.batch, ES.Money(small.invest))
-    assert(small.invest <= tonumber(ES.db.earnBudget) * 10000, "se pasa del presupuesto")
-    ES.db.earnBudget = nil
   end
   -- Lo que ya llevas fabricado: no se vuelve a fabricar
   if res.batch[1] then
@@ -386,7 +354,6 @@ step("ganar dinero y buzón", function()
   ES:RefreshAuctionPlan(true)
   assert(ES.AuctionPanelState.earn ~= nil, "panel sin modo ganar dinero")
   ES.GetProfessionSkill, ES.IsRecipeKnown = realSkill, realKnown
-  ES.db.mail = nil
   ES.Earn:Clear()
   ES.AuctionPanelState.profKey = nil
 end)
@@ -696,7 +663,7 @@ step("portada: tarjetas de profesiones", function()
   assert(tostring(lw.level._text):find("%d+|r / %d+"), "nivel no mostrado: " .. tostring(lw.level._text))
   -- Pestañas laterales: cada una abre su página y queda marcada
   local mf = ES:GetMainFrame()
-  assert(#mf.tabs == 4, "pestañas: " .. #mf.tabs)
+  assert(#mf.tabs == 6, "pestañas: " .. #mf.tabs)
   for _, tab in ipairs(mf.tabs) do
     tab._scripts.OnClick(tab)
     assert(ES.db.lastPage == tab.key, "la pestaña " .. tab.key .. " no abre su página")
@@ -1368,6 +1335,94 @@ step("rutas repartidas entre fotogramas (sin tirones)", function()
   ES.GetProfessionSkill = savedSkill
   ES:SelectPage("home")
 end)
+step("inventario: qué vender de las bolsas, dónde y qué guardar", function()
+  -- Bolsas: 20 Light Leather (la ruta fijada necesita 5), 3 de un objeto que ha subido,
+  -- 2 que solo valen para el vendedor y 1 ligado
+  local LL, UP, JUNK, BOUND = 2318, 4234, 4251, 5000
+  local bags = { { LL, 20 }, { UP, 3 }, { JUNK, 2 }, { BOUND, 1, true } }
+  local savedCC, savedScans, savedVendor = C_Container, ES.db.scans, ES.VendorSellPrice
+  local savedRef, savedSig, savedLock, savedLocked, savedNeed = ES.Market.ReferencePrice, ES.Market.Signals, ES.RouteLock, ES.LockedPlan, ES.Planner.NeedFrom
+  local savedMerchant, savedSell, savedPost, savedAH = ES.Ledger.MerchantOpen, ES.Ledger.SellToVendor, ES.Ledger.PostOnAH, ES.IsAuctionHouseOpen
+  C_Container = {
+    GetContainerNumSlots = function(bag) return bag == 0 and #bags or 0 end,
+    GetContainerItemID = function(bag, slot) return bags[slot] and bags[slot][1] end,
+    GetContainerItemInfo = function(bag, slot) local b = bags[slot] return b and { stackCount = b[2], isBound = b[3] } end,
+  }
+  local VENDOR = { [LL] = 15, [UP] = 100, [JUNK] = 659, [BOUND] = 500 }
+  ES.VendorSellPrice = function(_, id) return VENDOR[id] end
+  ES.db.scans = { [ES:RealmKey()] = { time = time() - 600, items = {
+    [LL] = { minUnit = 40, quantity = 50 }, [UP] = { minUnit = 5000, quantity = 2 }, [JUNK] = { minUnit = 600, quantity = 4 },
+    [BOUND] = { minUnit = 9000, quantity = 1 } } } }
+  local REF = { [LL] = 45, [UP] = 3000, [JUNK] = 650 }
+  ES.Market.ReferencePrice = function(_, id) if REF[id] then return REF[id], 3, 0 end end
+  ES.Market.Signals = function() return { verdict = "good" } end
+  ES.RouteLock = function(_, k) return k == "Leatherworking" end
+  ES.LockedPlan = function() return { from = 1 } end
+  ES.Planner.NeedFrom = function() return { [LL] = 5 } end
+  local list = ES.Inventory:List()
+  local by = {}
+  for _, e in ipairs(list) do by[e.itemID] = e end
+  assert(by[LL] and by[LL].keep == 5 and by[LL].ahN + by[LL].vendorN == 15, "Light Leather: guarda 5 y vende 15")
+  assert(by[LL].ahN == 15, "Light Leather a 40 en la AH deja más que 15 del vendedor: " .. by[LL].ahN)
+  assert(by[UP] and by[UP].rise and by[UP].ahN == 3, "lo que ha subido va a la AH y se marca")
+  assert(by[JUNK] and by[JUNK].ahN == 0 and by[JUNK].vendorN == 2, "la AH no deja más que el vendedor: al vendedor")
+  assert(not by[BOUND] or by[BOUND].ahN == 0, "un objeto ligado no se anuncia en la AH")
+  -- La página: secciones, cifras y el botón de vender (solo con el vendedor abierto)
+  ES:SelectPage("inventory")
+  local page = ES.inventoryPage
+  page._shown = true
+  local sold = {}
+  ES.Ledger.MerchantOpen = function() return true end
+  ES.Ledger.SellToVendor = function(_, id, n) sold[id] = n end
+  ES:RenderInventory()
+  local sections = {}
+  for i, row in ipairs(page.rows) do if row._shown and row.title then sections[#sections + 1] = tostring(row.title._text) end end
+  log[#log+1] = "     inventario: " .. tostring(page.stats.total._text) .. " · " .. table.concat(sections, " | "):sub(1, 220)
+  assert(page.action._shown, "con el vendedor abierto sale el botón de vender")
+  page.action._scripts.OnClick(page.action)
+  assert(sold[JUNK] == 2 and not sold[LL] and not sold[UP], "el botón solo vende lo que va al vendedor")
+  -- Clic en una fila con la AH abierta: anuncia
+  local posted
+  ES.IsAuctionHouseOpen = function() return true end
+  ES.Ledger.PostOnAH = function(_, id, n, price) posted = { id, n, price } end
+  for _, row in ipairs(page.rows) do if row.onClick and row.title and tostring(row.title._text):find("3×") then row.onClick() end end
+  assert(posted and posted[1] == UP and posted[2] == 3, "el clic con la AH abierta no anunció")
+  C_Container, ES.db.scans, ES.VendorSellPrice = savedCC, savedScans, savedVendor
+  ES.Market.ReferencePrice, ES.Market.Signals, ES.RouteLock, ES.LockedPlan, ES.Planner.NeedFrom = savedRef, savedSig, savedLock, savedLocked, savedNeed
+  ES.Ledger.MerchantOpen, ES.Ledger.SellToVendor, ES.Ledger.PostOnAH, ES.IsAuctionHouseOpen = savedMerchant, savedSell, savedPost, savedAH
+  ES:SelectPage("home")
+end)
+step("flipping: gangas de la AH", function()
+  local CHEAP, DROP, SAME, AVOID = 2318, 2319, 4234, 4304
+  local savedScans, savedVendor, savedRef, savedSig = ES.db.scans, ES.VendorSellPrice, ES.Market.ReferencePrice, ES.Market.Signals
+  local VENDOR = { [CHEAP] = 100, [DROP] = 20, [SAME] = 20, [AVOID] = 20 }
+  ES.VendorSellPrice = function(_, id) return VENDOR[id] end
+  ES.db.scans = { [ES:RealmKey()] = { time = time() - 300, items = {
+    [CHEAP] = { minUnit = 40, ladder = { 40, 4, 90, 2, 300, 10 } },     -- 6 por debajo del vendedor
+    [DROP] = { minUnit = 500, ladder = { 500, 3, 700, 2, 1000, 20 } },  -- normalmente 1000: -50%
+    [SAME] = { minUnit = 950, ladder = { 950, 10 } },                    -- precio normal
+    [AVOID] = { minUnit = 300, ladder = { 300, 5 } },                    -- -70% pero alertas: evitar
+  } } }
+  local REF = { [DROP] = 1000, [SAME] = 1000, [AVOID] = 1000 }
+  ES.Market.ReferencePrice = function(_, id) if REF[id] then return REF[id], 3, 0 end end
+  ES.Market.Signals = function(_, id) return { verdict = id == AVOID and "avoid" or "good" } end
+  local list = ES.Flipping:List()
+  local by = {}
+  for _, o in ipairs(list) do by[o.itemID] = o end
+  assert(by[CHEAP] and by[CHEAP].kind == "vendor" and by[CHEAP].units == 6 and by[CHEAP].profit == 600 - 340,
+    "por debajo del vendedor: " .. tostring(by[CHEAP] and by[CHEAP].profit))
+  assert(by[DROP] and by[DROP].kind == "drop" and by[DROP].units == 5, "ha bajado un 50%: las 5 baratas")
+  assert(not by[SAME], "a su precio normal no es una ganga")
+  assert(not by[AVOID], "con alertas de evitar no se propone")
+  ES:SelectPage("flipping")
+  local page = ES.flippingPage
+  page._shown = true
+  ES:RenderFlipping()
+  log[#log+1] = "     flipping: " .. tostring(page.stats.count._text) .. " oportunidades · " .. tostring(page.stats.profit._text)
+  assert(page.stats.count._text == "2", "oportunidades: " .. tostring(page.stats.count._text))
+  ES.db.scans, ES.VendorSellPrice, ES.Market.ReferencePrice, ES.Market.Signals = savedScans, savedVendor, savedRef, savedSig
+  ES:SelectPage("home")
+end)
 step("versión publicada: sin las pestañas en desarrollo", function()
   -- En el repositorio es copia de desarrollo; el empaquetador comenta el bloque @debug@
   assert(ES.DEV_BUILD == true and ES.DEV == true, "en desarrollo ES.DEV_BUILD y ES.DEV deberían ser true")
@@ -1376,7 +1431,7 @@ step("versión publicada: sin las pestañas en desarrollo", function()
   assert(src:find("%-%-@debug@\nES.DEV_BUILD = true\n%-%-@end%-debug@"), "falta el bloque @debug@ de ES.DEV_BUILD")
   -- Como en la publicada: Ganar dinero, Subastas y la Pesca no se abren
   ES.DEV = false
-  for _, key in ipairs({ "money", "ah", "Fishing", "pattern:Fishing" }) do
+  for _, key in ipairs({ "money", "ah", "flipping", "Fishing", "pattern:Fishing" }) do
     ES:SelectPage(key)
     assert(ES.db.lastPage == "home", key .. " no debería abrirse en la versión publicada")
   end
@@ -1397,7 +1452,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Vista de jugador: ventana nueva sin las pestañas, el buscador ni la Pesca
   local g = ES:GetMainFrame()
   assert(ES.DEV == false and ES.db.userPreview == true, "no pasó a vista de jugador")
-  assert(#g.tabs == 2, "pestañas en vista de jugador: " .. #g.tabs)
+  assert(#g.tabs == 3, "pestañas en vista de jugador: " .. #g.tabs) -- portada, inventario y colección
   ES:SelectPage("home")
   for _, c in ipairs(ES.homePage.cards) do
     if c._shown ~= false then assert(c.key ~= "Fishing", "la Pesca no debería verse") end
@@ -1407,7 +1462,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Y vuelta al modo desarrollo
   panel.devCheck:SetChecked(false)
   panel.devCheck._scripts.OnClick(panel.devCheck)
-  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 4, "no volvió al modo desarrollo")
+  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 6, "no volvió al modo desarrollo")
 end)
 step("materiales: o se fabrican o se compran, y la ✕ los compra hechos", function()
   local data = ES.Data.Leatherworking

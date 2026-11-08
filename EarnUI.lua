@@ -2,7 +2,7 @@ local _, ES = ...
 local L = ES.L
 
 -- Página "Ganar dinero": qué fabricar hoy con las recetas que sabes (Earn.lua),
--- el lote recomendado, lo que has vendido de verdad (buzón) y lo descartado
+-- el lote recomendado y lo descartado
 -- por las alertas de mercado.
 
 local GREEN, GREY, ORANGE = "|cff40ff40", "|cff999999", "|cffff9933"
@@ -51,10 +51,6 @@ local function IdeaTooltip(idea)
           or L["Anúncialos a %s (1 cobre menos que la más barata)."], ES.Money(idea.price)), 0.8, 0.8, 0.8, true)
       end
     end
-    local own = ES.Mail and ES.Mail:Stats(e.itemID)
-    if own and own.sold + own.expired > 0 then
-      GameTooltip:AddLine(string.format(L["Tus subastas (7 días): %d vendidas, %d caducadas."], own.sold, own.expired), 0.6, 1, 0.6, true)
-    end
     if idea.sellWhere == "ah" then ES.Market.AddToTooltip(e.itemID) end
     GameTooltip:Show()
   end
@@ -97,38 +93,8 @@ function ES:CreateEarnPage(page)
   name:SetTextColor(0.96, 0.79, 0.25)
   page.subtitle = Label(head, "", "GameFontHighlightSmall")
   page.subtitle:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", 12, 2)
-  page.subtitle:SetPoint("RIGHT", -230, 0)
+  page.subtitle:SetPoint("RIGHT", -16, 0)
   page.subtitle:SetJustifyH("LEFT")
-
-  -- Presupuesto: el lote no invierte más de esto (vacío = sin límite)
-  page.budget = CreateFrame("EditBox", nil, head, "InputBoxTemplate")
-  page.budget:SetSize(60, 20)
-  page.budget:SetPoint("RIGHT", -16, 0)
-  page.budget:SetAutoFocus(false)
-  page.budget:SetNumeric(true)
-  page.budget:SetMaxLetters(6)
-  page.budget:SetJustifyH("CENTER")
-  page.budget:SetText(ES.db.earnBudget or "")
-  local function SetBudget(self)
-    self:ClearFocus()
-    local v = tonumber(self:GetText())
-    ES.db.earnBudget = v and v > 0 and tostring(v) or nil
-    self:SetText(ES.db.earnBudget or "")
-    ES.Earn:Clear()
-    ES:RenderEarn()
-  end
-  page.budget:SetScript("OnEnterPressed", SetBudget)
-  page.budget:SetScript("OnEditFocusLost", SetBudget)
-  page.budget:SetScript("OnEscapePressed", function(self) self:SetText(ES.db.earnBudget or "") self:ClearFocus() end)
-  local budgetLabel = Label(head, L["Presupuesto (oro):"], "GameFontNormalSmall")
-  budgetLabel:SetPoint("RIGHT", page.budget, "LEFT", -8, 0)
-  page.budget:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
-    GameTooltip:AddLine(L["Presupuesto del lote"])
-    GameTooltip:AddLine(L["Oro que quieres invertir hoy en materiales. Vacío: sin límite."], 0.8, 0.8, 0.8, true)
-    GameTooltip:Show()
-  end)
-  page.budget:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
   local strip = CreateFrame("Frame", nil, page)
   strip:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 4, -6)
@@ -139,7 +105,6 @@ function ES:CreateEarnPage(page)
     { key = "invest", label = L["Inviertes en materiales"] },
     { key = "profit", label = L["Beneficio si se vende todo"] },
     { key = "count",  label = L["Recetas en el lote"] },
-    { key = "sold",   label = L["Vendido (7 días, buzón)"] },
   }
   for i, s in ipairs(STATS) do
     local label = Label(strip, s.label, "GameFontDisableSmall")
@@ -191,11 +156,9 @@ function ES:RenderEarn()
   local res = ES.Earn:Ideas()
   local Signed = ES.UI.Signed
 
-  local mail = ES.Mail and ES.Mail:Summary() or { sold = 0, money = 0, expired = 0 }
   page.stats.invest:SetText(#res.batch > 0 and Signed(res.invest) or (GREY .. "—|r"))
   page.stats.profit:SetText(#res.batch > 0 and Signed(-res.profit) or (GREY .. "—|r"))
   page.stats.count:SetText(tostring(#res.batch))
-  page.stats.sold:SetText(mail.sold > 0 and (Signed(-mail.money) .. GREY .. string.format(" (%d)", mail.sold) .. "|r") or (GREY .. "—|r"))
 
   local profs = {}
   for _, k in ipairs(res.profs) do profs[#profs + 1] = ES:ProfLabel(k) end
@@ -210,9 +173,6 @@ function ES:RenderEarn()
   else
     status = GREY .. string.format(L["Precios de la AH de hace %d min · beneficio igualando a la más barata (comisión y depósito descontados)|r"],
       math.floor((time() - res.scanTime) / 60))
-  end
-  if res.overBudget then
-    status = status .. ORANGE .. string.format(L[" · %d recetas no caben en el presupuesto|r"], res.overBudget)
   end
   page.status:SetText(status)
 
@@ -258,20 +218,6 @@ function ES:RenderEarn()
       lines[#lines + 1] = { icon = texture or 134400, title = it.count .. "× " .. (name or ""), sub = where,
         value = ES.UI.Signed(-it.value), item = it.itemID,
         onClick = ES.ahOpen and function() ES:SearchAuction(it.itemID) end or nil }
-    end
-  end
-  -- Lo que has vendido de verdad (buzón)
-  local sold = {}
-  for _, b in pairs(mail.byItem or {}) do sold[#sold + 1] = b end
-  table.sort(sold, function(a, b) return a.money > b.money end)
-  if #sold > 0 then
-    lines[#lines + 1] = { section = L["Tus subastas (7 días, leído del buzón)"] }
-    for i = 1, math.min(#sold, 10) do
-      local b = sold[i]
-      local _, texture = ItemLabel(b.itemID, b.name)
-      lines[#lines + 1] = { icon = texture or 134400, title = b.name or "?",
-        sub = string.format(L["%d vendidas · %d caducadas"], b.sold, b.expired),
-        value = b.money > 0 and Signed(-b.money) or (GREY .. "—|r"), item = b.itemID ~= 0 and b.itemID or nil }
     end
   end
   page.empty:SetText(#lines == 0 and (#res.profs == 0 and L["Aprende una profesión de fabricación para ver ideas."]

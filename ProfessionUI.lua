@@ -1140,7 +1140,12 @@ function ES:CreateProfessionPage(page, profKey)
       C_Timer.After(0.5, function()
         self.refreshQueued = false
         if not self:IsVisible() then return end
-        if needsRecalc then ES:CalculatePlan(self) else ES:RenderPlan(self) end
+        if needsRecalc and not ES:RouteLock(self.profKey) then
+          ES:ClearHomeCache() -- si no, la caché devolvería la misma ruta con el precio antiguo
+          ES:CalculatePlan(self)
+        else
+          ES:RenderPlan(self)
+        end
       end)
     end
   end)

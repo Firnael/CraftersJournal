@@ -33,7 +33,6 @@ Market.lua
 Waypoints.lua
 Scanner.lua
 Planner.lua
-Mail.lua
 Ledger.lua
 Earn.lua
 Collection.lua
@@ -44,6 +43,8 @@ HomeUI.lua
 HeaderUI.lua
 AuctionUI.lua
 EarnUI.lua
+InventoryUI.lua
+FlippingUI.lua
 CollectionUI.lua
 PatternsUI.lua
 VendorUI.lua

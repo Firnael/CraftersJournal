@@ -13,7 +13,12 @@ ADDON = Path(__file__).resolve().parent.parent
 # QuestieDB está en la carpeta de addons de WoW (el código de este addon vive en el
 # repositorio de GitHub y AddOns\CraftersJournal es un enlace a él). Otra carpeta:
 # variable de entorno WOW_ADDONS.
-WOW_ADDONS = Path(os.environ.get("WOW_ADDONS", r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\Interface\AddOns"))
+_WOW = Path(r"C:\Program Files (x86)\World of Warcraft")
+# Forever tiene su propia carpeta (_forever_) desde su lanzamiento; la beta, de reserva
+_DEFAULT_ADDONS = next((p for p in (_WOW / "_forever_" / "Interface" / "AddOns",
+                                    _WOW / "_classic_beta_" / "Interface" / "AddOns") if (p / "QuestieDB").exists()),
+                       _WOW / "_forever_" / "Interface" / "AddOns")
+WOW_ADDONS = Path(os.environ.get("WOW_ADDONS", str(_DEFAULT_ADDONS)))
 QUESTIE = WOW_ADDONS / "QuestieDB"
 TOC = QUESTIE / "QuestieDB_Forever.toc"
 ZONES = QUESTIE / "support" / "Forever" / "Zones"

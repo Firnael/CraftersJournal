@@ -55,7 +55,7 @@ panel:SetScript("OnShow", function()
   if panel.devCheck then
     panel.devCheck.label:SetText(L["Vista jugador: ver el addon como en CurseForge"])
     panel.devCheck:SetChecked(not ES.DEV)
-    panel.devCheck.note:SetText(L["Solo en tu copia de desarrollo. Marcado: sin Ganar dinero, Subastas, Pesca ni buscador, como en la versión publicada."])
+    panel.devCheck.note:SetText(L["Solo en tu copia de desarrollo. Marcado: sin Ganar dinero, Subastas, Flipping, Pesca ni buscador, como en la versión publicada."])
   end
 end)
 

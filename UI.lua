@@ -268,6 +268,8 @@ local function CreateMainFrame()
 
   ES:CreateHomePage(AddPage("home", L["Subir profesiones"]))
   ES:CreateEarnPage(AddPage("money", ""))
+  ES:CreateInventoryPage(AddPage("inventory", ""))
+  ES:CreateFlippingPage(AddPage("flipping", ""))
   ES:CreatePatternsPage(AddPage("patterns", L["Colección de recetas"]))
   for _, prof in ipairs(ES.PROFESSIONS) do
     if ES.Data[prof.key] then ES:CreatePatternPage(AddPage("pattern:" .. prof.key, ES:ProfLabel(prof.key)), prof.key) end
@@ -428,6 +430,10 @@ local TABS = ES.Localize({
     desc = "Cómo subir cada profesión: la ruta más barata paso a paso." },
   { key = "money",    label = "Ganar dinero",         icon = "Interface\\Icons\\INV_Misc_Coin_02", dev = true,
     desc = "Qué fabricar hoy con tus recetas porque da beneficio." },
+  { key = "inventory", label = "Inventario",          icon = "Interface\\Icons\\INV_Misc_Bag_08",
+    desc = "Qué vender de tus bolsas, dónde y cuánto sacas; y lo que ha subido de precio." },
+  { key = "flipping", label = "Flipping",             icon = "flip", dev = true,
+    desc = "Objetos de la AH que han bajado de precio: cómpralos barato y revéndelos." },
   { key = "patterns", label = "Colección de recetas", icon = "Interface\\Icons\\INV_Scroll_03",
     desc = "Todas las recetas de cada profesión: cuántas tienes y dónde conseguir las demás." },
   { key = "ah",       label = "Subastas",             icon = "Interface\\Icons\\INV_Misc_Bag_10", dev = true,
@@ -500,7 +506,8 @@ function ES:CreateSideTabs(f)
   f.tabs = {}
   for _, t in ipairs(TABS) do
     if not t.dev or ES.DEV then
-      local tab = CreateTab(f, t.icon == "skills" and ES.SKILLS_ICON or t.icon)
+      local tab = CreateTab(f, t.icon == "skills" and ES.SKILLS_ICON or t.icon ~= "flip" and t.icon or nil)
+      if t.icon == "flip" then ES.UI.FlipIcon(tab.icon) end -- dos flechas (FlippingUI.lua)
       if #f.tabs == 0 then
         tab:SetPoint("TOPLEFT", f, "TOPRIGHT", 0, TAB_TOP)
       else
@@ -523,7 +530,7 @@ end
 function ES:SelectPage(key)
   if key == "lw" or key == "profit" then key = "Leatherworking" end -- nombres de versiones anteriores
   if not main or not main.pages[key] then key = "home" end
-  if not ES.DEV and (key == "money" or key == "ah") then key = "home" end -- pestañas solo de desarrollo
+  if not ES.DEV and (key == "money" or key == "ah" or key == "flipping") then key = "home" end -- pestañas solo de desarrollo
   if not ES.DEV then -- profesiones solo de desarrollo (Pesca) y su colección
     for _, p in ipairs(ES.PROFESSIONS) do
       if p.dev and (key == p.key or key == "pattern:" .. p.key) then key = "home" end

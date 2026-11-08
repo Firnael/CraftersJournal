@@ -210,14 +210,24 @@ end
 ---------------------------------------------------------------------------
 local GetItemInfoCompat = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 
--- Lo que paga el vendedor: lo visto al vender en el juego (Ledger.lua), si no, los
--- datos, si no, lo que dice el cliente
+-- Lo que paga el vendedor: lo visto al vender en el juego (Ledger.lua); si no, lo que
+-- dice el juego ahora (siempre al día: Forever cambia precios, Bronze Dory pasó de
+-- 32s 53c a 4s 88c); si el juego aún no ha cargado el objeto, se le pide y mientras
+-- vale el de los datos (puede ser de una versión anterior de Forever)
 function ES:VendorSellPrice(itemID)
   local seen = ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID]
   if seen then return seen.price end
-  local price = ES.Data.SellPrices[itemID]
-  if price then return price end
-  return select(11, GetItemInfoCompat(itemID))
+  local live = select(11, GetItemInfoCompat(itemID))
+  if live then return live end
+  if C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, itemID) end
+  return ES.Data.SellPrices[itemID]
+end
+
+-- ¿El precio de venta es el de ahora (visto al vender o dado por el juego)? Si no, es
+-- el de los datos y la ruta se recalcula cuando el juego cargue el objeto
+function ES:SellPriceIsLive(itemID)
+  if ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID] then return true end
+  return select(11, GetItemInfoCompat(itemID)) ~= nil
 end
 
 -- Devuelve un texto con los motivos si el precio de la AH parece poco fiable

@@ -9,8 +9,7 @@ local L = ES.L
 --   "ojo" / "pocos datos":    unas pocas para probar (TEST_BATCH)
 --   "evitar":                 no se recomienda (se lista aparte con el motivo)
 --   se vende al vendedor:     venta segura, VENDOR_BATCH
--- Si tienes ventas reales tuyas de ese objeto (buzón, ver Mail.lua), se usan
--- para ajustar: lo que vendiste en los últimos días es un dato, no una estimación.
+-- (El buzón no se lee: el addon no guarda nada de tu correo.)
 
 local Earn = {}
 ES.Earn = Earn
@@ -52,18 +51,6 @@ local function Batch(idea, e)
   else
     n = math.min(TEST_BATCH, share)
     why = L["Alertas de mercado dudosas: unos pocos para probar."]
-  end
-  -- Tus ventas reales de este objeto (buzón): si se vendieron, no menos que eso;
-  -- si caducaron más de las que se vendieron, para probar
-  local own = ES.Mail and ES.Mail:Stats(e.itemID)
-  if own and own.sold + own.expired >= 3 then
-    if own.expired > own.sold then
-      n = math.min(n, TEST_BATCH)
-      why = string.format(L["Tus subastas: %d caducadas y %d vendidas en 7 días."], own.expired, own.sold)
-    elseif own.sold > 0 then
-      n = math.max(n, math.min(MAX_BATCH, math.ceil(own.sold / math.max(1, e.qty))))
-      why = string.format(L["Tus subastas: %d vendidas en 7 días."], own.sold)
-    end
   end
   return math.max(1, n), why
 end
@@ -107,8 +94,7 @@ end
 
 function Earn:Ideas()
   local scan = ES.db.scans and ES.db.scans[ES:RealmKey()]
-  local stamp = table.concat({ scan and scan.time or 0, ES:RealmKey(), ES.repStamp or "",
-    ES.Mail and ES.Mail:Stamp() or 0 }, ":")
+  local stamp = table.concat({ scan and scan.time or 0, ES:RealmKey(), ES.repStamp or "" }, ":")
   if cache and cache.stamp == stamp then return cache end
   local res = { stamp = stamp, ideas = {}, avoided = {}, scanTime = scan and scan.time, profs = Earn.MyProfessions(), known = 0 }
   for _, profKey in ipairs(res.profs) do
@@ -146,9 +132,7 @@ function Earn:Ideas()
 
   -- Lote de hoy: de mejor a peor, cada receta se vuelve a costear contando lo que
   -- ya compran las anteriores (si dos usan el mismo material, la segunda paga las
-  -- subastas siguientes, más caras), sin pasarse del presupuesto si lo hay.
-  local budget = tonumber(ES.db.earnBudget or "") and tonumber(ES.db.earnBudget) * 10000 or nil
-  res.budget = budget
+  -- subastas siguientes, más caras).
   res.batch, res.invest, res.profit = {}, 0, 0
   local ctxs = {}
   for _, idea in ipairs(res.ideas) do ctxs[idea.ctx] = true end
@@ -157,8 +141,7 @@ function Earn:Ideas()
   for _, idea in ipairs(res.ideas) do
     if #res.batch >= BATCH_SIZE then break end
     Earn.CostIdea(idea)
-    local fits = not budget or res.invest + idea.invest <= budget
-    if fits and (idea.crafts == 0 or idea.profit > 0) then
+    if idea.crafts == 0 or idea.profit > 0 then
       res.batch[#res.batch + 1] = idea
       idea.inBatch = true
       res.invest = res.invest + idea.invest
@@ -169,8 +152,6 @@ function Earn:Ideas()
           for ctx in pairs(ctxs) do ctx.used[key] = (ctx.used[key] or 0) + q end
         end
       end
-    elseif not fits then
-      res.overBudget = (res.overBudget or 0) + 1
     end
   end
   for _, idea in ipairs(res.batch) do

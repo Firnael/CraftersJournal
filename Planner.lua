@@ -542,7 +542,9 @@ function Planner.SaleInfo(ctx, recipe)
   if not recipe.out then return nil end
   local itemID = recipe.out[1]
   local vendor = ES:VendorSellPrice(itemID)
-  if not vendor then ctx.pendingInfo = true end -- el juego aún no ha cargado el objeto
+  -- El juego aún no ha cargado el objeto (precio de los datos, quizá antiguo): al
+  -- llegar se recalcula la ruta con el precio de ahora
+  if not vendor or (ES.SellPriceIsLive and not ES:SellPriceIsLive(itemID)) then ctx.pendingInfo = true end
   local sale = { itemID = itemID, qty = recipe.out[2], vendor = vendor or 0 }
   local ah = ctx.prices[itemID]
   sale.ahMin = ah and ah.minUnit
