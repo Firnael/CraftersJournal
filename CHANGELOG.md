@@ -1,5 +1,9 @@
 # Crafter's Journal
 
+## Unreleased
+
+- **Inventory tells you that clicking a row sells it.** The line under the totals now says what a click does right now: sell it to the open vendor, list it on the open AH, or that you need to open one of them. No more looking for the item in your bags.
+
 ## 0.37.1
 
 - **Inventory: no more AH suggestions that expire.** When the AH market for an item is uncertain (little data or mixed signals), the AH now has to pay more than the vendor even if the auction expires once and you lose the deposit (60% of the vendor price for 24 h, at least 1s per auction). Otherwise the item goes to the vendor, and the row and tooltip say the AH is risky. Items with a good market still go to the AH. (Crimson Silk Pantaloons: 30s on the AH vs 24s at the vendor, but 14s lost per expired auction.)
