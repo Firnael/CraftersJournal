@@ -421,8 +421,8 @@ local function CreateSheet(page)
     b:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:AddLine(string.format(L["Subasta de %d h"], self.hours))
-      GameTooltip:AddLine(string.format(L["Depósito: el %d%% del precio de vendedor. Se devuelve si se vende; lo pierdes si caduca o la cancelas."],
-        Calc.DepositPct(self.hours)), 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine(string.format(L["Depósito: el %d%% del precio de vendedor, mínimo %s por subasta. Se devuelve si se vende; lo pierdes si caduca o la cancelas."],
+        Calc.DepositPct(self.hours), ES.Money(Calc.MIN_DEPOSIT)), 0.8, 0.8, 0.8, true)
       GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -614,8 +614,8 @@ function ES:RenderCalculator()
 
   local notes = {}
   if res.deposit > 0 then
-    notes[#notes + 1] = string.format(L["Depósito de %d h: el %d%% del precio de vendedor. Se devuelve si se vende (no resta del beneficio); lo pierdes si caduca."],
-      res.hours, res.depositPct)
+    notes[#notes + 1] = string.format(L["Depósito de %d h: el %d%% del precio de vendedor, mínimo %s por subasta (%d subastas). Se devuelve si se vende (no resta del beneficio); lo pierdes si caduca."],
+      res.hours, res.depositPct, ES.Money(Calc.MIN_DEPOSIT), res.listings or 0)
   end
   if #res.made > 0 then
     local parts = {}

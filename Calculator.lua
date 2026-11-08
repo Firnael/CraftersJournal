@@ -61,6 +61,29 @@ function Calc.Hours(c)
   return 24
 end
 
+-- Depósito mínimo por subasta en Forever: 1s, aunque el porcentaje dé menos (Wowhead,
+-- noviembre de 2026; por montón en lo que se apila). Blizzard ha dicho que volverá a la
+-- fórmula de Classic: entonces bastará con cambiar este valor
+Calc.MIN_DEPOSIT = 100
+
+-- Unidades por montón de un objeto (1 si no se apila o el juego aún no lo tiene)
+function Calc.StackSize(itemID)
+  local get = (C_Item and C_Item.GetItemInfo) or GetItemInfo
+  local stack = get and select(8, get(itemID))
+  return (type(stack) == "number" and stack > 1) and stack or 1
+end
+
+-- Depósito de vender `units` unidades: una subasta por montón lleno y otra con lo que
+-- sobre, cada una con el mínimo. Devuelve depósito y número de subastas
+function Calc.Deposit(perUnit, units, stack)
+  if units <= 0 then return 0, 0 end
+  local full = math.floor(units / stack)
+  local rest = units - full * stack
+  local deposit = full * math.max(Calc.MIN_DEPOSIT, perUnit * stack)
+  if rest > 0.001 then deposit = deposit + math.max(Calc.MIN_DEPOSIT, perUnit * rest) end
+  return deposit, full + (rest > 0.001 and 1 or 0)
+end
+
 -- Depósito de una duración en % del precio de vendedor (5/20/60; más en la AH neutral)
 function Calc.DepositPct(hours)
   return math.floor(ES.Planner.AuctionCosts(100, { hours = hours, neutral = ES:IsNeutralAH() }) + 0.5)
@@ -206,8 +229,9 @@ function Calc:Compute(c)
     -- En la AH: comisión sobre la venta y depósito según la duración (2/8/24 h: 5/20/60%
     -- del precio de vendedor, la fórmula de Classic). El depósito se devuelve si se
     -- vende: no resta del beneficio, solo se arriesga
-    local deposit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = res.hours, neutral = ES:IsNeutralAH() })
-    res.cutRate, res.cut, res.deposit = cut, res.revenue * cut, deposit * res.outN
+    local perUnit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = res.hours, neutral = ES:IsNeutralAH() })
+    res.cutRate, res.cut = cut, res.revenue * cut
+    res.deposit, res.listings = Calc.Deposit(perUnit, res.outN, Calc.StackSize(res.outID))
   end
   res.profit = res.revenue - res.cut - res.cost
   return res

@@ -1588,12 +1588,20 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   -- vendedor) se devuelve al venderse: se enseña, pero no resta
   assert(math.abs(res.profit - (res.revenue - res.cut - res.cost)) < 0.01, "beneficio mal sumado")
   local outVendor = ES:VendorSellPrice(outID) or 0
-  assert(res.hours == 24 and math.abs(res.deposit - outVendor * 0.6 * res.outN) < 0.01, "depósito 24 h = 60% del vendedor: " .. res.deposit)
+  -- Mínimo de Forever: 1s por subasta (por montón en lo que se apila)
+  assert(Calc.Deposit(1.5, 1, 1) == 100, "por debajo de 1s, 1s")
+  assert(Calc.Deposit(300, 2, 1) == 600, "dos subastas de 3s")
+  local d, n = Calc.Deposit(2, 20, 20)
+  assert(d == 100 and n == 1, "un montón de 20 paga el mínimo una vez")
+  d, n = Calc.Deposit(2, 25, 20)
+  assert(d == 200 and n == 2, "25 en montones de 20: dos subastas")
+  local stack = Calc.StackSize(outID)
+  assert(res.hours == 24 and math.abs(res.deposit - Calc.Deposit(outVendor * 0.6, res.outN, stack)) < 0.01, "depósito 24 h = 60% del vendedor: " .. res.deposit)
   -- Duración elegida: 2 h = 5%, 8 h = 20% (y el beneficio no cambia: se devuelve)
   for hours, pct in pairs({ [2] = 0.05, [8] = 0.20 }) do
     c.hours = hours
     local rh = Calc:Compute(c)
-    assert(math.abs(rh.deposit - outVendor * pct * rh.outN) < 0.01 and rh.depositPct == pct * 100, hours .. " h: " .. rh.deposit)
+    assert(math.abs(rh.deposit - Calc.Deposit(outVendor * pct, rh.outN, stack)) < 0.01 and rh.depositPct == pct * 100, hours .. " h: " .. rh.deposit)
     assert(math.abs(rh.profit - res.profit) < 0.01, "la duración no cambia el beneficio")
   end
   c.hours = nil
