@@ -29,43 +29,82 @@ local function SourceText(res, source)
   if source == "manual" then return GOLD .. L["a mano"] .. "|r" end
   if source == "ah" then return L["AH"] end
   if source == "vendor" then
-    if res.discount > 0 then
-      return string.format(L["vendedor (%s −%d%%)"], res.city or "", math.floor(res.discount * 100 + 0.5))
+    if res.discount > 0 then -- la ciudad, en la nota de abajo: aquí no cabe
+      return string.format(L["vendedor −%d%%"], math.floor(res.discount * 100 + 0.5))
     end
     return L["vendedor"]
   end
   return ORANGE .. L["sin precio"] .. "|r"
 end
 
--- Casilla de dinero: al pulsar Intro o salir de ella, `commit(cobre o nil)`
-local function MoneyBox(parent, width, commit)
-  local box = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
-  box:SetSize(width, 20)
-  box:SetAutoFocus(false)
-  box:SetJustifyH("RIGHT")
-  local function Save(self)
-    if self.saving then return end
-    self.saving = true
-    commit(Calc.ParseMoney(self:GetText()), self:GetText())
-    self.saving = false
+-- Precio con tres casillas, oro, plata y cobre, cada una con su icono (como el correo
+-- del juego). Al pulsar Intro o salir de una casilla, `commit(cobre)`; con las tres
+-- vacías, commit(nil): vuelve al precio automático. Tab pasa a la siguiente.
+local MONEY_W = 136 -- ancho de las tres casillas con sus iconos
+local COIN_ICONS = { "Interface\\MoneyFrame\\UI-GoldIcon", "Interface\\MoneyFrame\\UI-SilverIcon", "Interface\\MoneyFrame\\UI-CopperIcon" }
+local function MoneyInput(parent, commit)
+  local input = CreateFrame("Frame", nil, parent)
+  input:SetSize(MONEY_W, 20)
+  local widths, maxLetters = { 40, 24, 24 }, { 5, 2, 2 }
+  local boxes, x = {}, 6
+  local function Value()
+    local g, s, c = tonumber(boxes[1]:GetText()), tonumber(boxes[2]:GetText()), tonumber(boxes[3]:GetText())
+    if not g and not s and not c then return nil end
+    return (g or 0) * 10000 + math.min(s or 0, 99) * 100 + math.min(c or 0, 99)
   end
-  box:SetScript("OnEnterPressed", function(self) Save(self) self:ClearFocus() end)
-  box:SetScript("OnEditFocusLost", Save)
-  box:SetScript("OnEscapePressed", function(self) self.cancel = true self:ClearFocus() ES:RenderCalculator() end)
-  box:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_TOP")
-    GameTooltip:AddLine(L["Escribe el precio por unidad"])
-    GameTooltip:AddLine(L["En plata: 2,7 = 2s 70c. O con unidades: 1g 20s 5c. Vacío: vuelve al automático."], 0.8, 0.8, 0.8, true)
-    GameTooltip:Show()
-  end)
-  box:SetScript("OnLeave", function() GameTooltip:Hide() end)
-  return box
-end
-
--- Pone el texto de una casilla salvo si la estás escribiendo
-local function SetBox(box, copper)
-  if box:HasFocus() == true then return end
-  box:SetText(Calc.FormatMoney(copper))
+  local function Save()
+    if input.saving then return end
+    input.saving = true
+    commit(Value())
+    input.saving = false
+  end
+  for i = 1, 3 do
+    local box = CreateFrame("EditBox", nil, input, "InputBoxTemplate")
+    box:SetSize(widths[i], 20)
+    box:SetPoint("LEFT", x, 0)
+    box:SetAutoFocus(false)
+    box:SetNumeric(true)
+    box:SetMaxLetters(maxLetters[i])
+    box:SetJustifyH("RIGHT")
+    local icon = input:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(12, 12)
+    icon:SetPoint("LEFT", box, "RIGHT", 1, 0)
+    icon:SetTexture(COIN_ICONS[i])
+    x = x + widths[i] + 6 + 13
+    box:SetScript("OnEnterPressed", function(self) self.leaving = true self:ClearFocus() Save() self.leaving = false end)
+    box:SetScript("OnEditFocusLost", function(self)
+      -- Pasar a otra casilla del mismo precio (Tab) no guarda todavía
+      C_Timer.After(0, function()
+        for _, b in ipairs(boxes) do if b:HasFocus() == true then return end end
+        Save()
+      end)
+    end)
+    box:SetScript("OnTabPressed", function() boxes[i % 3 + 1]:SetFocus() end)
+    box:SetScript("OnEscapePressed", function(self) self:ClearFocus() ES:RenderCalculator() end)
+    box:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine(L["Escribe el precio por unidad"])
+      GameTooltip:AddLine(L["Oro, plata y cobre; Tab pasa a la siguiente casilla. Con las tres vacías vuelve al precio automático."], 0.8, 0.8, 0.8, true)
+      GameTooltip:Show()
+    end)
+    box:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    boxes[i] = box
+  end
+  input.g, input.s, input.c = boxes[1], boxes[2], boxes[3]
+  -- Pone el precio, salvo si estás escribiendo en alguna de sus casillas
+  function input:SetValue(copper)
+    for _, b in ipairs(boxes) do if b:HasFocus() == true then return end end
+    if not copper then
+      for _, b in ipairs(boxes) do b:SetText("") end
+      return
+    end
+    copper = math.floor(copper + 0.5)
+    local g, s, c = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
+    boxes[1]:SetText(g > 0 and tostring(g) or "")
+    boxes[2]:SetText((g > 0 or s > 0) and tostring(s) or "")
+    boxes[3]:SetText(tostring(c))
+  end
+  return input
 end
 
 ---------------------------------------------------------------------------
@@ -237,8 +276,10 @@ end
 ---------------------------------------------------------------------------
 -- Hoja del cálculo elegido
 ---------------------------------------------------------------------------
--- Columnas (x desde la izquierda del panel; el total, pegado a la derecha)
-local COL_NAME, COL_QTY, COL_PRICE, COL_SOURCE = 36, 250, 312, 412
+-- Columnas (x desde la izquierda del panel; el total, pegado a la derecha, ~90 px).
+-- La hoja mide ~610 px con la ventana de 840: nombre 150, cantidad 40, precio 136,
+-- de dónde 90, total 90
+local COL_NAME, COL_QTY_RIGHT, COL_PRICE, COL_SOURCE = 36, 228, 236, 384
 
 local function SheetRow(page, i)
   local row = page.sheetRows[i]
@@ -252,24 +293,25 @@ local function SheetRow(page, i)
   row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   row.name = ES.UI.Label(row, "", "GameFontHighlightSmall")
   row.name:SetPoint("LEFT", COL_NAME, 0)
-  row.name:SetWidth(COL_QTY - COL_NAME - 8)
+  row.name:SetWidth(COL_QTY_RIGHT - 44 - COL_NAME)
   row.name:SetJustifyH("LEFT")
   row.name:SetWordWrap(false)
   row.qty = ES.UI.Label(row, "", "GameFontHighlightSmall")
-  row.qty:SetPoint("LEFT", COL_QTY, 0)
-  row.qty:SetWidth(50)
+  row.qty:SetPoint("RIGHT", row, "LEFT", COL_QTY_RIGHT, 0)
+  row.qty:SetWidth(40)
   row.qty:SetJustifyH("RIGHT")
-  row.box = MoneyBox(row, 86, function(copper, text)
+  row.box = MoneyInput(row, function(copper)
     local c = Calc:Selected()
     if not c or not row.itemID then return end
-    if copper then c.prices[row.itemID] = copper
-    elseif strtrim(text or "") == "" then c.prices[row.itemID] = nil end
+    c.prices[row.itemID] = copper -- nil: vuelve al automático
     ES:RenderCalculator()
   end)
   row.box:SetPoint("LEFT", COL_PRICE, 0)
   row.source = ES.UI.Label(row, "", "GameFontDisableSmall")
   row.source:SetPoint("LEFT", COL_SOURCE, 0)
+  row.source:SetWidth(88)
   row.source:SetJustifyH("LEFT")
+  row.source:SetWordWrap(false)
   row.total = ES.UI.Label(row, "", "GameFontHighlightSmall")
   row.total:SetPoint("RIGHT", -14, 0)
   row.total:SetJustifyH("RIGHT")
@@ -322,8 +364,8 @@ local function CreateSheet(page)
   head:SetHeight(18)
   head:SetPoint("TOPLEFT", 6, -54)
   head:SetPoint("TOPRIGHT", -6, -54)
-  for _, col in ipairs({ { L["Material"], COL_NAME, "LEFT" }, { L["Cantidad"], COL_QTY + 50, "RIGHT" },
-    { L["Precio por unidad"], COL_PRICE + 86, "RIGHT" }, { L["De dónde"], COL_SOURCE, "LEFT" } }) do
+  for _, col in ipairs({ { L["Material"], COL_NAME, "LEFT" }, { L["Cantidad"], COL_QTY_RIGHT, "RIGHT" },
+    { L["Precio por unidad"], COL_PRICE + 6, "LEFT" }, { L["De dónde"], COL_SOURCE, "LEFT" } }) do
     local fs = ES.UI.Label(head, col[1], "GameFontNormalSmall")
     fs:SetPoint(col[3], head, "LEFT", col[2], 0)
   end
@@ -335,15 +377,20 @@ local function CreateSheet(page)
   page.matTotal = SummaryLine(p)
   -- Venta: casilla del precio por unidad
   page.saleLine = SummaryLine(p)
-  page.saleBox = MoneyBox(page.saleLine, 86, function(copper, text)
+  page.saleLine.label:SetWidth(COL_PRICE - COL_NAME - 8)
+  page.saleLine.label:SetWordWrap(false)
+  page.saleBox = MoneyInput(page.saleLine, function(copper)
     local c = Calc:Selected()
     if not c then return end
-    if copper then c.sale = copper elseif strtrim(text or "") == "" then c.sale = nil end
+    c.sale = copper -- nil: vuelve al automático
     ES:RenderCalculator()
   end)
   page.saleBox:SetPoint("LEFT", COL_PRICE, 0)
   page.saleSource = ES.UI.Label(page.saleLine, "", "GameFontDisableSmall")
   page.saleSource:SetPoint("LEFT", COL_SOURCE, 0)
+  page.saleSource:SetWidth(88)
+  page.saleSource:SetJustifyH("LEFT")
+  page.saleSource:SetWordWrap(false)
   page.cutLine = SummaryLine(p)
   page.depositLine = SummaryLine(p)
   page.profitLine = SummaryLine(p, "GameFontNormalLarge")
@@ -475,7 +522,7 @@ function ES:RenderCalculator()
     row.icon:SetTexture(texture or 134400)
     row.name:SetText(label)
     row.qty:SetText(Qty(r.qty))
-    SetBox(row.box, r.price)
+    row.box:SetValue(r.price)
     row.source:SetText(SourceText(res, r.source))
     row.total:SetText(r.total and Money(r.total) or (ORANGE .. "?|r"))
     row:Show()
@@ -497,7 +544,7 @@ function ES:RenderCalculator()
   if res.outID then
     local outLabel = ES.UI.ItemLabel(res.outID, L["Objeto "] .. res.outID)
     page.saleLine.label:SetText(string.format(L["Venta: %s × %s"], Qty(res.outN), outLabel))
-    SetBox(page.saleBox, res.sale)
+    page.saleBox:SetValue(res.sale)
     page.saleBox:Show()
     page.saleSource:SetText(SourceText(res, res.saleSource))
     page.saleLine.value:SetText(Signed(-res.revenue))
@@ -511,9 +558,10 @@ function ES:RenderCalculator()
   Place(page.cutLine)
   page.cutLine.label:SetText(string.format(L["Comisión de la AH (%d%%)"], math.floor(res.cutRate * 100 + 0.5)))
   page.cutLine.value:SetText(res.cut > 0 and Signed(res.cut) or (GREY .. "—|r"))
+  -- El depósito se devuelve al venderse: no resta, se enseña en gris (lo que arriesgas)
   Place(page.depositLine)
-  page.depositLine.label:SetText(L["Depósito (24 h)"])
-  page.depositLine.value:SetText(res.deposit > 0 and Signed(res.deposit) or (GREY .. "—|r"))
+  page.depositLine.label:SetText(L["Depósito (24 h)"] .. GREY .. " · " .. L["se devuelve si se vende; lo pierdes si caduca"] .. "|r")
+  page.depositLine.value:SetText(res.deposit > 0 and (GREY .. ES.Money(res.deposit) .. "|r") or (GREY .. "—|r"))
   Place(page.profitLine, 6)
   page.profitLine.label:SetText(L["Beneficio"])
   page.profitLine.value:SetText(Signed(-res.profit))

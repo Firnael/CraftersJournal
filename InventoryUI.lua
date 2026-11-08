@@ -76,8 +76,9 @@ function Inventory:List()
     if n > 0 and not it.bound and entry and entry.minUnit then
       local fair = ES.Market:FairPrice(id, entry.minUnit)
       local listPrice = ES.Market.ListPrice(fair)
-      local deposit, cut = ES.Planner.AuctionCosts(vendor, { hours = 24, neutral = ES:IsNeutralAH() })
-      local net = listPrice and (listPrice * (1 - cut) - deposit)
+      -- El depósito se devuelve al venderse: no resta (lo que te queda es tras la comisión)
+      local _, cut = ES.Planner.AuctionCosts(vendor, { hours = 24, neutral = ES:IsNeutralAH() })
+      local net = listPrice and listPrice * (1 - cut)
       local verdict = ES.Market:Signals(id).verdict
       e.fair, e.verdict, e.listPrice, e.ref = fair, verdict, listPrice, fair.ref
       if fair.ref and entry.minUnit >= fair.ref * RISE then e.rise = entry.minUnit / fair.ref - 1 end
@@ -190,7 +191,7 @@ local function Tooltip(e)
     if e.ahN > 0 then
       GameTooltip:AddDoubleLine(string.format(L["%d en la AH a %s"], e.ahN, ES.Money(e.listPrice)),
         "+" .. ES.Money(e.ahN * e.ahUnit), 1, 0.82, 0, 1, 1, 1)
-      GameTooltip:AddLine(L["(lo que te queda tras la comisión del 5% y el depósito)"], 0.6, 0.6, 0.6)
+      GameTooltip:AddLine(L["(lo que te queda tras la comisión de la AH; el depósito se devuelve al venderse)"], 0.6, 0.6, 0.6, true)
     end
     if e.vendorN > 0 then
       GameTooltip:AddDoubleLine(string.format(L["%d al vendedor a %s"], e.vendorN, ES.Money(e.vendorUnit)),
@@ -332,7 +333,7 @@ function ES:RenderInventory()
   else
     local mins = math.floor((time() - scan.time) / 60)
     page.status:SetText(mins > 12 * 60 and (ORANGE .. string.format(L["Precios de la AH de hace %d h: escanea antes de anunciar.|r"], math.floor(mins / 60)))
-      or (GREY .. string.format(L["Precios de la AH de hace %d min · en la AH, lo que te queda tras comisión y depósito|r"], mins)))
+      or (GREY .. string.format(L["Precios de la AH de hace %d min · en la AH, lo que te queda tras la comisión|r"], mins)))
   end
   local merchant = ES.Ledger:MerchantOpen()
   page.action:SetShown(merchant and #vendor > 0)

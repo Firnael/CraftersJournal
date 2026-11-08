@@ -2,7 +2,8 @@ local _, ES = ...
 
 -- Calculadora de beneficio de una receta, como una hoja de cálculo: materiales en
 -- crudo (lo intermedio que sabes fabricar, como el Bolt of Silk Cloth, se desglosa en
--- su tela), el precio de cada uno, la venta, la comisión de la AH y el depósito.
+-- su tela), el precio de cada uno, la venta y la comisión de la AH (el depósito se
+-- enseña aparte: se devuelve si se vende).
 -- Los precios salen solos (lo más barato entre la AH del último escaneo y el vendedor,
 -- con el descuento de la capital donde tienes más reputación) y cada uno se puede
 -- escribir a mano: se guarda en ese cálculo y no cambia nada más del addon.
@@ -188,10 +189,11 @@ function Calc:Compute(c)
   res.revenue = (res.sale or 0) * res.outN
   res.cut, res.cutRate, res.deposit = 0, 0, 0
   if res.outID and res.saleSource ~= "vendor" then
-    -- En la AH: comisión sobre la venta y depósito (24 h) por unidad
+    -- En la AH: comisión sobre la venta y depósito (24 h: 60% del precio de vendedor).
+    -- El depósito se devuelve si se vende: no resta del beneficio, solo se arriesga
     local deposit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = 24, neutral = ES:IsNeutralAH() })
     res.cutRate, res.cut, res.deposit = cut, res.revenue * cut, deposit * res.outN
   end
-  res.profit = res.revenue - res.cut - res.deposit - res.cost
+  res.profit = res.revenue - res.cut - res.cost
   return res
 end

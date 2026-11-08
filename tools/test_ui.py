@@ -1584,8 +1584,11 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   for _, rq in ipairs(data.recipes[boltID].r) do if rq[1] == SILK then silkPerBolt = rq[2] end end
   assert(by[SILK].qty == boltsNeeded * silkPerBolt / (data.recipes[boltID].out[2] or 1), "tela: " .. by[SILK].qty)
   assert(by[SILK].source == "ah" and by[SILK].price == 200, "la seda, del escaneo")
-  -- Las cuentas: venta - comisión - depósito - materiales
-  assert(math.abs(res.profit - (res.revenue - res.cut - res.deposit - res.cost)) < 0.01, "beneficio mal sumado")
+  -- Las cuentas: venta - comisión - materiales. El depósito (24 h: 60% del precio de
+  -- vendedor) se devuelve al venderse: se enseña, pero no resta
+  assert(math.abs(res.profit - (res.revenue - res.cut - res.cost)) < 0.01, "beneficio mal sumado")
+  local outVendor = ES:VendorSellPrice(outID) or 0
+  assert(math.abs(res.deposit - outVendor * 0.6 * res.outN) < 0.01, "depósito 24 h = 60% del vendedor: " .. res.deposit)
   assert(res.cutRate == 0.05 and res.saleSource == "ah" and res.sale == 49999, "venta en la AH a 1c menos: " .. tostring(res.sale))
   -- Precio a mano: solo en este cálculo
   c.prices[SILK] = Calc.ParseMoney("2,7")
@@ -1620,13 +1623,17 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   assert(page.saved[1]._shown and page.saved[2]._shown, "dos cálculos guardados en la lista")
   local silkRow
   for _, row in ipairs(page.sheetRows) do if row._shown and row.itemID == SILK then silkRow = row end end
-  assert(silkRow and silkRow.box._text == "2s 70c", "casilla con el precio a mano: " .. tostring(silkRow and silkRow.box._text))
-  silkRow.box:SetText("3")
-  silkRow.box._scripts.OnEnterPressed(silkRow.box)
-  assert(c.prices[SILK] == 300, "escribir 3 en la casilla = 3s")
-  silkRow.box:SetText("")
-  silkRow.box._scripts.OnEnterPressed(silkRow.box)
-  assert(c.prices[SILK] == nil, "vaciar la casilla vuelve al automático")
+  -- Tres casillas: oro, plata y cobre
+  local b = silkRow and silkRow.box
+  assert(b and b.g._text == "" and b.s._text == "2" and b.c._text == "70",
+    "casillas con 2s 70c: " .. tostring(b and b.g._text) .. "|" .. tostring(b and b.s._text) .. "|" .. tostring(b and b.c._text))
+  b.g:SetText("1") b.s:SetText("3") b.c:SetText("")
+  b.s._scripts.OnEnterPressed(b.s)
+  assert(c.prices[SILK] == 10300, "1 oro y 3 platas = 1g 3s: " .. tostring(c.prices[SILK]))
+  assert(b.g._text == "1" and b.s._text == "3" and b.c._text == "0", "se repinta con 1g 3s 0c")
+  b.g:SetText("") b.s:SetText("") b.c:SetText("")
+  b.c._scripts.OnEnterPressed(b.c)
+  assert(c.prices[SILK] == nil, "con las tres vacías vuelve al automático")
   log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
   -- Buscar y añadir; borrar con la ✕
   page.search:SetText("silk")
