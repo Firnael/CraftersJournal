@@ -1412,6 +1412,70 @@ step("inventario: qué vender de las bolsas, dónde y qué guardar", function()
   ES.Ledger.MerchantOpen, ES.Ledger.SellToVendor, ES.Ledger.PostOnAH, ES.IsAuctionHouseOpen = savedMerchant, savedSell, savedPost, savedAH
   ES:SelectPage("home")
 end)
+step("inventario: desencantar cuando vale más que venderlo", function()
+  -- Un verde de armadura nivel 22 ligado (4-6 polvos extraños de media al 75%), un arma
+  -- verde del mismo nivel (sobre todo esencias), un gris y un verde que se vende caro
+  local ARMOR, WEAPON, GREY, PRICEY = 9001, 9002, 9003, 9004
+  local bags = { { ARMOR, 1, true }, { WEAPON, 1 }, { GREY, 1 }, { PRICEY, 1 } }
+  local INFO = { [ARMOR] = { 2, 22, 4 }, [WEAPON] = { 2, 22, 2 }, [GREY] = { 0, 22, 4 }, [PRICEY] = { 2, 22, 4 } }
+  local savedCC, savedScans, savedVendor, savedGII = C_Container, ES.db.scans, ES.VendorSellPrice, GetItemInfo
+  local savedSkill, savedSpell, savedSig = ES.GetProfessionSkill, GetSpellInfo, ES.Market.Signals
+  C_Container = {
+    GetContainerNumSlots = function(bag) return bag == 0 and #bags or 0 end,
+    GetContainerItemID = function(bag, slot) return bags[slot] and bags[slot][1] end,
+    GetContainerItemInfo = function(bag, slot) local b = bags[slot] return b and { stackCount = b[2], isBound = b[3] } end,
+  }
+  GetItemInfo = function(id) local i = INFO[id] if i then return "Obj" .. id, nil, i[1], i[2], 20, nil, nil, 1, nil, 134400, 100, i[3] end
+    return savedGII(id) end
+  local VENDOR = { [ARMOR] = 100, [WEAPON] = 100, [GREY] = 100, [PRICEY] = 100 }
+  ES.VendorSellPrice = function(_, id) return VENDOR[id] or 1 end
+  -- Polvo extraño a 50c, esencia astral menor a 1s; el verde caro se vende a 50s en la AH
+  ES.db.scans = { [ES:RealmKey()] = { time = time() - 600, items = {
+    [10940] = { minUnit = 50, quantity = 100 }, [10998] = { minUnit = 100, quantity = 20 },
+    [PRICEY] = { minUnit = 5000, quantity = 1 } } } }
+  ES.Market.Signals = function() return { verdict = "good" } end
+  GetSpellInfo = function(id) if id == 13262 then return "Desencantar" end end
+  local function By()
+    local by = {}
+    for _, e in ipairs(ES.Inventory:List()) do by[e.itemID] = e end
+    return by
+  end
+  -- Sin Encantamiento: no se propone, pero el tooltip dice lo que sacaría un encantador
+  ES.GetProfessionSkill = function() return nil end
+  local by = By()
+  assert(by[ARMOR] and by[ARMOR].deN == 0 and by[ARMOR].de, "sin Encantamiento no se desencanta, pero se calcula")
+  -- Con Encantamiento 30 (pide 25 para nivel 22)
+  ES.GetProfessionSkill = function(_, line) if line == 333 then return 30, 75 end end
+  by = By()
+  local de = by[ARMOR] and by[ARMOR].de
+  -- 0.75 x 5 polvos x ~47c + 0.15 x 1.5 esencias x ~95c + 0.10 x fragmento (sin precio: vendedor 1c)
+  log[#log+1] = string.format("     verde nivel 22 (armadura): desencantar ~%dc frente a 100c del vendedor", de and de.value or -1)
+  assert(by[ARMOR].deN == 1 and by[ARMOR].vendorN == 0, "el verde de armadura (ligado) se desencanta: " .. tostring(by[ARMOR].deN))
+  assert(de.value > 150 and de.value < 220, "valor medio del verde de armadura: " .. de.value)
+  assert(de.partial, "el fragmento no estaba en el escaneo: se avisa")
+  assert(by[WEAPON] and by[WEAPON].de and by[WEAPON].de.value < de.value, "un arma da sobre todo esencias (aquí valen menos que los polvos)")
+  assert(not by[GREY] or not by[GREY].de, "un gris no se desencanta")
+  assert(by[PRICEY] and by[PRICEY].deN == 0 and by[PRICEY].ahN == 1, "si en la AH vale más, a la AH")
+  -- Nivel insuficiente: Encantamiento 10
+  ES.GetProfessionSkill = function(_, line) if line == 333 then return 10, 75 end end
+  by = By()
+  assert(by[ARMOR].deN == 0 and by[ARMOR].deRank == 10, "con 10 no llega al 25 que pide")
+  -- La página: sección y botón seguro con la macro del hueco del objeto
+  ES.GetProfessionSkill = function(_, line) if line == 333 then return 30, 75 end end
+  ES:SelectPage("inventory")
+  local page = ES.inventoryPage
+  page._shown = true
+  ES:RenderInventory()
+  local btn = page.deButton
+  assert(btn._shown and (btn.itemID == ARMOR or btn.itemID == WEAPON), "botón Desencantar: " .. tostring(btn.itemID))
+  assert(tostring(btn._text):find("Desencantar"), "texto del botón: " .. tostring(btn._text))
+  local sections = {}
+  for _, row in ipairs(page.rows) do if row._shown and row.title then sections[#sections + 1] = tostring(row.title._text) end end
+  log[#log+1] = "     desencantar: " .. tostring(btn._text) .. " · " .. table.concat(sections, " | "):sub(1, 200)
+  C_Container, ES.db.scans, ES.VendorSellPrice, GetItemInfo = savedCC, savedScans, savedVendor, savedGII
+  ES.GetProfessionSkill, GetSpellInfo, ES.Market.Signals = savedSkill, savedSpell, savedSig
+  ES:SelectPage("home")
+end)
 step("flipping: gangas de la AH", function()
   local CHEAP, DROP, SAME, AVOID = 2318, 2319, 4234, 4304
   local savedScans, savedVendor, savedRef, savedSig = ES.db.scans, ES.VendorSellPrice, ES.Market.ReferencePrice, ES.Market.Signals

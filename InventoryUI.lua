@@ -14,6 +14,8 @@ local RISE = 1.3          -- "ha subido": el mínimo de ahora, un 30% o más sob
 local AH_MIN_GAIN = 5     -- la AH tiene que dejar al menos 5c por unidad más que el vendedor
 local AH_MIN_PCT = 0.15   -- y un 15% más
 local AH_FEW = 5          -- con alertas dudosas, unas pocas a la AH y el resto al vendedor
+local DE_MIN_GAIN = 10    -- desencantar tiene que dejar al menos 10c más que venderlo
+local DE_MIN_PCT = 0.20   -- y un 20% más (es una media: cada desencantamiento sale al azar)
 
 -- Objetos de tus bolsas: { [itemID] = { count, bound, noValue } }
 local function BagContents()
@@ -27,7 +29,7 @@ local function BagContents()
       local id = getID(bag, slot)
       if id then
         local info = getInfo and getInfo(bag, slot)
-        local it = items[id] or { count = 0 }
+        local it = items[id] or { count = 0, bag = bag, slot = slot } -- dónde está (para desencantarlo)
         it.count = it.count + (info and info.stackCount or 1)
         it.bound = it.bound or (info and info.isBound) or nil
         it.noValue = it.noValue or (info and info.hasNoValue) or nil
@@ -84,8 +86,20 @@ function Inventory:List()
         e.ahN, e.ahUnit = onAH, net
       end
     end
-    e.vendorN = vendor > 0 and (n - e.ahN) or 0
-    e.value = e.ahN * (e.ahUnit or 0) + e.vendorN * vendor
+    -- Desencantar (también lo ligado): si los materiales valen bastante más que venderlo
+    local de = n > 0 and ES.Disenchant:Value(id, scan)
+    local sellUnit = math.max(vendor, e.ahN > 0 and e.ahUnit or 0)
+    if de and de.value - sellUnit >= math.max(DE_MIN_GAIN, sellUnit * DE_MIN_PCT) then
+      local can, rank = ES.Disenchant:CanDisenchant(de.skill)
+      e.de, e.deRank, e.sellUnit = de, rank, sellUnit
+      if can then
+        e.deN, e.deUnit, e.ahN, e.ahUnit = n, de.value, 0, nil
+        e.bag, e.slot = it.bag, it.slot
+      end
+    end
+    e.deN = e.deN or 0
+    e.vendorN = (vendor > 0 and e.deN == 0) and (n - e.ahN) or 0
+    e.value = e.ahN * (e.ahUnit or 0) + e.vendorN * vendor + e.deN * (e.deUnit or 0)
     if e.value > 0 or keep > 0 then list[#list + 1] = e end
   end
   table.sort(list, function(a, b) return a.value > b.value or (a.value == b.value and a.itemID < b.itemID) end)
@@ -187,6 +201,22 @@ local function Tooltip(e)
       GameTooltip:AddDoubleLine(string.format(L["%d al vendedor a %s"], e.vendorN, ES.Money(e.vendorUnit)),
         "+" .. ES.Money(e.vendorN * e.vendorUnit), 1, 0.82, 0, 1, 1, 1)
     end
+    if e.de then
+      -- Qué da desencantarlo, de media, y lo que vale cada material
+      GameTooltip:AddDoubleLine(e.deN > 0 and string.format(L["Desencantar %d: de media, cada uno da"], e.deN) or L["Desencantado daría de media"],
+        "+" .. ES.Money(e.de.value), 1, 0.82, 0, 1, 1, 1)
+      for _, r in ipairs(e.de.results) do
+        GameTooltip:AddDoubleLine(string.format("  %.2f× %s", r[2], (ItemLabel(r[1]))), ES.Money(math.floor(r[3])), 0.8, 0.8, 0.8, 0.8, 0.8, 0.8)
+      end
+      GameTooltip:AddLine(L["Media aproximada (tabla de Classic): cada desencantamiento sale al azar. Los materiales, a lo que te queda vendiéndolos en la AH."], 0.6, 0.6, 0.6, true)
+      if e.de.partial then
+        GameTooltip:AddLine(L["Algún material no salía en el escaneo: se cuenta a precio de vendedor (puede valer más)."], 1, 0.6, 0.2, true)
+      end
+      if e.deN == 0 then
+        GameTooltip:AddLine(e.deRank and string.format(L["Necesitas Encantamiento %d para desencantarlo (tienes %d)."], e.de.skill, e.deRank)
+          or string.format(L["Un encantador (Encantamiento %d) sacaría más desencantándolo."], e.de.skill), 1, 0.6, 0.2, true)
+      end
+    end
     if e.noAH then
       GameTooltip:AddLine(L["No salía en el último escaneo de la AH: no se sabe si allí vale más. Escanea la AH para compararlo."], 1, 0.6, 0.2, true)
     end
@@ -197,7 +227,9 @@ local function Tooltip(e)
     ES.Market.AddFairToTooltip(e.fair)
     if e.ahN > 0 or e.verdict then ES.Market.AddToTooltip(e.itemID) end
     GameTooltip:AddLine(" ")
-    if e.ahN > 0 and ES:IsAuctionHouseOpen() then
+    if e.deN > 0 then
+      GameTooltip:AddLine(L["Clic: elegirlo para el botón Desencantar de arriba."], 0.5, 0.8, 1, true)
+    elseif e.ahN > 0 and ES:IsAuctionHouseOpen() then
       GameTooltip:AddLine(string.format(L["Clic: anunciar %d en la AH."], e.ahN), 0.5, 0.8, 1)
     elseif e.vendorN > 0 and ES.Ledger:MerchantOpen() then
       GameTooltip:AddLine(string.format(L["Clic: vender %d al vendedor."], e.vendorN), 0.5, 0.8, 1)
@@ -210,7 +242,13 @@ end
 
 -- Clic: con la AH abierta anuncia lo que va a la AH; con el vendedor, vende lo suyo
 local function Act(e)
-  if e.ahN > 0 and ES:IsAuctionHouseOpen() then
+  if e.deN > 0 then
+    -- No se puede desencantar desde aquí (el juego solo deja lanzar hechizos desde un
+    -- botón seguro): se elige para el botón Desencantar de la cabecera
+    ES.inventoryPage.deTarget = e.itemID
+    ES:RenderInventory()
+    return
+  elseif e.ahN > 0 and ES:IsAuctionHouseOpen() then
     ES.Ledger:PostOnAH(e.itemID, e.ahN, e.listPrice)
   elseif e.vendorN > 0 and ES.Ledger:MerchantOpen() then
     ES.Ledger:SellToVendor(e.itemID, e.vendorN)
@@ -231,7 +269,12 @@ local function Line(e, mode)
     if e.ahN > 0 then
       parts[#parts + 1] = string.format(L["%sAH: %d a %s|r (%s)"], GOLD, e.ahN, ES.Money(e.listPrice), ES.Market.LABELS[e.verdict] or "")
     end
+    if e.deN > 0 then
+      parts[#parts + 1] = GOLD .. string.format(L["desencantar: %d · ~%s cada uno"], e.deN, ES.Money(e.deUnit)) .. "|r"
+        .. GREY .. " · " .. string.format(L["venderlo: %s"], ES.Money(e.sellUnit or 0)) .. "|r"
+    end
     if e.vendorN > 0 then parts[#parts + 1] = string.format(L["vendedor: %d a %s"], e.vendorN, ES.Money(e.vendorUnit)) end
+    if e.vendorN > 0 and e.de and e.deN == 0 then parts[#parts + 1] = GREY .. string.format(L["un encantador sacaría ~%s"], ES.Money(e.de.value)) .. "|r" end
     if e.noAH then parts[#parts + 1] = ORANGE .. L["sin precio de AH"] .. "|r" end
     if e.rise then parts[1] = GREEN .. string.format(L["+%d%% sobre su precio habitual"], math.floor(e.rise * 100 + 0.5)) .. "|r · " .. (parts[1] or "") end
     if e.keep > 0 then parts[#parts + 1] = GREY .. string.format(L["guarda %d para tus rutas"], e.keep) .. "|r" end
@@ -270,6 +313,25 @@ function ES:CreateInventoryPage(page)
     GameTooltip:Show()
   end)
   page.action:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  -- Desencantar: botón seguro (el único que puede lanzar un hechizo) con la macro
+  -- "/cast Desencantar" + "/use bolsa hueco" del objeto elegido. Se configura fuera de
+  -- combate al pintar; cada clic desencanta uno y la lista se repinta con el siguiente
+  local de = CreateFrame("Button", "CraftersJournalDisenchantButton", page.action:GetParent(), "SecureActionButtonTemplate,UIPanelButtonTemplate")
+  de:SetSize(170, 24)
+  de:SetPoint("RIGHT", -14, 0)
+  de:RegisterForClicks("AnyUp", "AnyDown") -- con "acción al pulsar" del cliente, solo valdría el clic hacia abajo
+  de:SetAttribute("type", "macro")
+  de:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    if self.itemID then
+      GameTooltip:AddLine(string.format(L["Desencanta 1 %s."], (ItemLabel(self.itemID))), 1, 1, 1, true)
+      GameTooltip:AddLine(L["Cada clic desencanta uno; luego pasa al siguiente. Pulsa una fila para elegir otro."], 0.8, 0.8, 0.8, true)
+    end
+    GameTooltip:Show()
+  end)
+  de:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  de:Hide()
+  page.deButton = de
   page.Render = function() ES:RenderInventory() end
   page:SetScript("OnShow", page.Render)
   -- Cambian tus bolsas, abres o cierras el vendedor o la AH: se repinta (si se ve)
@@ -286,17 +348,19 @@ function ES:RenderInventory()
   if not page or not page:IsVisible() then return end
   local list = Inventory:List()
   local Signed = ES.UI.Signed
-  local rising, ah, vendor, keep = {}, {}, {}, {}
-  local tAH, tVendor = 0, 0
+  local rising, ah, vendor, keep, dis = {}, {}, {}, {}, {}
+  local tAH, tVendor, tDE = 0, 0, 0
   for _, e in ipairs(list) do
     tAH = tAH + e.ahN * (e.ahUnit or 0)
     tVendor = tVendor + e.vendorN * e.vendorUnit
-    if e.value > 0 and e.rise and e.ahN > 0 then rising[#rising + 1] = e
+    tDE = tDE + e.deN * (e.deUnit or 0)
+    if e.deN > 0 then dis[#dis + 1] = e
+    elseif e.value > 0 and e.rise and e.ahN > 0 then rising[#rising + 1] = e
     elseif e.ahN > 0 then ah[#ah + 1] = e
     elseif e.vendorN > 0 then vendor[#vendor + 1] = e end
     if e.keep > 0 then keep[#keep + 1] = e end
   end
-  page.stats.total:SetText(Signed(-(tAH + tVendor)))
+  page.stats.total:SetText(Signed(-(tAH + tVendor + tDE)))
   page.stats.ah:SetText(tAH > 0 and Signed(-tAH) or (GREY .. "—|r"))
   page.stats.vendor:SetText(tVendor > 0 and Signed(-tVendor) or (GREY .. "—|r"))
   page.stats.rising:SetText(tostring(#rising))
@@ -313,12 +377,35 @@ function ES:RenderInventory()
   page.action:SetShown(merchant and #vendor > 0)
   page.action:SetText(L["Vender al vendedor"])
 
+  -- Botón Desencantar: el objeto elegido (o el primero) y su hueco en las bolsas. Un
+  -- botón seguro no se puede tocar en combate: se deja como estaba
+  if not (InCombatLockdown and InCombatLockdown()) then
+    local target
+    for _, e in ipairs(dis) do if e.itemID == page.deTarget then target = e end end
+    target = target or dis[1]
+    local de = page.deButton
+    local spell = ES.Disenchant:SpellName()
+    if target and spell and target.bag then
+      page.deTarget = target.itemID
+      de.itemID = target.itemID
+      de:SetAttribute("macrotext", string.format("/cast %s\n/use %d %d", spell, target.bag, target.slot))
+      de:SetText(string.format(L["Desencantar (%d)"], target.deN))
+      de:ClearAllPoints()
+      if page.action:IsShown() then de:SetPoint("RIGHT", page.action, "LEFT", -6, 0) else de:SetPoint("RIGHT", -14, 0) end
+      de:Show()
+    else
+      de.itemID = nil
+      de:Hide()
+    end
+  end
+
   local lines = {}
   local function Section(title, items, mode)
     if #items == 0 then return end
     lines[#lines + 1] = { section = title }
     for _, e in ipairs(items) do lines[#lines + 1] = Line(e, mode) end
   end
+  Section(L["Desencantar: vale más que venderlo"], dis)
   Section(L["Ha subido: véndelo ahora"], rising)
   Section(L["Vender en la Casa de Subastas"], ah)
   Section(L["Vender al vendedor"], vendor)

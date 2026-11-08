@@ -43,6 +43,7 @@ HomeUI.lua
 HeaderUI.lua
 AuctionUI.lua
 EarnUI.lua
+Disenchant.lua
 InventoryUI.lua
 FlippingUI.lua
 CollectionUI.lua
