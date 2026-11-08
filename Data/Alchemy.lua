@@ -62,7 +62,7 @@ ES.Data.Alchemy = {
     [7841] = { name = "Swim Speed Potion", t = { 1, 130, 150, 170 }, fee = 900, train = 100, r = { { 2452, 1 }, { 6370, 1 }, { 3371, 1 } }, out = { 6372, 1 }, oq = 1 },
     [7845] = { name = "Elixir of Fire Power", t = { 1, 165, 185, 205 }, fee = 2700, train = 140, r = { { 6371, 2 }, { 3356, 1 }, { 3372, 1 } }, out = { 6373, 1 }, oq = 1 },
     [8240] = { name = "Elixir of Giant Growth", t = { 1, 120, 140, 160 }, scroll = 6663, train = 90, sq = 2, r = { { 6522, 1 }, { 2449, 1 }, { 3371, 1 } }, out = { 6662, 1 }, oq = 1 },
-    [11447] = { name = "Draught of Water Walking", t = { 1, 190, 210, 230 }, r = { { 6370, 1 }, { 3357, 1 }, { 3372, 1 } }, out = { 8827, 1 }, oq = 1 },
+    [11447] = { name = "Draught of Water Walking", t = { 1, 190, 210, 230 }, scroll = 288206, train = 180, sq = 1, r = { { 6370, 1 }, { 3357, 1 }, { 3372, 1 } }, out = { 8827, 1 }, oq = 1 },
     [11448] = { name = "Greater Mana Potion", t = { 1, 220, 240, 260 }, fee = 8100, train = 205, r = { { 3358, 1 }, { 3821, 1 }, { 3372, 1 } }, out = { 6149, 1 }, oq = 1 },
     [11449] = { name = "Elixir of Agility", t = { 1, 205, 225, 245 }, fee = 5850, train = 185, r = { { 3820, 1 }, { 3821, 1 }, { 3372, 1 } }, out = { 8949, 1 }, oq = 1 },
     [11450] = { name = "Elixir of Defense", t = { 1, 215, 235, 255 }, fee = 6750, train = 195, r = { { 3355, 1 }, { 3821, 1 }, { 3372, 1 } }, out = { 8951, 1 }, oq = 1 },
@@ -149,7 +149,7 @@ ES.Data.Alchemy = {
     [1249632] = { name = "Viridian Dye", t = { 1, 230, 250, 270 }, r = { { 249274, 2 }, { 8925, 1 } }, out = { 249431, 1 }, oq = 2 },
     [1249633] = { name = "Sulfuric Acid", t = { 1, 50, 70, 90 }, fee = 135, train = 40, r = { { 249391, 2 }, { 3371, 1 } }, out = { 249410, 1 }, oq = 2 },
     [1250775] = { name = "Revealing Draught", t = { 1, 205, 207, 210 }, scroll = 250362, train = 195, sq = 1, r = { { 3818, 3 }, { 3358, 1 }, { 3372, 1 } }, out = { 250326, 1 }, oq = 1 },
-    [1250776] = { name = "Draught of Predatory Senses", t = { 1, 200, 202, 205 }, scroll = 250363, train = 195, sq = 1, r = { { 3818, 2 }, { 3821, 2 }, { 3372, 1 } }, out = { 250327, 1 }, oq = 1 },
+    [1250776] = { name = "Potion of Predatory Senses", t = { 1, 200, 202, 205 }, scroll = 250363, train = 195, sq = 1, r = { { 3818, 2 }, { 3821, 2 }, { 3372, 1 } }, out = { 250327, 1 }, oq = 1 },
     [1250777] = { name = "Elixir of Cunning", t = { 1, 280, 282, 285 }, scroll = 250364, train = 275, sq = 1, favor = 180, favorRep = 6, r = { { 13463, 3 }, { 8846, 2 }, { 8925, 1 } }, out = { 250328, 1 }, oq = 1 },
     [1250778] = { name = "Elixir of the Phalanx", t = { 1, 255, 257, 260 }, scroll = 250365, train = 250, sq = 1, favor = 180, favorRep = 6, r = { { 13464, 2 }, { 8838, 4 }, { 8925, 1 } }, out = { 250329, 1 }, oq = 1 },
     [1250779] = { name = "Minor Cleric's Elixir", t = { 1, 50, 52, 55 }, scroll = 250366, train = 45, sq = 1, r = { { 785, 2 }, { 2453, 1 }, { 3371, 1 } }, out = { 250330, 1 }, oq = 1 },
@@ -191,20 +191,19 @@ ES.Data.Alchemy = {
     [1251741] = { name = "Minor Mender's Potion", t = { 1, 35, 37, 40 }, scroll = 250988, train = 30, sq = 1, r = { { 785, 2 }, { 2453, 1 }, { 3371, 1 } }, out = { 250944, 1 }, oq = 1 },
     [1251742] = { name = "Lesser Mender's Potion", t = { 1, 85, 87, 90 }, scroll = 250989, train = 80, sq = 1, r = { { 3356, 2 }, { 3357, 2 }, { 3372, 1 } }, out = { 250945, 1 }, oq = 1 },
     [1251743] = { name = "Mender's Potion", t = { 1, 135, 137, 140 }, scroll = 250990, train = 130, sq = 1, favor = 45, r = { { 3819, 2 }, { 4625, 2 }, { 3372, 1 } }, out = { 250946, 1 }, oq = 1 },
-    [1251744] = { name = "Greater Mender's Potion", t = { 1, 185, 187, 190 }, scroll = 250991, train = 175, sq = 1, r = { { 8836, 2 }, { 8831, 1 }, { 8925, 1 } }, out = { 250947, 1 }, oq = 1 },
+    [1251744] = { name = "Greater Mender's Potion", t = { 1, 185, 187, 190 }, scroll = 250991, train = 180, sq = 1, r = { { 8836, 2 }, { 8831, 1 }, { 8925, 1 } }, out = { 250947, 1 }, oq = 1 },
     [1251745] = { name = "Superior Mender's Potion", t = { 1, 235, 237, 240 }, scroll = 250992, train = 230, sq = 1, r = { { 8838, 2 }, { 8836, 1 }, { 8925, 1 } }, out = { 250948, 1 }, oq = 1 },
     [1251747] = { name = "Major Mender's Potion", t = { 1, 285, 287, 290 }, scroll = 250993, train = 280, sq = 1, favor = 180, favorRep = 6, r = { { 13463, 3 }, { 8838, 1 }, { 18256, 1 } }, out = { 250949, 1 }, oq = 1 },
     [1251748] = { name = "Potion of Venomous Blood", t = { 1, 280, 282, 285 }, scroll = 250994, train = 275, sq = 1, favor = 180, favorRep = 6, r = { { 8846, 3 }, { 13466, 2 }, { 8925, 1 } }, out = { 250950, 1 }, oq = 1 },
     [1251749] = { name = "Caustic Smog Potion", t = { 1, 270, 272, 275 }, scroll = 250995, train = 265, sq = 1, favor = 180, favorRep = 6, r = { { 8845, 2 }, { 3369, 2 }, { 8925, 1 } }, out = { 250951, 1 }, oq = 1 },
-    [1251750] = { name = "Disorienting Smog Potion", t = { 1, 185, 187, 190 }, scroll = 250996, train = 180, sq = 1, favor = 120, favorRep = 5, r = { { 8845, 3 }, { 3369, 2 }, { 8925, 1 } }, out = { 250952, 1 }, oq = 1 },
     [1251751] = { name = "Dragonfire Potion", t = { 1, 250, 252, 255 }, scroll = 250997, train = 245, sq = 1, favor = 120, favorRep = 5, r = { { 13465, 2 }, { 4625, 2 }, { 8925, 1 } }, out = { 250953, 1 }, oq = 1 },
     [1251752] = { name = "Potion of Elemental Purging", t = { 1, 285, 287, 290 }, scroll = 250998, train = 280, sq = 1, favor = 180, favorRep = 6, r = { { 4625, 2 }, { 3819, 2 }, { 8925, 1 } }, out = { 250954, 1 }, oq = 1 },
     [1251753] = { name = "Potion of Beast Slaying", t = { 1, 285, 287, 290 }, scroll = 250999, train = 280, sq = 1, r = { { 8846, 2 }, { 13466, 2 }, { 18256, 1 } }, out = { 250955, 1 }, oq = 1 },
     [1263005] = { name = "Fermenter", t = { 1, 140, 142, 145 }, scroll = 273085, train = 140, sq = 2, r = { { 3372, 1 }, { 3356, 1 }, { 2452, 1 } }, out = { 279970, 1 }, oq = 1 },
-    [1293559] = { name = "Flask of Natural Accuracy", t = { 1, 320, 325, 330 }, scroll = 274277, train = 300, sq = 4, r = { { 248822, 1 }, { 248821, 12 }, { 13464, 9 }, { 18256, 1 } }, out = { 274273, 1 }, oq = 2 },
-    [1293560] = { name = "Flask of Natural Aggression", t = { 1, 320, 325, 330 }, scroll = 274278, train = 300, sq = 4, r = { { 248822, 1 }, { 248821, 18 }, { 13465, 6 }, { 18256, 1 } }, out = { 274274, 1 }, oq = 2 },
-    [1293561] = { name = "Flask of Natural Precision", t = { 1, 320, 325, 330 }, scroll = 274279, train = 300, sq = 4, r = { { 248822, 1 }, { 248823, 12 }, { 13463, 9 }, { 18256, 1 } }, out = { 274275, 1 }, oq = 2 },
-    [1293562] = { name = "Flask of Natural Swiftness", t = { 1, 320, 325, 330 }, scroll = 274280, train = 300, sq = 4, r = { { 248822, 1 }, { 248823, 18 }, { 13467, 6 }, { 18256, 1 } }, out = { 274276, 1 }, oq = 2 },
+    [1293559] = { name = "Flask of Natural Accuracy", t = { 1, 320, 325, 330 }, scroll = 274277, train = 300, sq = 3, r = { { 248822, 1 }, { 248821, 12 }, { 13464, 9 }, { 18256, 1 } }, out = { 274273, 1 }, oq = 2 },
+    [1293560] = { name = "Flask of Natural Aggression", t = { 1, 320, 325, 330 }, scroll = 274278, train = 300, sq = 3, r = { { 248822, 1 }, { 248821, 18 }, { 13465, 6 }, { 18256, 1 } }, out = { 274274, 1 }, oq = 2 },
+    [1293561] = { name = "Flask of Natural Precision", t = { 1, 320, 325, 330 }, scroll = 274279, train = 300, sq = 3, r = { { 248822, 1 }, { 248823, 12 }, { 13463, 9 }, { 18256, 1 } }, out = { 274275, 1 }, oq = 2 },
+    [1293562] = { name = "Flask of Natural Swiftness", t = { 1, 320, 325, 330 }, scroll = 274280, train = 300, sq = 3, r = { { 248822, 1 }, { 248823, 18 }, { 13467, 6 }, { 18256, 1 } }, out = { 274276, 1 }, oq = 2 },
     [1317279] = { name = "Transmute: Legionite", t = { 1, 275, 282, 290 }, scroll = 284871, train = 275, sq = 1, r = { { 251291, 1 }, { 248819, 1 } }, tool = 12, out = { 251290, 1 }, oq = 2 },
     [2332] = { name = "Minor Rejuvenation Potion", t = { 40, 70, 90, 110 }, fee = 135, train = 40, r = { { 785, 2 }, { 2447, 1 }, { 3371, 1 } }, out = { 2456, 1 }, oq = 1 },
     [2334] = { name = "Elixir of Minor Fortitude", t = { 50, 80, 100, 120 }, fee = 225, train = 50, r = { { 2449, 2 }, { 2447, 1 }, { 3371, 1 } }, out = { 2458, 1 }, oq = 1 },
@@ -419,7 +418,7 @@ ES.Data.SellPrices[248823] = 150
 ES.Data.SellPrices[249274] = 250
 ES.Data.SellPrices[249391] = 100
 ES.Data.SellPrices[249399] = 30
-ES.Data.SellPrices[249409] = 125
+ES.Data.SellPrices[249409] = 75
 ES.Data.SellPrices[249410] = 125
 ES.Data.SellPrices[249424] = 95
 ES.Data.SellPrices[249430] = 250
@@ -471,12 +470,11 @@ ES.Data.SellPrices[250948] = 1
 ES.Data.SellPrices[250949] = 1
 ES.Data.SellPrices[250950] = 1
 ES.Data.SellPrices[250951] = 1
-ES.Data.SellPrices[250952] = 1
 ES.Data.SellPrices[250953] = 1
 ES.Data.SellPrices[250954] = 1
 ES.Data.SellPrices[250955] = 1
 ES.Data.SellPrices[251290] = 5000
-ES.Data.SellPrices[251291] = 2500
+ES.Data.SellPrices[251291] = 1500
 ES.Data.SellPrices[274273] = 5000
 ES.Data.SellPrices[274274] = 5000
 ES.Data.SellPrices[274275] = 5000
@@ -680,7 +678,7 @@ ES.Data.ItemNames[249410] = "Sulfuric Acid"
 ES.Data.ItemNames[249424] = "Rosecap"
 ES.Data.ItemNames[249430] = "Magenta Dye"
 ES.Data.ItemNames[249431] = "Viridian Dye"
-ES.Data.ItemNames[250327] = "Draught of Predatory Senses"
+ES.Data.ItemNames[250327] = "Potion of Predatory Senses"
 ES.Data.ItemNames[250328] = "Elixir of Cunning"
 ES.Data.ItemNames[250329] = "Elixir of the Phalanx"
 ES.Data.ItemNames[250330] = "Minor Cleric's Elixir"
@@ -727,7 +725,6 @@ ES.Data.ItemNames[250948] = "Superior Mender's Potion"
 ES.Data.ItemNames[250949] = "Major Mender's Potion"
 ES.Data.ItemNames[250950] = "Potion of Venomous Blood"
 ES.Data.ItemNames[250951] = "Caustic Smog Potion"
-ES.Data.ItemNames[250952] = "Disorienting Smog Potion"
 ES.Data.ItemNames[250953] = "Dragonfire Potion"
 ES.Data.ItemNames[250954] = "Potion of Elemental Purging"
 ES.Data.ItemNames[250955] = "Potion of Beast Slaying"

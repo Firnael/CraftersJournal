@@ -200,13 +200,7 @@ ES.Data.Engineering = {
     [1213573] = { name = "Arcane Megabomb", t = { 1, 315, 322, 330 }, scroll = 234261, train = 305, sq = 1, r = { { 16006, 1 }, { 20725, 1 }, { 14047, 1 } }, out = { 233984, 5 }, oq = 1 },
     [1213646] = { name = "Obsidian Blasting Powder", t = { 1, 315, 322, 330 }, scroll = 234280, train = 305, sq = 1, r = { { 22202, 2 } }, out = { 234005, 1 }, oq = 1 },
     [1221012] = { name = "Creepy Censor Sensors", t = { 1, 275, 277, 280 }, scroll = 236872, train = 250, sq = 2, r = { { 8170, 8 }, { 12800, 2 } }, tool = 14, out = { 236871, 1 }, oq = 1 },
-    [1226206] = { name = "Tinkerbox", t = { 1, 260, 270, 280 }, scroll = 238782, train = 250, sq = 1, r = { { 10561, 1 }, { 10558, 2 } }, tool = 14, out = { 238737, 1 }, oq = 1 },
-    [1226207] = { name = "Tinkerbox: Teleport", t = { 1, 270, 280, 290 }, scroll = 238783, train = 260, sq = 2, r = { { 238737, 1 }, { 10560, 1 }, { 15994, 1 } }, tool = 14, out = { 238734, 1 }, oq = 2 },
-    [1226208] = { name = "Tinkerbox: Nitro Boosts", t = { 1, 270, 280, 290 }, scroll = 238784, train = 260, sq = 2, r = { { 238737, 1 }, { 10560, 1 }, { 16000, 1 } }, tool = 14, out = { 238735, 1 }, oq = 2 },
-    [1226209] = { name = "Tinkerbox: Magnetic Displacement", t = { 1, 270, 280, 290 }, scroll = 238785, train = 260, sq = 2, r = { { 238737, 1 }, { 10560, 1 }, { 4387, 2 } }, tool = 14, out = { 238736, 1 }, oq = 2 },
-    [1226210] = { name = "Tinker: Teleport", t = { 1, 280, 282, 285 }, scroll = 238786, train = 280, sq = 3, r = { { 238737, 1 }, { 16006, 1 }, { 15994, 1 } }, tool = 14 },
-    [1226211] = { name = "Tinker: Nitro Boosts", t = { 1, 280, 282, 285 }, scroll = 238787, train = 280, sq = 3, r = { { 238737, 1 }, { 16006, 1 }, { 16000, 1 } }, tool = 14 },
-    [1226212] = { name = "Tinker: Magnetic Displacement", t = { 1, 280, 282, 285 }, scroll = 238788, train = 280, sq = 3, r = { { 238737, 1 }, { 16006, 1 }, { 4387, 2 } }, tool = 14 },
+    [1226206] = { name = "Tinkerbox", t = { 1, 260, 270, 280 }, scroll = 250400, train = 250, sq = 1, r = { { 10561, 1 }, { 10558, 2 } }, tool = 14, out = { 238737, 1 }, oq = 1 },
     [1228088] = { name = "Pop-Up Shrub", t = { 1, 255, 257, 260 }, scroll = 239222, train = 250, sq = 3, r = { { 15994, 1 }, { 10560, 1 }, { 4382, 1 } }, tool = 14, out = { 237023, 1 }, oq = 1 },
     [1230656] = { name = "Reagent Bot", t = { 1, 20, 22, 25 }, fee = 0, train = 20, r = { { 4359, 1 }, { 4361, 1 } }, out = { 279950, 1 }, oq = 1 },
     [1249634] = { name = "Sandpaper", t = { 1, 130, 142, 155 }, r = { { 249425, 2 }, { 2996, 1 } }, out = { 249432, 1 }, oq = 2 },
@@ -248,9 +242,6 @@ ES.Data.Engineering = {
     [1266938] = { name = "Ultralight Goblin Glider", t = { 1, 320, 330, 340 }, scroll = 264235, train = 300, sq = 1, favor = 360, favorRep = 6, r = { { 249431, 2 }, { 249726, 2 }, { 249429, 8 }, { 12359, 8 } }, tool = 14, out = { 260825, 1 }, oq = 2 },
     [1266939] = { name = "Gnomish Weather Machine", t = { 1, 320, 330, 340 }, scroll = 264236, train = 300, sq = 1, r = { { 7076, 2 }, { 7078, 2 }, { 7082, 2 }, { 7080, 2 }, { 248822, 2 } }, tool = 14, out = { 260826, 1 }, oq = 2 },
     [1266940] = { name = "Stealthman 52", t = { 1, 320, 330, 340 }, scroll = 264237, train = 300, sq = 1, favor = 360, favorRep = 6, r = { { 7082, 6 }, { 16204, 6 }, { 248820, 2 }, { 251290, 2 }, { 248823, 4 } }, tool = 14, out = { 260827, 1 }, oq = 2 },
-    [1266941] = { name = "SAF-T Nitro Boosts", t = { 1, 320, 330, 340 }, scroll = 264238, train = 300, sq = 1, r = { { 238787, 1 }, { 260813, 2 } }, tool = 14, out = { 260828, 1 }, oq = 2 },
-    [1266942] = { name = "EZ-Thro Magnetic Displacer", t = { 1, 320, 330, 340 }, scroll = 264239, train = 300, sq = 1, r = { { 238788, 1 }, { 260815, 1 } }, tool = 14, out = { 260829, 1 }, oq = 2 },
-    [1266943] = { name = "SAF-T Teleport", t = { 1, 320, 330, 340 }, scroll = 264240, train = 300, sq = 1, r = { { 238786, 1 }, { 260813, 2 } }, tool = 14, out = { 260830, 1 }, oq = 2 },
     [1286792] = { name = "Centaur Banner Deployment Device", t = { 1, 190, 197, 205 }, scroll = 269901, train = 190, scrollPrice = 3000, sq = 2, r = { { 4387, 6 }, { 4389, 2 }, { 10558, 4 }, { 4234, 30 } }, tool = 14, out = { 269900, 1 }, oq = 2 },
     [1286796] = { name = "Hoof-Shaped Foot Pedal", t = { 1, 150, 155, 160 }, scroll = 269903, train = 140, scrollPrice = 3000, sq = 2, r = { { 4387, 3 }, { 4382, 2 }, { 4389, 1 }, { 10558, 1 }, { 4234, 4 } }, tool = 14, out = { 269902, 1 }, oq = 1 },
     [1293088] = { name = "9-60 Battery Pack", t = { 1, 125, 135, 145 }, scroll = 274049, train = 115, sq = 1, r = { { 249409, 1 }, { 249391, 1 }, { 3575, 1 } }, tool = 14, out = { 274048, 1 }, oq = 1 },
@@ -358,7 +349,7 @@ ES.Data.SellPrices[4365] = 75
 ES.Data.SellPrices[4366] = 75
 ES.Data.SellPrices[4367] = 150
 ES.Data.SellPrices[4368] = 408
-ES.Data.SellPrices[4369] = 1179
+ES.Data.SellPrices[4369] = 790
 ES.Data.SellPrices[4370] = 175
 ES.Data.SellPrices[4371] = 200
 ES.Data.SellPrices[4372] = 1800
@@ -579,15 +570,11 @@ ES.Data.SellPrices[22728] = 5000
 ES.Data.SellPrices[213369] = 280
 ES.Data.SellPrices[213379] = 280
 ES.Data.SellPrices[215430] = 250
-ES.Data.SellPrices[238737] = 3000
-ES.Data.SellPrices[238786] = 1400
-ES.Data.SellPrices[238787] = 1400
-ES.Data.SellPrices[238788] = 1400
 ES.Data.SellPrices[248820] = 15000
 ES.Data.SellPrices[248822] = 1500
 ES.Data.SellPrices[248823] = 150
 ES.Data.SellPrices[249391] = 100
-ES.Data.SellPrices[249409] = 125
+ES.Data.SellPrices[249409] = 75
 ES.Data.SellPrices[249410] = 125
 ES.Data.SellPrices[249425] = 250
 ES.Data.SellPrices[249426] = 375
@@ -596,9 +583,9 @@ ES.Data.SellPrices[249429] = 375
 ES.Data.SellPrices[249430] = 250
 ES.Data.SellPrices[249431] = 375
 ES.Data.SellPrices[249432] = 250
-ES.Data.SellPrices[249726] = 5000
+ES.Data.SellPrices[249726] = 3000
 ES.Data.SellPrices[251290] = 5000
-ES.Data.SellPrices[251291] = 2500
+ES.Data.SellPrices[251291] = 1500
 ES.Data.SellPrices[255007] = 22
 ES.Data.SellPrices[260784] = 4
 ES.Data.SellPrices[260792] = 75
@@ -636,9 +623,6 @@ ES.Data.SellPrices[260823] = 5000
 ES.Data.SellPrices[260824] = 5000
 ES.Data.SellPrices[260826] = 5000
 ES.Data.SellPrices[260827] = 5000
-ES.Data.SellPrices[260828] = 1250
-ES.Data.SellPrices[260829] = 1250
-ES.Data.SellPrices[260830] = 1250
 ES.Data.SellPrices[269900] = 500
 ES.Data.SellPrices[269902] = 100
 ES.Data.SellPrices[277132] = 200
@@ -646,16 +630,16 @@ ES.Data.SellPrices[279272] = 25000
 ES.Data.SellPrices[279273] = 66347
 ES.Data.SellPrices[280306] = 1710
 ES.Data.SellPrices[280307] = 1716
-ES.Data.SellPrices[280308] = 1722
+ES.Data.SellPrices[280308] = 1033
 ES.Data.SellPrices[280310] = 4987
-ES.Data.SellPrices[280311] = 6273
-ES.Data.SellPrices[280312] = 7568
-ES.Data.SellPrices[280313] = 8805
+ES.Data.SellPrices[280311] = 3764
+ES.Data.SellPrices[280312] = 3784
+ES.Data.SellPrices[280313] = 2201
 ES.Data.SellPrices[284869] = 1500
-ES.Data.SellPrices[285275] = 9
-ES.Data.SellPrices[285276] = 9
-ES.Data.SellPrices[285277] = 9
-ES.Data.SellPrices[285278] = 9
+ES.Data.SellPrices[285275] = 821
+ES.Data.SellPrices[285276] = 4484
+ES.Data.SellPrices[285277] = 13124
+ES.Data.SellPrices[285278] = 26602
 
 -- Nombre de cada objeto (inglés, del cliente): se muestra mientras el juego no lo ha cargado
 ES.Data.ItemNames = ES.Data.ItemNames or {}
@@ -941,13 +925,6 @@ ES.Data.ItemNames[213381] = "Pile of Tarnished Gears"
 ES.Data.ItemNames[213383] = "Polished Truesilver Gears"
 ES.Data.ItemNames[215430] = "Gnomeregan Fallout"
 ES.Data.ItemNames[237023] = "Pop-Up Shrub"
-ES.Data.ItemNames[238734] = "Tinkerbox: Teleport"
-ES.Data.ItemNames[238735] = "Tinkerbox: Nitro Boosts"
-ES.Data.ItemNames[238736] = "Tinkerbox: Magnetic Displacement"
-ES.Data.ItemNames[238737] = "Tinkerbox"
-ES.Data.ItemNames[238786] = "Schematic: Tinker: Teleport"
-ES.Data.ItemNames[238787] = "Schematic: Tinker: Nitro Boosts"
-ES.Data.ItemNames[238788] = "Schematic: Tinker: Magnetic Displacement"
 ES.Data.ItemNames[248820] = "Torbernite"
 ES.Data.ItemNames[248822] = "Death Lotus"
 ES.Data.ItemNames[248823] = "Marefoil"
@@ -1002,9 +979,6 @@ ES.Data.ItemNames[260824] = "Gnomish Poultryizer"
 ES.Data.ItemNames[260825] = "Ultralight Goblin Glider"
 ES.Data.ItemNames[260826] = "Gnomish Weather Machine NYI"
 ES.Data.ItemNames[260827] = "Stealthman 52"
-ES.Data.ItemNames[260828] = "SAF-T Nitro Boosts"
-ES.Data.ItemNames[260829] = "EZ-Thro Magnetic Displacer"
-ES.Data.ItemNames[260830] = "SAF-T Teleport"
 ES.Data.ItemNames[269900] = "Centaur Banner Deployment Device"
 ES.Data.ItemNames[269902] = "Hoof-Shaped Foot Pedal"
 ES.Data.ItemNames[274030] = "Malleable Essence of Nature"

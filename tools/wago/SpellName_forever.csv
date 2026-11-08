@@ -14,7 +14,7 @@ ID,Name_lang
 2164,Fine Leather Gloves
 2165,Medium Armor Kit
 2166,Toughened Leather Armor
-2167,Dark Leather Boots
+2167,Gray Leather Boots
 2168,Dark Leather Cloak
 2169,Dark Leather Tunic
 2259,Alchemy
@@ -1516,7 +1516,7 @@ ID,Name_lang
 1250157,Breakfast Omelette
 1250158,Clam Linguine
 1250775,Revealing Draught
-1250776,Draught of Predatory Senses
+1250776,Potion of Predatory Senses
 1250777,Elixir of Cunning
 1250778,Elixir of the Phalanx
 1250779,Minor Cleric's Elixir
@@ -1561,7 +1561,6 @@ ID,Name_lang
 1251747,Major Mender's Potion
 1251748,Potion of Venomous Blood
 1251749,Caustic Smog Potion
-1251750,Disorienting Smog Potion
 1251751,Dragonfire Potion
 1251752,Potion of Elemental Purging
 1251753,Potion of Beast Slaying
@@ -1720,7 +1719,7 @@ ID,Name_lang
 1254978,Supple Scorpid Belt
 1254979,Heavy Scorpid Boots
 1254980,Charged Scorpid Bracers
-1254981,Supple Scorpid Shoulder
+1254981,Supple Scorpid Shoulders
 1254982,Mender's Mail Belt
 1254983,Skirmisher's Mail Belt
 1254984,Skycaller's Mail Belt
@@ -1729,7 +1728,7 @@ ID,Name_lang
 1254987,Skirmisher's Mail Gauntlets
 1254988,Skycaller's Mail Gauntlets
 1254989,Stalker's Mail Gauntlets
-1254990,Charged Scorpid Shoulder
+1254990,Charged Scorpid Shoulders
 1254991,Supple Scorpid Bracers
 1254992,Charged Scorpid Helm
 1254993,Supple Scorpid Leggings
@@ -1743,10 +1742,10 @@ ID,Name_lang
 1255001,Skirmisher's Mail Bracers
 1255002,Skycaller's Mail Bracers
 1255003,Stalker's Mail Bracers
-1255004,Mender's Mail Shoulder
-1255005,Skirmisher's Mail Shoulder
-1255006,Skycaller's Mail Shoulder
-1255007,Stalker's Mail Shoulder
+1255004,Mender's Mail Shoulders
+1255005,Skirmisher's Mail Shoulders
+1255006,Skycaller's Mail Shoulders
+1255007,Stalker's Mail Shoulders
 1255008,Mender's Mail Boots
 1255009,Skirmisher's Mail Boots
 1255010,Skycaller's Mail Boots
@@ -1762,10 +1761,10 @@ ID,Name_lang
 1255020,Tooled Leather Epaulets
 1255021,Blue Suede Belt
 1255022,Tooled Leather Bracers
-1255023,Wicked Leather Shoulder
+1255023,Wicked Leather Shoulders
 1255024,Blue Suede Armor
 1255025,Tooled Leather Crown
-1255026,Blue Suede Shoulder
+1255026,Blue Suede Shoulders
 1255027,Tooled Leather Gauntlets
 1255028,Wicked Leather Boots
 1255029,Blue Suede Pants
@@ -1794,11 +1793,11 @@ ID,Name_lang
 1255052,Warden's Leather Bracers
 1255053,Skulker's Leather Bracers
 1255054,Prowler's Leather Bracers
-1255055,Mender's Leather Shoulder
-1255056,Skycaller's Leather Shoulder
-1255057,Warden's Leather Shoulder
-1255058,Skulker's Leather Shoulder
-1255059,Prowler's Leather Shoulder
+1255055,Mender's Leather Shoulders
+1255056,Skycaller's Leather Shoulders
+1255057,Warden's Leather Shoulders
+1255058,Skulker's Leather Shoulders
+1255059,Prowler's Leather Shoulders
 1255060,Mender's Leather Shoes
 1255061,Skycaller's Leather Shoes
 1255062,Warden's Leather Shoes
@@ -1877,6 +1876,7 @@ ID,Name_lang
 1255142,Brawler's Leather Belt
 1255143,Moonglow Boots
 1255144,Murloc Scale Shoes
+1255145,Dark Leather Boots
 1255146,Black Whelp Slippers
 1255241,Cleansing Stew
 1257013,Linen Reagent Bag
@@ -2297,6 +2297,7 @@ ID,Name_lang
 1319164,Large White Rocket Cluster
 1319165,Large Yellow Rocket Cluster
 1319313,Plated Armorfish
+1328948,Enchant Boots - Speed
 16985,Corruption
 1244433,Healing Potion
 7183,Elixir of Minor Defense
@@ -2324,7 +2325,6 @@ ID,Name_lang
 1240961,Leatherworking
 1240972,Leatherworking
 1240985,Leatherworking
-1255145,Dark Leather Boots
 3101,Alchemy
 3464,Alchemy
 11611,Alchemy

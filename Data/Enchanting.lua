@@ -249,9 +249,9 @@ ES.Data.Enchanting = {
     [1249069] = { name = "Truesilver Conduit", t = { 1, 225, 245, 265 }, scroll = 249508, train = 220, sq = 3, favor = 120, favorRep = 5, r = { { 11178, 3 }, { 11177, 1 }, { 11291, 2 }, { 11175, 2 }, { 11176, 3 }, { 249409, 1 }, { 249430, 2 } }, tool = 374, out = { 249455, 1 }, oq = 3, bop = true },
     [1249070] = { name = "Twisting Essence Jar", t = { 1, 225, 245, 265 }, scroll = 249509, train = 220, sq = 3, favor = 120, favorRep = 5, r = { { 6037, 4 }, { 11175, 12 }, { 11135, 12 }, { 249409, 1 }, { 249430, 2 } }, tool = 374, out = { 249456, 1 }, oq = 3, bop = true },
     [1249071] = { name = "Enchant Chest - Absorption", t = { 1, 225, 245, 265 }, scroll = 249510, train = 220, sq = 2, favor = 120, favorRep = 5, r = { { 11176, 10 }, { 11175, 4 }, { 11178, 2 } }, tool = 374 },
-    [1249107] = { name = "Frozen Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249519, train = 275, sq = 1, r = { { 11382, 1 }, { 12808, 1 }, { 14343, 3 } }, out = { 249469, 1 }, oq = 3, bop = true },
-    [1249112] = { name = "Molten Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249520, train = 275, sq = 1, r = { { 11382, 1 }, { 7076, 1 }, { 14343, 3 } }, out = { 249470, 1 }, oq = 3, bop = true },
-    [1249114] = { name = "Dormant Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249521, train = 275, sq = 1, r = { { 11382, 1 }, { 7080, 1 }, { 14343, 3 } }, out = { 249473, 1 }, oq = 3, bop = true },
+    [1249107] = { name = "Frozen Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249519, train = 265, sq = 3, r = { { 11382, 1 }, { 12808, 1 }, { 14343, 3 } }, out = { 249469, 1 }, oq = 3, bop = true },
+    [1249112] = { name = "Molten Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249520, train = 265, sq = 3, r = { { 11382, 1 }, { 7076, 1 }, { 14343, 3 } }, out = { 249470, 1 }, oq = 3, bop = true },
+    [1249114] = { name = "Dormant Heart of the Mountain", t = { 1, 285, 305, 325 }, scroll = 249521, train = 265, sq = 3, r = { { 11382, 1 }, { 7080, 1 }, { 14343, 3 } }, out = { 249473, 1 }, oq = 3, bop = true },
     [1249128] = { name = "Idol of the Dream", t = { 1, 320, 340, 360 }, scroll = 249529, train = 300, sq = 3, favor = 240, favorRep = 6, r = { { 14344, 2 }, { 16203, 4 }, { 16204, 6 }, { 249431, 8 }, { 249430, 4 }, { 249409, 2 }, { 11291, 4 } }, tool = 377, out = { 220606, 1 }, oq = 3, bop = true },
     [1249152] = { name = "Libram of Holy Alacrity", t = { 1, 320, 340, 360 }, scroll = 249530, train = 300, sq = 3, favor = 240, favorRep = 6, r = { { 14344, 4 }, { 16203, 3 }, { 16204, 4 }, { 249431, 8 }, { 249430, 4 }, { 249409, 2 }, { 10308, 4 } }, tool = 377, out = { 228175, 1 }, oq = 3, bop = true },
     [1249154] = { name = "Totem of Thunder", t = { 1, 320, 340, 360 }, scroll = 249532, train = 300, sq = 3, favor = 240, favorRep = 6, r = { { 14344, 1 }, { 16203, 8 }, { 16204, 10 }, { 249431, 8 }, { 249430, 4 }, { 249409, 2 }, { 11291, 4 } }, tool = 377, out = { 228176, 1 }, oq = 3, bop = true },
@@ -263,6 +263,7 @@ ES.Data.Enchanting = {
     [1306523] = { name = "Totem of Urgency", t = { 1, 310, 317, 325 }, scroll = 279298, train = 300, sq = 4, r = { { 274030, 1 }, { 20725, 1 }, { 16203, 2 }, { 16204, 12 } }, out = { 279249, 1 }, oq = 4 },
     [1306524] = { name = "Idol of Swiftness", t = { 1, 310, 317, 325 }, scroll = 279299, train = 300, sq = 4, r = { { 274030, 1 }, { 20725, 1 }, { 16203, 2 }, { 16204, 12 } }, out = { 279250, 1 }, oq = 4 },
     [1306525] = { name = "Idol of the Ursine Twins", t = { 1, 310, 317, 325 }, scroll = 279300, train = 300, sq = 4, r = { { 274030, 1 }, { 20725, 1 }, { 16203, 2 }, { 16204, 12 } }, out = { 279251, 1 }, oq = 4 },
+    [1328948] = { name = "Enchant Boots - Speed", t = { 1, 280, 290, 300 }, scroll = 289560, train = 280, sq = 2, r = { { 11178, 2 }, { 11176, 8 }, { 11175, 2 }, { 12361, 1 } }, tool = 376 },
     -- Conversión de esencias (clic derecho en la bolsa): no es receta ni da puntos
     [-1] = { name = "Convertir 3 en 1 mayor", intermediate = true, conversion = true, t = { 1, 1, 1, 1 }, train = 1, r = { { 10938, 3 } }, out = { 10939, 1 } },
     [-2] = { name = "Convertir 1 en 3 menores", intermediate = true, conversion = true, t = { 1, 1, 1, 1 }, train = 1, r = { { 10939, 1 } }, out = { 10938, 3 } },
@@ -378,6 +379,7 @@ ES.Data.SellPrices[11289] = 450
 ES.Data.SellPrices[11291] = 1125
 ES.Data.SellPrices[11382] = 750
 ES.Data.SellPrices[12359] = 600
+ES.Data.SellPrices[12361] = 7000
 ES.Data.SellPrices[12363] = 2000
 ES.Data.SellPrices[12655] = 500
 ES.Data.SellPrices[12803] = 500
@@ -403,7 +405,7 @@ ES.Data.SellPrices[18256] = 1500
 ES.Data.SellPrices[18512] = 4000
 ES.Data.SellPrices[20725] = 1
 ES.Data.SellPrices[20744] = 100
-ES.Data.SellPrices[20745] = 1000
+ES.Data.SellPrices[20745] = 500
 ES.Data.SellPrices[20746] = 1000
 ES.Data.SellPrices[20747] = 1000
 ES.Data.SellPrices[20748] = 1000
@@ -412,7 +414,7 @@ ES.Data.SellPrices[20750] = 1000
 ES.Data.SellPrices[217287] = 600
 ES.Data.SellPrices[220606] = 11850
 ES.Data.SellPrices[220792] = 150
-ES.Data.SellPrices[228980] = 1000
+ES.Data.SellPrices[228980] = 400
 ES.Data.SellPrices[232611] = 1000
 ES.Data.SellPrices[247786] = 1
 ES.Data.SellPrices[247789] = 5
@@ -428,22 +430,22 @@ ES.Data.SellPrices[249385] = 5263
 ES.Data.SellPrices[249391] = 100
 ES.Data.SellPrices[249392] = 601
 ES.Data.SellPrices[249393] = 601
-ES.Data.SellPrices[249394] = 2156
-ES.Data.SellPrices[249395] = 2156
-ES.Data.SellPrices[249396] = 1012
-ES.Data.SellPrices[249397] = 1012
-ES.Data.SellPrices[249398] = 1012
+ES.Data.SellPrices[249394] = 499
+ES.Data.SellPrices[249395] = 496
+ES.Data.SellPrices[249396] = 499
+ES.Data.SellPrices[249397] = 450
+ES.Data.SellPrices[249398] = 499
 ES.Data.SellPrices[249399] = 30
-ES.Data.SellPrices[249409] = 125
+ES.Data.SellPrices[249409] = 75
 ES.Data.SellPrices[249410] = 125
 ES.Data.SellPrices[249424] = 95
 ES.Data.SellPrices[249425] = 250
 ES.Data.SellPrices[249430] = 250
 ES.Data.SellPrices[249431] = 375
 ES.Data.SellPrices[249432] = 250
-ES.Data.SellPrices[249441] = 5833
-ES.Data.SellPrices[249442] = 5833
-ES.Data.SellPrices[249443] = 11880
+ES.Data.SellPrices[249441] = 2001
+ES.Data.SellPrices[249442] = 2655
+ES.Data.SellPrices[249443] = 4752
 ES.Data.SellPrices[249453] = 601
 ES.Data.SellPrices[249454] = 601
 ES.Data.SellPrices[249455] = 2156
@@ -451,7 +453,7 @@ ES.Data.SellPrices[249456] = 2156
 ES.Data.SellPrices[249469] = 1500
 ES.Data.SellPrices[249470] = 1500
 ES.Data.SellPrices[249473] = 1500
-ES.Data.SellPrices[249726] = 5000
+ES.Data.SellPrices[249726] = 3000
 ES.Data.SellPrices[279246] = 13687
 ES.Data.SellPrices[279247] = 18929
 ES.Data.SellPrices[279248] = 18929
@@ -536,6 +538,7 @@ ES.Data.ItemNames[11291] = "Star Wood"
 ES.Data.ItemNames[11382] = "Blood of the Mountain"
 ES.Data.ItemNames[11754] = "Black Diamond"
 ES.Data.ItemNames[12359] = "Thorium Bar"
+ES.Data.ItemNames[12361] = "Blue Sapphire"
 ES.Data.ItemNames[12363] = "Arcane Crystal"
 ES.Data.ItemNames[12655] = "Enchanted Thorium Bar"
 ES.Data.ItemNames[12735] = "Frayed Abomination Stitching"

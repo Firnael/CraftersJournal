@@ -13,7 +13,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 WAGO = HERE / "wago"
-BUILD = "1.60.1.70291"
+BUILD = "1.60.1.70862"
 
 
 def download(table):

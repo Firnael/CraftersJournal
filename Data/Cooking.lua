@@ -218,6 +218,7 @@ ES.Data.SellPrices[2673] = 10
 ES.Data.SellPrices[2674] = 12
 ES.Data.SellPrices[2675] = 11
 ES.Data.SellPrices[2677] = 15
+ES.Data.SellPrices[2678] = 1
 ES.Data.SellPrices[2679] = 5
 ES.Data.SellPrices[2680] = 10
 ES.Data.SellPrices[2681] = 6

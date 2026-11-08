@@ -50,7 +50,7 @@ ID,Name
 2312,Guantes de cuero refinado
 2313,Refuerzo para armadura medio
 2314,Armadura de cuero fortalecido
-2315,Botas de cuero oscuro
+2315,Botas de cuero gris
 2316,Capa de cuero oscuro
 2317,Túnica de cuero oscuro
 2318,Cuero ligero
@@ -64,8 +64,8 @@ ID,Name
 2408,Patrón: guantes de cuero refinado
 2409,Patrón: túnica de cuero oscuro
 2447,Flor de paz
-2449,Raíz terrenal
-2450,Briarthorn
+2449,Raíz de tierra
+2450,Brezospina
 2452,Cardoveloz
 2453,Hierba cardenal
 2454,Elixir de fuerza menor
@@ -178,7 +178,7 @@ ID,Name
 3356,Sangrerregia
 3357,Vidarraíz
 3358,Mostacho de Khadgar
-3369,Moho de tumba
+3369,Musgo de tumba
 3371,Vial vacío
 3372,Vial con plomo
 3382,Elixir de sangre de trol menor
@@ -253,7 +253,7 @@ ID,Name
 3736,Receta: filete de león sabroso
 3737,Receta: sopa de tortuga reconfortante
 3818,Pálida
-3819,Ivernalia
+3819,Invernalia
 3820,Alga estranguladora
 3821,Espina de oro
 3823,Poción de invisibilidad inferior
@@ -887,7 +887,7 @@ ID,Name
 8176,Cinta Nochefugaz
 8185,Leotardos de escamas de tortuga
 8187,Guantes de escamas de tortuga
-8189,Peto de escamas de tortuga
+8189,Coraza de escamas de tortuga
 8191,Yelmo de escamas de tortuga
 8192,Hombreras Nochefugaz
 8193,Pantalones Nochefugaz
@@ -1121,7 +1121,7 @@ ID,Name
 10720,Proyector redomático gnómico
 10721,Cinturón de prevención de daño gnómico
 10724,Botas cohete gnómicas
-10725,Pollo de batalla gnomo
+10725,Gallo de batalla gnómico
 10726,Gorro de control mental gnómico
 10727,Pistola de dragón goblin
 10728,Patrón: camisa negra de aventurero
@@ -1179,8 +1179,8 @@ ID,Name
 11224,Fórmula: encantar escudo: resistencia a Escarcha
 11225,Fórmula: encantar brazal: aguante superior
 11226,Fórmula: encantar guantes: equitación
-11287,Varita mágica inferior
 11288,Varita mágica superior
+11287,Varita mágica inferior
 11289,Varita mística inferior
 11291,Madera de estrella
 11371,Lingote Hierro Negro
@@ -1735,6 +1735,7 @@ ID,Name
 16055,Esquema: bomba Arcana
 16056,Esquema: rifle de arcanita impecable
 16072,Libro de cocina para expertos
+16083,Pesca para expertos: La lubina y tú
 16084,Primeros auxilios para expertos: Entre vendas
 16110,Receta: tortilla de monstruo
 16111,Receta: chili de cangrejo especiado
@@ -2354,7 +2355,7 @@ ID,Name
 232437,Receta: sopa de Garranegra
 232438,Branquirrojo ahumado
 232443,Receta: branquirrojo ahumado
-249427,Cuero prístino
+249395,Orbe de almas
 232610,Fórmula: abrillantador trol magnífico
 232611,Abrillantador trol magnífico
 234012,Cardo de la colmena
@@ -2372,7 +2373,7 @@ ID,Name
 238306,Patrón: bandana de infiltrado Escarlata
 238307,Patrón: hombreras de infiltrado Escarlata
 238308,Patrón: jubón de infiltrado Escarlata
-249454,Bastonsueño
+249427,Cuero prístino
 238309,Patrón: brazales de infiltrado Escarlata
 238310,Patrón: guantes de infiltrado Escarlata
 238311,Patrón: cinturón de infiltrado Escarlata
@@ -2389,7 +2390,7 @@ ID,Name
 238322,Diseño: casco de soldado Escarlata
 238323,Diseño: bufas de soldado Escarlata
 238324,Diseño: peto de soldado Escarlata
-249869,Té soleado
+249454,Bastonsueño
 238325,Diseño: protectores de soldado Escarlata
 238326,Diseño: mandiletes de soldado Escarlata
 238327,Diseño: guardarrenes de soldado Escarlata
@@ -2405,17 +2406,6 @@ ID,Name
 238647,Receta: tortilla del alba
 238649,Receta: festín de pez moteado
 238650,Receta: gran festín de langostas
-238734,Caja de manitas: teletransporte
-238735,Caja de manitas: propulsiones de nitro
-238736,Caja de manitas: desplazamiento magnético
-238737,Caja de manitas
-238782,Esquema: caja de manitas
-238783,Esquema: caja de manitas: teletransporte
-238784,Esquema: caja de manitas: propulsiones de nitro
-238785,Esquema: caja de manitas: desplazamiento magnético
-238786,Esquema: modificación: teletransporte
-238787,Esquema: modificación: propulsiones de nitro
-238788,Esquema: modificación: desplazamiento magnético
 238789,Esquema: transportador cuasiseguro: Nuevo Avalon
 238927,Patrón: carcaj Escarlata
 238928,Patrón: faltriquera de munición Escarlata
@@ -2427,6 +2417,7 @@ ID,Name
 239149,Patrón: morral de cruzado
 239150,Patrón: bolsa de tela del Alba Carmesí
 239222,Esquema: arbusto desplegable
+249865,Té de paz
 241191,Fórmula: encantar arma: gran cruzado
 241195,Fórmula: encantar arma 2M: gran arcanista
 241201,Fórmula: encantar arma: gran hechicero
@@ -2442,7 +2433,7 @@ ID,Name
 247755,Elixir de fuerza menor
 247786,Mota de magia
 247789,Varita de prácticas de novicio
-249395,Orbe de almas
+249866,Té regio
 248819,Cristal vil
 248820,Torbernita
 248821,Salvia demoníaca
@@ -2518,6 +2509,9 @@ ID,Name
 249514,Fórmula: Encantar brazales: agilidad superior
 249515,Fórmula: varita eterna inferior
 249516,Fórmula: Encantar guantes: desuello avanzado
+249519,Fórmula: corazón de la montaña congelado
+249520,Fórmula: corazón de la montaña fundido
+249521,Fórmula: corazón de la montaña durmiente
 249522,Fórmula: varita eterna superior
 249523,Formula: Enchant 2H Weapon - Strength
 249524,Fórmula: Encantar brazales: agilidad excelente
@@ -2534,10 +2528,9 @@ ID,Name
 249539,Fórmula: Encantar brazal: desvío excelente
 249726,Barra de azerothium
 249796,Bayas de Hyjal
-249865,Té de paz
-249866,Té regio
 249867,Té de raíz
 249868,Té reconstituyente
+249869,Té soleado
 249870,Té de salvia
 249871,Batido venenoso
 249872,Batido baboso
@@ -2590,15 +2583,15 @@ ID,Name
 250186,Receta: huevos gigantes revueltos
 250187,Receta: pinchitos de raptor sabrosos
 250188,Receta: tortilla de desayuno
+250334,Elixir de entereza
 250189,Receta: linguini de almejas
-250327,Jarabe de instintos depredadores
+250327,Poción de instintos depredadores
 250328,Elixir de astucia
 250329,Elixir de la falange
 250330,Elixir de clérigo menor
 250331,Elixir de clérigo inferior
 250332,Elixir de clérigo
 250333,Elixir de clérigo superior
-250334,Elixir de entereza
 250335,Elixir de entereza superior
 250336,Elixir de regeneración perversa
 250337,Elixir del búho
@@ -2618,7 +2611,7 @@ ID,Name
 250351,Elixir de los pardos
 250353,Elixir de intelecto inferior
 250354,Elixir de intelecto
-250363,Receta: jarabe de instintos depredadores
+250363,Receta: poción de instintos depredadores
 250364,Receta: elixir de astucia
 250365,Receta: elixir de la falange
 250366,Receta: elixir de clérigo menor
@@ -2634,10 +2627,10 @@ ID,Name
 250376,Receta: elixir de sangre de mago inferior
 250377,Receta: elixir de sangre de mago superior
 250378,Receta: elixir Arcano inferior
+250489,Camisa de anillas de guardia
 250379,Receta: elixir de poder de la Naturaleza
 250380,Receta: elixir de espíritu menor
 250381,Receta: elixir de espíritu inferior
-250483,Botas de plata de ley
 250382,Receta: elixir de espíritu
 250383,Receta: elixir de espíritu superior
 250384,Receta: elixir de la ballena
@@ -2647,12 +2640,12 @@ ID,Name
 250388,Receta: elixir de intelecto inferior
 250389,Receta: elixir de intelecto
 250482,Botas de cobre resplandecientes
+250483,Botas de plata de ley
 250484,Leotardos de plata de ley
 250485,Guanteletes de plata de ley
 250486,Hombreras de plata de ley
 250487,Coraza de plata de ley
 250488,Camisa de anillas de veterano
-250489,Camisa de anillas de guardia
 250490,Camisa de anillas de protector
 250491,Camisa de anillas de acólito
 250492,Camisa de anillas de cruzado
@@ -2805,7 +2798,6 @@ ID,Name
 250949,Poción de ensalmador sublime
 250950,Poción de sangre venenosa
 250951,Poción de humo cáustico
-250952,Poción de humo desorientador
 250953,Poción de fuego de dragón
 250954,Poción de purga elemental
 250955,Poción de matanza de bestias
@@ -2824,15 +2816,15 @@ ID,Name
 250988,Receta: poción de ensalmador menor
 250989,Receta: poción de ensalmador inferior
 250990,Receta: poción de ensalmador
+250991,Receta: poción de ensalmador superior
 250992,Receta: poción de ensalmador excelente
 250993,Receta: poción de ensalmador sublime
 250994,Receta: poción de sangre venenosa
+251290,Barra de legionita
 250995,Receta: poción de humo cáustico
-250996,Receta: poción de humo desorientador
 250997,Receta: poción de fuego de dragón
 250998,Receta: poción de purga elemental
 250999,Receta: poción de matanza de bestias
-251290,Barra de legionita
 251291,Barra de torio pesado
 251332,Diseño: botas de cobre con gemas
 251333,Diseño: botas de cobre extrañas
@@ -2842,7 +2834,22 @@ ID,Name
 251337,Diseño: guanteletes de plata de ley
 251338,Diseño: hombreras de plata de ley
 251339,Diseño: coraza de plata de ley
+251340,Diseño: camisa de anillas de veterano
 251341,Diseño: camisa de anillas de guardia
+251342,Diseño: camisa de anillas de protector
+251343,Diseño: camisa de anillas de acólito
+251344,Diseño: camisa de anillas de cruzado
+251345,Diseño: leotardos de anillas de veterano
+251346,Diseño: leotardos de anillas de guardia
+253897,Botas nacaradas
+251347,Diseño: leotardos de anillas de protector
+251348,Diseño: leotardos de anillas de acólito
+251349,Diseño: leotardos de anillas de cruzado
+251350,Diseño: yelmo de anillas de veterano
+251351,Diseño: yelmo de anillas de guardia
+251352,Diseño: yelmo de anillas de protector
+251353,Diseño: yelmo de anillas de acólito
+251354,Diseño: yelmo de anillas de cruzado
 251355,Diseño: botas de veterano
 251356,Diseño: botas de guardia
 251357,Diseño: botas de protector
@@ -2883,6 +2890,8 @@ ID,Name
 251392,Diseño: coraza de mitril brillante
 251393,Diseño: espaldares de mitril brillantes
 251394,Diseño: botas de mitril brillantes
+251395,Diseño: yelmo de mitril brillante
+251405,Diseño: guantes de guardián
 251396,Diseño: pantalones de mitril brillantes
 251397,Diseño: guanteletes de mitril brillantes
 251398,Diseño: botas de oficial
@@ -2892,7 +2901,6 @@ ID,Name
 251402,Diseño: botas de justicar
 251403,Diseño: guantes de oficial
 251404,Diseño: guantes de centinela
-251405,Diseño: guantes de guardián
 251406,Diseño: guantes de prefecto
 251407,Diseño: guantes de justicar
 251408,Diseño: cinturón de oficial
@@ -3097,8 +3105,8 @@ ID,Name
 252533,Zapatos de cuero de ensalmador
 252534,Hombreras de cuero de merodeador
 252535,Hombreras de cuero de vagador
-252536,Hombreras de cuero de celador
-252537,Hombreras de cuero de clamacielos
+252536,Hombreras de cuero de alcaide
+252537,Hombreras de cuero de Llamacielo
 252538,Hombreras de cuero de ensalmador
 252539,Brazales de cuero de merodeador
 252540,Brazales de cuero de vagador
@@ -3117,7 +3125,7 @@ ID,Name
 252553,Guanteletes de cuero trabajado
 252554,Hombreras de gamuza azul
 252555,Corona de cuero trabajado
-252556,Hombreras de cuero maligno
+252556,Hombreras de cuero infame
 252557,Brazales de cuero trabajado
 252558,Cubrehombros de cuero trabajado
 252559,Brazales de gamuza azul
@@ -3128,8 +3136,8 @@ ID,Name
 252564,Botas de malla de hostigador
 252565,Botas de malla de ensalmador
 252566,Hombreras de malla de acechador
-252567,Hombreras de malla de clamacielos
-252568,Hombreras de malla de hostigador
+252567,Hombreras de malla de Llamacielo
+252568,Hombreras de malla de tramador
 252569,Hombreras de malla de ensalmador
 252570,Brazales de malla de acechador
 252571,Brazales de malla de clamacielos
@@ -3144,7 +3152,7 @@ ID,Name
 252580,Leotardos de escórpido flexibles
 252581,Yelmo de escórpido cargado
 252582,Brazales de escórpido flexibles
-252583,Hombreras de escórpido cargadas
+252583,Hombreras de escórpido electrificadas
 252584,Guanteletes de malla de acechador
 252585,Guanteletes de malla de clamacielos
 252586,Guanteletes de malla de hostigador
@@ -3178,6 +3186,12 @@ ID,Name
 252768,Patrón: cinturón de cuero totémico
 252769,Patrón: cinturón de cuero de jinete de la tormenta
 252770,Patrón: cinturón de cuero de la sabiduría
+252771,Patrón: armadura de cuero de camorrista
+252772,Patrón: armadura de cuero de trampero
+252773,Patrón: armadura de cuero de defensor
+252774,Patrón: armadura de cuero totémica
+252775,Patrón: armadura de cuero de jinete de la tormenta
+252776,Patrón: armadura de cuero de la sabiduría
 252777,Patrón: guantes de cuero de camorrista
 252778,Patrón: guantes de cuero de trampero
 252779,Patrón: guantes de cuero de defensor
@@ -3192,6 +3206,12 @@ ID,Name
 252789,Patrón: botas de cuero totémicas
 252790,Patrón: botas de cuero de jinete de la tormenta
 252791,Patrón: botas de cuero de la sabiduría
+252792,Patrón: pantalones de cuero de camorrista
+252793,Patrón: pantalones de cuero de trampero
+252794,Patrón: pantalones de cuero de defensor
+252795,Patrón: pantalones de cuero totémicos
+252796,Patrón: pantalones de cuero de jinete de la tormenta
+252797,Patrón: pantalones de cuero de la sabiduría
 252798,Patrón: caperuza de cuero de camorrista
 252799,Patrón: caperuza de cuero de trampero
 252800,Patrón: caperuza de cuero de defensor
@@ -3207,6 +3227,12 @@ ID,Name
 252810,Patrón: guerrera de cuero de la sabiduría
 252811,Patrón: complemento pesado para armadura místico
 252812,Patrón: complemento pesado para armadura fuerte
+252814,Patrón: yelmo de cuero de camorrista
+252815,Patrón: yelmo de cuero de trampero
+252816,Patrón: yelmo de cuero de defensor
+252817,Patrón: yelmo de cuero totémico
+252818,Patrón: yelmo de cuero de jinete de la tormenta
+252819,Patrón: yelmo de cuero de la sabiduría
 252820,Patrón: musleras de cuero de camorrista
 252821,Patrón: musleras de cuero de trampero
 252822,Patrón: falda de cuero de defensor
@@ -3236,8 +3262,8 @@ ID,Name
 252847,Patrón: zapatos de cuero de ensalmador
 252848,Patrón: hombreras de cuero de merodeador
 252849,Patrón: hombreras de cuero de vagador
-252850,Patrón: hombreras de cuero de celador
-252851,Patrón: hombreras de cuero de clamacielos
+252850,Patrón: hombreras de cuero de alcaide
+252851,Patrón: hombreras de cuero de Llamacielo
 252852,Patrón: hombreras de cuero de ensalmador
 252853,Patrón: brazales de cuero de merodeador
 252854,Patrón: brazales de cuero de vagador
@@ -3248,16 +3274,15 @@ ID,Name
 252859,Patrón: zapatos de gamuza azul
 252860,Patrón: botas de cuero de merodeador
 252861,Patrón: botas de cuero de vagador
-253897,Botas nacaradas
 252862,Patrón: botas de cuero de celador
 252863,Patrón: botas de cuero de clamacielos
 252864,Patrón: botas de cuero de ensalmador
 252865,Patrón: botas de cuero trabajado
 252866,Patrón: guantes de gamuza azul
+253664,Bolsa de componentes de lino
 252867,Patrón: guanteletes de cuero de merodeador
 252868,Patrón: guanteletes de cuero de vagador
 252869,Patrón: guanteletes de cuero de celador
-254087,Ceñidor negro
 252870,Patrón: guanteletes de cuero de clamacielos
 252871,Patrón: guanteletes de cuero de ensalmador
 252872,Patrón: guardarrenes de cuero de merodeador
@@ -3271,10 +3296,10 @@ ID,Name
 252880,Patrón: guanteletes de cuero trabajado
 252881,Patrón: hombreras de gamuza azul
 252882,Patrón: corona de cuero trabajado
+254087,Ceñidor negro
 252883,Patrón: armadura de gamuza azul
-252884,Patrón: hombreras de cuero maligno
+252884,Patrón: hombreras de cuero infame
 252885,Patrón: brazales de cuero trabajado
-252895,Patrón: leotardos Plumahierro
 252886,Patrón: cinturón de gamuza azul
 252887,Patrón: cubrehombros de cuero trabajado
 252888,Patrón: brazales de gamuza azul
@@ -3284,13 +3309,15 @@ ID,Name
 252892,Patrón: armadura del Alba
 252893,Patrón: guerrera de los Fauces de Madera
 252894,Patrón: yelmo de oso de guerra
+252895,Patrón: leotardos Plumahierro
 252896,Patrón: botas de malla de acechador
 252897,Patrón: botas de malla de clamacielos
 252898,Patrón: botas de malla de hostigador
 252899,Patrón: botas de malla de ensalmador
+253887,Fajín de ferviente novicio
 252900,Patrón: hombreras de malla de acechador
-252901,Patrón: hombreras de malla de clamacielos
-252902,Patrón: hombreras de malla de hostigador
+252901,Patrón: hombreras de malla de Llamacielo
+252902,Patrón: hombreras de malla de tramador
 252903,Patrón: hombreras de malla de ensalmador
 252904,Patrón: brazales de malla de acechador
 252905,Patrón: brazales de malla de clamacielos
@@ -3305,7 +3332,7 @@ ID,Name
 252914,Patrón: leotardos de escórpido flexibles
 252915,Patrón: yelmo de escórpido cargado
 252916,Patrón: brazales de escórpido flexibles
-252917,Patrón: hombreras de escórpido cargadas
+252917,Patrón: hombreras de escórpido electrificadas
 252918,Patrón: guanteletes de malla de acechador
 252919,Patrón: guanteletes de malla de clamacielos
 252920,Patrón: guanteletes de malla de hostigador
@@ -3331,13 +3358,11 @@ ID,Name
 252940,Patrón: leotardos de escórpido prístinos
 252941,Patrón: complemento basto para armadura místico
 252942,Patrón: complemento basto para armadura fuerte
-253664,Bolsa de componentes de lino
 253665,Patrón: bolsa de componentes de lino
 253667,Bolsa de componentes de lana
 253668,Patrón: bolsa de componentes de lana
 253885,Fajín de arcanista novicio
 253886,Patrón: fajín de arcanista novicio
-253887,Fajín de ferviente novicio
 253888,Patrón: fajín de ferviente novicio
 253889,Botas prístinas
 253890,Patrón: botas prístinas
@@ -3687,6 +3712,7 @@ ID,Name
 264227,Esquema: bomba oscura EZ-Thro
 264228,Esquema: bomba de maná EZ-Thro
 264229,Esquema: transportador de campo EZ-Thro: Gadgetzan
+264238,Esquema: SECUR-propulsiones de nitro
 264230,Esquema: SECUR-desgarrador de emergencia: Vista Eterna
 264231,Esquema: SECUR-transportador de campo EZ-Thro: Monte Hyjal
 264232,Esquema: batería recargable ultrasegura
@@ -3695,7 +3721,6 @@ ID,Name
 264235,Esquema: parapente goblin ultraligero
 264236,Esquema: máquina de clima gnómica
 264237,Esquema: Sigilador 52
-264238,Esquema: SECUR-propulsiones de nitro
 264239,Esquema: desplazador magnético EZ-Thro
 264240,Esquema: SECUR-teletransporte
 267341,Mermelada patadulce
@@ -3716,10 +3741,11 @@ ID,Name
 273105,Plano: estudio sobre toxinas
 273112,Plano: laboratorio de alquimia
 273113,Plano: forja de maestro
-273115,Blueprint: Iron Oven
+273115,Plano: horno de hierro
 273116,Plano: forja Arcana
 273117,Plano: banco de trabajo de anarquista
 273118,Plano: laboratorio de doctor de peste
+273119,Plano: cabaña de pesca
 273121,Plano: máquina de costura
 273124,Plano: telar
 273125,Dedo índice de exánime
@@ -3728,6 +3754,8 @@ ID,Name
 273129,Esencia de la anarquía
 273130,Motor de no-muerte
 273131,Gritos embotellados
+273141,Plano: expositor de pesca
+273295,Filetes de pescado de temporada
 273952,Patrón: calzas de guardia de la arboleda
 273953,Patrón: mandiletes de guardia de la arboleda
 273954,Patrón: hombreras de guardia de la arboleda
@@ -3776,7 +3804,6 @@ ID,Name
 273997,Patrón: guantes de costura nefasta
 273998,Patrón: bufas de costura nefasta
 273999,Patrón: botas de costura nefasta
-274017,Diseño: manoplas de gloria
 274000,Patrón: leotardos de clamaespíritus
 274001,Patrón: mandiletes de clamaespíritus
 274002,Patrón: bufas de clamaespíritus
@@ -3794,6 +3821,7 @@ ID,Name
 274014,Diseño: sobrehombros de gloria
 274015,Diseño: grebas de gloria
 274016,Diseño: musleras de gloria
+274017,Diseño: manoplas de gloria
 274018,Diseño: espaldares de gloria
 274019,Diseño: escarpes de gloria
 274030,Esencia maleable de la Naturaleza
@@ -3809,9 +3837,9 @@ ID,Name
 274388,Bala golpeveloz
 274389,Esquema: flecha Plumaveloz
 274390,Esquema: bala Golpeveloz
-274391,Formula: Enchant Off Hand - Superior Intellect
-274392,Formula: Enchant Off Hand - Excellent Spirit
-274393,Formula: Enchant Off Hand - Wisdom
+274391,Fórmula: Encantar mano secundaria - Intelecto superior
+274392,Fórmula: Encantar mano secundaria - Espíritu excelente
+274393,Fórmula: Encantar mano secundaria - Sabiduría
 274394,Formula: Enchant 2H Weapon - Spellblasting
 274395,Fórmula: Encantar escudo: aguante excelente
 274398,Fórmula: Encantar guantes: fuerza excelente
@@ -3843,6 +3871,7 @@ ID,Name
 275596,Patrón: cinturón de guardacrías
 275597,Patrón: botines de guardacrías
 275598,Diseño: mandiletes acuchillavísceras
+275608,Cordón de cuidaenjambres
 275599,Diseño: ajustador acuchillavísceras
 275600,Diseño: apisonadoras acuchillavísceras
 275601,Diseño: mandiletes de señor del nido
@@ -3852,7 +3881,6 @@ ID,Name
 275605,Cordón de vómito venenoso
 275606,Escarpines de vómito venenoso
 275607,Guantes de cuidaenjambres
-275608,Cordón de cuidaenjambres
 275609,Escarpines de cuidaenjambres
 275610,Garras de ampollabilis
 275611,Faja de ampollabilis
@@ -4056,7 +4084,6 @@ ID,Name
 279306,Patrón: manoplas de luto
 279307,Patrón: refuerzo para armadura de cuero salvaje
 279308,Diseño: hoja de maderaférrea
-279318,Patrón: capa vil
 279309,Diseño: hacha de defensor del bosque
 279310,Diseño: martilloverde
 279311,Diseño: escudo siempreverde
@@ -4066,6 +4093,7 @@ ID,Name
 279315,Patrón: togas de devastación ígnea
 279316,Patrón: cordón imbuido de maná
 279317,Patrón: botas incrustadas de helada
+279318,Patrón: capa vil
 279319,Patrón: capa de tierra y cielo
 279320,Patrón: bolsa de almas de sangrevil
 279321,Esquema: SECUR-mira de ultraprecisión
@@ -4083,6 +4111,9 @@ ID,Name
 279957,Festín de Cocinitas
 279959,Telar
 279961,Equipo de hoguera de oficial
+279965,Expositor de pesca
+279966,Cabaña de pesca
+279967,Cuenco con pescado
 279968,Equipo de primeros auxilios
 279970,Fermentador
 279972,Estandarte de facción
@@ -4143,3 +4174,4 @@ ID,Name
 286087,Esquema: traca de cohetes grandes amarillos
 286152,Pez coraza de placas
 286153,Receta: pez coraza de placas
+289560,Fórmula: encantar botas: velocidad

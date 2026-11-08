@@ -42,15 +42,15 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 2302,Handstitched Leather Boots,147,29,1,0,0,0,0,1,8,8,0
 2303,Handstitched Leather Pants,358,71,1,0,0,0,0,2,10,7,2
 2304,Light Armor Kit,60,15,1,0,0,0,0,1,5,0,0
-2307,Fine Leather Boots,1216,243,1,0,0,0,0,2,18,8,2
+2307,Fine Leather Boots,975,195,1,0,0,0,0,2,18,8,2
 2308,Fine Leather Cloak,1338,267,1,0,0,0,0,2,15,16,2
-2309,Embossed Leather Boots,1343,268,1,0,0,0,0,2,15,8,2
+2309,Embossed Leather Boots,1085,217,1,0,0,0,0,2,15,8,2
 2310,Embossed Leather Cloak,561,112,1,0,0,0,0,2,13,16,2
 2311,White Leather Jerkin,751,150,1,0,0,0,0,2,13,5,2
 2312,Fine Leather Gloves,905,181,1,0,0,0,0,2,15,10,2
 2313,Medium Armor Kit,800,200,1,0,0,0,0,1,15,0,0
-2314,Toughened Leather Armor,3717,743,1,0,0,0,0,1,24,5,0
-2315,Dark Leather Boots,1538,307,1,0,0,0,0,2,20,8,2
+2314,Toughened Leather Armor,3717,743,1,0,0,0,0,2,24,5,2
+2315,Gray Leather Boots,1538,307,1,0,0,0,0,2,20,8,2
 2316,Dark Leather Cloak,2043,408,1,0,0,0,0,2,22,16,2
 2317,Dark Leather Tunic,3446,689,1,0,0,0,0,2,20,5,2
 2318,Light Leather,60,15,1,0,0,0,0,1,10,0,0
@@ -106,7 +106,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 2674,Crawler Meat,48,12,1,0,0,0,0,1,13,0,0
 2675,Crawler Claw,44,11,1,0,0,0,0,1,13,0,0
 2677,Boar Ribs,60,15,1,0,0,0,0,1,14,0,0
-2678,Mild Spices,10,0,5,0,0,0,0,1,5,0,0
+2678,Mild Spices,10,1,5,0,0,0,0,1,5,0,0
 2679,Charred Wolf Meat,20,5,1,0,0,0,0,1,10,0,0
 2680,Spiced Wolf Meat,40,10,1,0,0,0,0,1,10,0,0
 2681,Roasted Boar Meat,24,6,1,0,0,0,0,1,10,0,0
@@ -134,9 +134,9 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 2844,Copper Mace,530,106,1,0,0,0,0,1,9,13,0
 2845,Copper Axe,546,109,1,0,0,0,0,1,9,13,0
 2847,Copper Shortsword,551,110,1,0,0,0,0,2,10,13,2
-2848,Bronze Mace,5595,1119,1,0,0,0,0,2,22,13,0
-2849,Bronze Axe,6345,1269,1,0,0,0,0,2,23,13,2
-2850,Bronze Shortsword,7197,1439,1,0,0,0,0,2,24,13,2
+2848,Bronze Mace,3592,898,1,0,0,0,0,2,22,13,0
+2849,Bronze Axe,3668,917,1,0,0,0,0,2,23,13,2
+2850,Bronze Shortsword,4544,1136,1,0,0,0,0,2,24,13,2
 2851,Copper Chain Belt,282,56,1,0,0,0,0,2,11,6,2
 2852,Copper Chain Pants,335,67,1,0,0,0,0,2,10,7,2
 2853,Copper Bracers,85,17,1,0,0,0,0,1,7,9,0
@@ -145,10 +145,10 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 2862,Rough Sharpening Stone,12,3,1,0,0,0,0,1,5,0,0
 2863,Coarse Sharpening Stone,40,10,1,0,0,0,0,1,15,0,0
 2864,Runed Copper Breastplate,3150,630,1,0,0,0,0,2,18,5,2
-2865,Rough Bronze Leggings,4810,962,1,0,0,0,0,2,21,7,2
-2866,Rough Bronze Cuirass,3764,752,1,0,0,0,0,2,23,5,2
-2867,Rough Bronze Bracers,3148,629,1,0,0,0,0,2,23,9,2
-2868,Patterned Bronze Bracers,4035,807,1,0,0,0,0,2,25,9,2
+2865,Rough Bronze Leggings,2885,577,1,0,0,0,0,2,21,7,2
+2866,Rough Bronze Cuirass,3005,601,1,0,0,0,0,2,23,5,2
+2867,Rough Bronze Bracers,1585,317,1,0,0,0,0,2,23,9,2
+2868,Patterned Bronze Bracers,2535,507,1,0,0,0,0,2,25,9,2
 2869,Silvered Bronze Breastplate,9155,1831,1,0,0,0,0,2,26,5,2
 2870,Shining Silver Breastplate,14677,2935,1,0,0,0,0,3,29,5,2
 2871,Heavy Sharpening Stone,160,40,1,0,0,0,0,1,25,0,0
@@ -205,16 +205,16 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 3474,Gemmed Copper Gauntlets,1083,216,1,0,0,0,0,2,15,10,2
 3478,Coarse Grinding Stone,40,10,1,0,0,0,0,1,20,0,0
 3480,Rough Bronze Shoulders,2660,532,1,0,0,0,0,2,22,3,2
-3481,Silvered Bronze Shoulders,6422,1284,1,0,0,0,0,2,25,3,2
-3482,Silvered Bronze Boots,6588,1317,1,0,0,0,0,2,26,8,2
+3481,Silvered Bronze Shoulders,3664,916,1,0,0,0,0,2,25,3,2
+3482,Silvered Bronze Boots,3672,918,1,0,0,0,0,2,26,8,2
 3483,Silvered Bronze Gauntlets,4828,965,1,0,0,0,0,2,27,10,2
 3484,Green Iron Boots,8837,1767,1,0,0,0,0,2,29,8,2
 3485,Green Iron Gauntlets,6477,1295,1,0,0,0,0,2,30,10,2
 3486,Heavy Grinding Stone,400,100,1,0,0,0,0,1,25,0,0
-3487,Heavy Copper Broadsword,7490,1498,1,0,0,0,0,2,19,17,2
-3488,Copper Battle Axe,3066,613,1,0,0,0,0,2,13,17,2
-3489,Thick War Axe,4688,937,1,0,0,0,0,2,17,13,2
-3490,Deadly Bronze Poniard,13658,2731,1,0,0,0,0,2,25,13,2
+3487,Heavy Copper Broadsword,4540,1135,1,0,0,0,0,2,19,17,2
+3488,Copper Battle Axe,2400,480,1,0,0,0,0,2,13,17,2
+3489,Thick War Axe,2860,715,1,0,0,0,0,2,17,13,2
+3490,Deadly Bronze Poniard,8176,2044,1,0,0,0,0,2,25,13,2
 3491,Heavy Bronze Mace,13709,2741,1,0,0,0,0,2,25,13,2
 3492,Mighty Iron Hammer,22764,4552,1,0,0,0,0,2,30,13,2
 3530,Wool Bandage,115,28,1,0,0,2942,50,1,1,0,0
@@ -268,7 +268,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 3832,Recipe: Elixir of Detect Lesser Invisibility,2200,550,1,0,0,171,195,2,39,0,0
 3835,Green Iron Bracers,5532,1106,1,0,0,0,0,2,33,9,2
 3836,Green Iron Helm,15268,3053,1,0,0,0,0,2,34,1,2
-3837,Golden Scale Coif,22027,4405,1,0,0,0,0,2,38,1,2
+3837,Golden Scale Coif,15420,3084,1,0,0,0,0,2,38,1,2
 3840,Green Iron Shoulders,12855,2571,1,0,0,0,0,2,32,3,2
 3841,Golden Scale Shoulders,15534,3106,1,0,0,0,0,2,35,3,2
 3842,Green Iron Leggings,14531,2906,1,0,0,0,0,2,31,7,2
@@ -277,15 +277,15 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 3845,Golden Scale Cuirass,32794,6558,1,0,0,0,0,2,40,5,2
 3846,Polished Steel Boots,19685,3937,1,0,0,0,0,2,37,8,2
 3847,Golden Scale Boots,24887,4977,1,0,0,0,0,2,40,8,2
-3848,Big Bronze Knife,7130,1426,1,0,0,0,0,2,20,13,2
+3848,Big Bronze Knife,3660,915,1,0,0,0,0,2,20,13,2
 3849,Hardened Iron Shortsword,27340,5468,1,0,0,0,0,2,32,13,2
 3850,Jade Serpentblade,36523,7304,1,0,0,0,0,2,35,13,2
 3851,Solid Iron Maul,31294,6258,1,0,0,0,0,2,31,17,2
 3852,Golden Iron Destroyer,41804,8360,1,0,0,0,0,2,34,17,2
-3853,Moonsteel Broadsword,50768,10153,1,0,0,0,0,2,36,17,2
-3854,Frost Tiger Blade,70603,14120,1,0,0,0,0,2,40,17,2
+3853,Moonsteel Broadsword,34460,8615,1,0,0,0,0,2,36,17,2
+3854,Frost Tiger Blade,35440,8860,1,0,0,0,0,2,40,17,2
 3855,Massive Iron Axe,56243,11248,1,0,0,0,0,2,37,17,2
-3856,Shadow Crescent Axe,71106,14221,1,0,0,0,0,2,40,17,2
+3856,Shadow Crescent Axe,41544,10386,1,0,0,0,0,2,40,17,2
 3858,Mithril Ore,1000,250,1,0,0,0,0,1,40,0,0
 3859,Steel Bar,240,60,1,0,0,0,0,1,35,0,0
 3860,Mithril Bar,1600,400,1,0,0,0,0,1,40,0,0
@@ -322,7 +322,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 4248,Dark Leather Gloves,3958,791,1,0,0,0,0,2,26,10,2
 4249,Dark Leather Belt,3515,703,1,0,0,0,0,2,25,6,2
 4250,Hillman's Belt,3527,705,1,0,0,0,0,2,25,6,2
-4251,Hillman's Shoulders,5999,1199,1,0,0,0,0,2,26,3,2
+4251,Hillman's Shoulders,3295,659,1,0,0,0,0,2,26,3,2
 4252,Dark Leather Shoulders,7286,1457,1,0,0,0,0,2,28,3,2
 4253,Toughened Leather Gloves,4810,962,1,0,0,0,0,3,27,10,2
 4254,Barbaric Gloves,5356,1071,1,0,0,0,0,2,30,10,2
@@ -412,7 +412,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 4366,Target Dummy,300,75,1,0,0,202,85,1,17,0,0
 4367,Small Seaforium Charge,600,150,1,0,0,202,100,1,20,0,0
 4368,Flying Tiger Goggles,2043,408,1,0,0,202,100,2,20,1,2
-4369,Deadly Blunderbuss,5899,1179,1,0,0,0,0,2,21,26,2
+4369,Deadly Blunderbuss,3950,790,1,0,0,0,0,2,21,26,2
 4370,Large Copper Bomb,700,175,1,0,0,202,105,1,26,0,0
 4371,Bronze Tube,800,200,1,0,0,0,0,1,21,0,0
 4372,Lovingly Crafted Boomstick,9000,1800,1,0,0,0,0,2,24,26,2
@@ -573,7 +573,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 6037,Truesilver Bar,5000,1250,1,0,0,0,0,2,50,0,0
 6038,Giant Clam Scorcho,1250,312,1,0,0,0,0,1,35,0,0
 6039,Recipe: Giant Clam Scorcho,5000,1250,1,0,0,185,175,1,35,0,0
-6040,Golden Scale Bracers,8247,1649,1,0,0,0,0,2,37,9,2
+6040,Golden Scale Bracers,5260,1315,1,0,0,0,0,2,37,9,2
 6041,Steel Weapon Chain,6000,1500,1,0,0,164,190,1,38,0,0
 6042,Iron Shield Spike,1000,250,1,0,0,164,150,1,30,0,0
 6043,Iron Counterweight,2000,500,1,0,0,164,165,1,33,0,0
@@ -594,7 +594,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 6068,Recipe: Shadow Oil,1500,375,1,0,0,171,165,1,33,0,1
 6149,Greater Mana Potion,480,120,1,0,0,0,0,1,41,0,0
 6211,Recipe: Elixir of Ogre's Strength,1800,450,1,0,0,171,150,1,30,0,0
-6214,Heavy Copper Maul,2978,595,1,0,0,0,0,2,16,17,2
+6214,Heavy Copper Maul,1864,466,1,0,0,0,0,2,16,17,2
 6217,Copper Rod,124,24,1,0,0,0,0,1,5,0,0
 6218,Runed Copper Rod,124,24,1,0,0,0,0,1,5,0,1
 6219,Arclight Spanner,721,144,1,0,0,202,50,1,10,21,0
@@ -679,8 +679,8 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 6712,Practice Lock,50,12,1,0,0,0,0,1,20,0,0
 6714,Ez-Thro Dynamite,300,75,1,0,0,0,0,1,25,0,0
 6716,Schematic: EZ-Thro Dynamite,800,200,1,0,0,202,100,2,20,0,0
-6730,Ironforge Chain,2482,496,1,0,0,0,0,2,16,5,2
-6731,Ironforge Breastplate,4358,871,1,0,0,0,0,2,20,5,2
+6730,Ironforge Chain,1490,298,1,0,0,0,0,2,16,5,2
+6731,Ironforge Breastplate,3450,690,1,0,0,0,0,2,20,5,2
 6733,Ironforge Gauntlets,5726,1145,1,0,0,0,0,2,28,10,2
 6735,Plans: Ironforge Breastplate,600,150,1,0,0,164,100,2,20,0,0
 6786,Simple Dress,298,59,1,0,0,0,0,1,10,20,0
@@ -805,7 +805,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 7919,Heavy Mithril Gauntlet,12382,2476,1,0,0,0,0,2,41,10,2
 7920,Mithril Plate Pants,40265,8053,1,0,0,0,0,2,42,7,2
 7921,Heavy Mithril Pants,26936,5387,1,0,0,0,0,2,42,7,2
-7922,Steel Plate Helm,11885,2377,1,0,0,0,0,2,43,1,2
+7922,Steel Plate Helm,7776,1944,1,0,0,0,0,2,43,1,2
 7924,Mithril Plate Bracers,20516,4103,1,0,0,0,0,2,43,9,2
 7925,Mithril Plate Gloves,22238,4447,1,0,0,0,0,2,44,10,2
 7926,Ornate Mithril Pants,29761,5952,1,0,0,0,0,2,44,7,2
@@ -825,19 +825,19 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 7941,Heavy Mithril Axe,62601,12520,1,0,0,0,0,2,42,13,2
 7942,Blue Glittering Axe,73296,14659,1,0,0,0,0,2,44,13,2
 7943,Wicked Mithril Blade,79459,15891,1,0,0,0,0,2,45,13,2
-7944,Dazzling Mithril Rapier,100463,20092,1,0,0,0,0,2,48,13,2
+7944,Dazzling Mithril Rapier,58684,14671,1,0,0,0,0,2,48,13,2
 7945,Big Black Mace,86455,17291,1,0,0,0,0,2,46,13,2
-7946,Runed Mithril Hammer,108304,21660,1,0,0,0,0,2,49,13,2
+7946,Runed Mithril Hammer,57840,14460,1,0,0,0,0,2,49,13,2
 7947,Ebon Shiv,124460,24892,1,0,0,0,0,2,51,13,2
 7954,The Shatterer,115799,23159,1,0,0,0,0,3,47,13,2
 7955,Copper Claymore,1208,241,1,0,0,0,0,2,11,17,2
-7956,Bronze Warhammer,9722,1944,1,0,0,0,0,2,25,17,2
+7956,Bronze Warhammer,6176,1544,1,0,0,0,0,2,25,17,2
 7957,Bronze Greatsword,11028,2205,1,0,0,0,0,2,26,17,2
 7958,Bronze Battle Axe,12178,2435,1,0,0,0,0,2,27,17,2
 7959,Blight,169289,33857,1,0,0,0,0,3,50,17,2
 7960,Truesilver Champion,192743,38548,1,0,0,0,0,3,52,17,2
 7961,Phantom Blade,127541,25508,1,0,0,0,0,3,49,13,2
-7963,Steel Breastplate,32440,6488,1,0,0,0,0,2,40,5,2
+7963,Steel Breastplate,22460,5615,1,0,0,0,0,2,40,5,2
 7964,Solid Sharpening Stone,160,40,1,0,0,0,0,1,35,0,0
 7965,Solid Weightstone,160,40,1,0,0,0,0,1,35,0,0
 7966,Solid Grinding Stone,800,200,1,0,0,0,0,1,35,0,0
@@ -883,8 +883,8 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 8172,Cured Thick Hide,2000,500,1,0,0,0,0,1,40,0,0
 8173,Thick Armor Kit,4000,1000,1,0,0,0,0,1,40,0,0
 8174,Comfortable Leather Hat,20657,4131,1,0,0,0,0,2,40,1,2
-8175,Nightscape Tunic,29857,5971,1,0,0,0,0,2,41,5,2
-8176,Nightscape Headband,22475,4495,1,0,0,0,0,2,41,1,2
+8175,Nightscape Tunic,19405,3881,1,0,0,0,0,2,41,5,2
+8176,Nightscape Headband,14610,2922,1,0,0,0,0,2,41,1,2
 8185,Turtle Scale Leggings,54764,10952,1,0,0,0,0,2,47,7,2
 8187,Turtle Scale Gloves,17387,3477,1,0,0,0,0,2,41,10,2
 8189,Turtle Scale Breastplate,37838,7567,1,0,0,0,0,2,42,5,2
@@ -1004,7 +1004,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 10003,Black Mageweave Gloves,14296,2859,1,0,0,0,0,2,43,10,2
 10004,Shadoweave Robe,28694,5738,1,0,0,0,0,2,43,20,2
 10007,Red Mageweave Vest,28999,5799,1,0,0,0,0,2,43,5,2
-10008,White Bandit Mask,21826,4365,1,0,0,0,0,2,43,1,2
+10008,White Bandit Mask,13968,3492,1,0,0,0,0,2,43,1,2
 10009,Red Mageweave Pants,26424,5284,1,0,0,0,0,2,43,7,2
 10010,Stormcloth Pants,28648,5729,1,0,0,0,0,2,44,7,2
 10011,Stormcloth Gloves,14377,2875,1,0,0,0,0,2,44,10,2
@@ -1064,7 +1064,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 10325,Pattern: White Wedding Dress,10000,2500,1,0,0,197,140,1,50,0,0
 10326,Pattern: Tuxedo Jacket,5000,1250,1,0,0,197,140,1,50,0,0
 10421,Rough Copper Vest,161,32,1,0,0,0,0,2,10,5,2
-10423,Silvered Bronze Leggings,14211,2842,1,0,0,0,0,2,31,7,2
+10423,Silvered Bronze Leggings,9464,2366,1,0,0,0,0,2,31,7,2
 10424,Plans: Silvered Bronze Leggings,3000,750,1,0,0,164,130,2,31,0,0
 10463,Pattern: Shadoweave Mask,7000,1750,1,0,0,197,200,2,49,0,0
 10498,Gyromatic Micro-Adjustor,81,16,1,0,0,0,0,1,35,0,0
@@ -1174,23 +1174,23 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 11205,Formula: Enchant Gloves - Advanced Herbalism,5000,1250,1,0,0,333,225,2,45,0,0
 11206,Formula: Enchant Cloak - Lesser Agility,5000,1250,1,0,0,333,225,2,45,0,0
 11207,Formula: Enchant Weapon - Fiery Weapon,12000,3000,1,0,0,333,265,2,53,0,0
-11288,Greater Magic Wand,7675,200,1,0,0,0,0,2,23,26,2
 11208,Formula: Enchant Weapon - Demonslaying,5400,1350,1,0,0,333,230,2,46,0,0
 11223,Formula: Enchant Bracer - Deflection,5800,1450,1,0,0,333,235,2,47,0,0
 11224,Formula: Enchant Shield - Frost Resistance,5800,1450,1,0,0,333,235,2,47,0,0
 11225,Formula: Enchant Bracer - Greater Stamina,6200,1550,1,0,0,333,245,2,49,0,0
 11226,Formula: Enchant Gloves - Riding Skill,6200,1550,1,0,0,333,250,2,50,0,0
-11287,Lesser Magic Wand,2544,110,1,0,0,0,0,2,15,26,2
+11287,Lesser Magic Wand,550,110,1,0,0,0,0,2,15,26,2
+11288,Greater Magic Wand,10000,200,1,0,0,0,0,2,23,26,2
 11289,Lesser Mystic Wand,17905,450,1,0,0,0,0,2,31,26,2
 11291,Star Wood,4500,1125,1,0,0,0,0,1,30,0,0
 11371,Dark Iron Bar,2400,600,1,0,0,0,0,1,50,0,0
 11382,Blood of the Mountain,3000,750,1,0,0,0,0,2,50,0,0
 11590,Mechanical Repair Kit,1000,250,1,0,0,202,200,1,40,0,0
 11604,Dark Iron Plate,97143,19428,1,0,0,0,0,3,59,5,1
-11605,Dark Iron Shoulders,53880,10776,1,0,0,0,0,2,58,3,2
-11606,Dark Iron Mail,96279,19255,1,0,0,0,0,2,56,5,2
-11607,Dark Iron Sunderer,256125,51225,1,0,0,0,0,3,57,17,2
-11608,Dark Iron Pulverizer,228803,45760,1,0,0,0,0,3,55,17,2
+11605,Dark Iron Shoulders,43104,10776,1,0,0,0,0,2,58,3,2
+11606,Dark Iron Mail,77020,19255,1,0,0,0,0,2,56,5,2
+11607,Dark Iron Sunderer,204900,51225,1,0,0,0,0,3,57,17,2
+11608,Dark Iron Pulverizer,183040,45760,1,0,0,0,0,3,55,17,2
 11610,Plans: Dark Iron Pulverizer,12000,3000,1,0,0,164,240,3,53,0,0
 11611,Plans: Dark Iron Sunderer,12000,3000,1,0,0,164,250,3,55,0,0
 11612,Plans: Dark Iron Plate,12000,3000,1,0,0,164,260,3,57,0,0
@@ -1235,8 +1235,8 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 12233,Recipe: Mystery Stew,3000,750,1,0,0,185,175,1,35,0,1
 12239,Recipe: Dragonbreath Chili,7000,1750,1,0,0,185,200,1,40,0,0
 12240,Recipe: Heavy Kodo Stew,7000,1750,1,0,0,185,200,1,40,0,1
-12259,Glinting Steel Dagger,40363,8072,1,0,0,0,0,2,36,13,2
-12260,Searing Golden Blade,51977,10395,1,0,0,0,0,2,39,13,2
+12259,Glinting Steel Dagger,32288,8072,1,0,0,0,0,2,36,13,2
+12260,Searing Golden Blade,32660,8165,1,0,0,0,0,2,39,13,2
 12261,Plans: Searing Golden Blade,3800,950,1,0,0,164,165,2,38,0,0
 12359,Thorium Bar,2400,600,1,0,0,0,0,1,50,0,0
 12360,Arcanite Bar,20000,5000,1,0,0,0,0,2,55,0,0
@@ -1327,7 +1327,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 12728,Pattern: Invulnerable Mail,80000,20000,1,0,0,165,295,4,63,0,0
 12735,Frayed Abomination Stitching,0,0,1,0,0,0,0,2,1,0,1
 12753,Skin of Shadow,0,0,1,0,0,0,0,2,1,0,1
-12764,Thorium Greatsword,168107,33621,1,0,0,0,0,2,52,17,2
+12764,Thorium Greatsword,117725,23534,1,0,0,0,0,2,52,17,2
 12769,Bleakwood Hew,230772,46154,1,0,0,0,0,3,54,17,2
 12772,Inlaid Thorium Hammer,194357,38871,1,0,0,0,0,2,54,17,2
 12773,Ornate Thorium Handaxe,165399,33079,1,0,0,0,0,2,55,13,1
@@ -1411,7 +1411,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 13481,Recipe: Elixir of Brute Force,15000,3750,1,0,0,171,275,2,55,0,0
 13482,Recipe: Transmute Air to Fire,15000,0,1,529,5,171,275,2,55,0,1
 13483,Recipe: Transmute Fire to Earth,15000,0,1,0,0,171,275,2,55,0,1
-13484,Recipe: Transmute Earth to Water,15000,0,1,576,4,171,275,2,55,0,1
+13484,Recipe: Transmute Earth to Water,15000,3000,1,576,4,171,275,2,55,0,1
 13485,Recipe: Transmute Water to Air,15000,0,1,0,0,171,275,2,55,0,1
 13486,Recipe: Transmute Undeath to Water,15000,3750,1,0,0,171,275,2,55,0,0
 13487,Recipe: Transmute Water to Undeath,15000,3750,1,0,0,171,275,2,55,0,0
@@ -1586,8 +1586,8 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 15050,Black Dragonscale Breastplate,130357,26071,1,0,0,0,0,3,58,5,2
 15051,Black Dragonscale Shoulders,108683,21736,1,0,0,0,0,3,60,3,2
 15052,Black Dragonscale Leggings,159667,31933,1,0,0,0,0,3,62,7,2
-15053,Volcanic Breastplate,86377,17275,1,0,0,0,0,2,57,5,2
-15054,Volcanic Leggings,72799,14559,1,0,0,0,0,2,54,7,2
+15053,Volcanic Breastplate,38005,9501,1,0,0,0,0,2,57,5,2
+15054,Volcanic Leggings,32029,8007,1,0,0,0,0,2,54,7,2
 15055,Volcanic Shoulders,80097,16019,1,0,0,0,0,2,61,3,2
 15056,Stormshroud Armor,104834,20966,1,0,0,0,0,3,57,5,2
 15057,Stormshroud Pants,93642,18728,1,0,0,0,0,3,55,7,2
@@ -1953,7 +1953,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 19215,Pattern: Wisdom of the Timbermaw,22000,5500,1,576,5,197,255,1,58,0,1
 19216,Pattern: Argent Boots,22000,5500,1,529,5,197,255,1,58,0,1
 19217,Pattern: Argent Shoulders,40000,10000,1,529,6,197,290,1,64,0,1
-19218,Pattern: Mantle of the Timbermaw,40000,10000,1,576,6,197,290,1,64,0,1
+19218,Pattern: Mantle of the Timbermaw,40000,10000,1,576,6,197,290,3,64,0,1
 19219,Pattern: Flarecore Robe,60000,15000,1,59,5,197,300,1,66,0,1
 19220,Pattern: Flarecore Leggings,90000,22500,1,59,6,197,300,1,70,0,1
 19326,Pattern: Might of the Timbermaw,22000,5500,1,576,5,165,265,1,58,0,1
@@ -2068,7 +2068,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 20735,Formula: Enchant Cloak - Subtlety,100000,25000,1,0,0,333,300,3,70,0,1
 20736,Formula: Enchant Cloak - Dodge,100000,25000,1,0,0,333,300,3,70,0,1
 20744,Minor Wizard Oil,2000,100,1,0,0,0,0,1,15,0,0
-20745,Minor Mana Oil,4000,1000,1,0,0,0,0,1,30,0,0
+20745,Minor Mana Oil,2500,500,1,0,0,0,0,1,30,0,0
 20746,Lesser Wizard Oil,4000,1000,1,0,0,0,0,1,40,0,0
 20747,Lesser Mana Oil,4000,1000,1,0,0,0,0,1,50,0,0
 20748,Brilliant Mana Oil,4000,1000,1,0,0,0,0,1,55,0,0
@@ -2231,7 +2231,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 210708,Elixir of Coalesced Regret,160,40,1,0,0,0,0,1,25,0,0
 210709,Recipe: Elixir of Coalesced Regret,100,25,1,0,0,171,90,2,25,0,0
 210779,Plans: Mantle of the Second War,75000,1000,1,0,0,164,150,2,38,0,1
-210781,Phoenix Bindings,4000,2481,1,0,0,0,0,3,30,9,2
+210781,Phoenix Bindings,2976,744,1,0,0,0,0,3,30,9,2
 211247,Pattern: Phoenix Bindings,75000,1000,1,0,0,197,125,2,30,0,1
 211427,Soul Vessel,0,0,1,0,0,0,0,3,1,0,0
 211845,Blackfathom Sharpening Stone,500,125,1,0,0,0,0,2,25,0,0
@@ -2343,7 +2343,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 228477,Pattern: Embroidered Belt of the Archmage,120000,30000,1,0,0,197,300,4,62,0,0
 228978,Enchanted Sigil: Flowing Waters,0,0,1,0,0,333,290,3,60,0,1
 228979,Enchanted Sigil: Flowing Waters,100000,25000,1,749,6,333,290,4,60,0,1
-228980,Conductive Shield Coating,4000,1000,1,0,0,0,0,1,50,0,0
+228980,Conductive Shield Coating,2000,400,1,0,0,0,0,1,50,0,0
 228981,Formula: Conductive Shield Coating,20000,5000,1,0,0,333,275,1,55,0,1
 228982,Formula: Enchant Shield - Law of Nature,100000,25000,1,576,6,333,300,3,60,0,1
 228993,Pattern: Bottomless Bag,60000,15000,1,0,0,197,300,3,62,0,0
@@ -2389,6 +2389,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 238323,Plans: Scarlet Soldier's Spaulders,0,0,1,0,0,164,280,3,1,0,0
 238324,Plans: Scarlet Soldier's Chestplate,0,0,1,0,0,164,280,3,1,0,0
 238325,Plans: Scarlet Soldier's Protectors,0,0,1,0,0,164,250,3,1,0,0
+238642,Grand Lobster Banquet,5000,250,5,0,0,0,0,2,65,0,0
 238326,Plans: Scarlet Soldier's Grips,0,0,1,0,0,164,260,3,1,0,0
 238327,Plans: Scarlet Soldier's Waistguard,0,0,1,0,0,164,250,3,1,0,0
 238328,Plans: Scarlet Soldier's Legplates,0,0,1,0,0,164,270,3,1,0,0
@@ -2397,23 +2398,11 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 238638,Filet o' Flank,5000,250,5,0,0,0,0,1,65,0,0
 238639,Sunrise Omelette,5000,250,5,0,0,0,0,1,65,0,0
 238641,Specklefin Feast,5000,250,5,0,0,0,0,2,65,0,0
-238642,Grand Lobster Banquet,5000,250,5,0,0,0,0,2,65,0,0
 238645,Recipe: Prowler Steak,7500,1875,1,0,0,185,250,1,1,0,1
 238646,Recipe: Filet o' Flank,7500,1875,1,0,0,185,250,1,1,0,1
 238647,Recipe: Sunrise Omelette,7500,1875,1,0,0,185,250,1,1,0,1
 238649,Recipe: Specklefin Feast,7500,1875,1,0,0,185,280,1,1,0,1
 238650,Recipe: Grand Lobster Banquet,7500,1875,1,0,0,185,280,1,1,0,1
-238734,Tinkerbox: Teleport,0,0,1,0,0,0,0,2,1,0,0
-238735,Tinkerbox: Nitro Boosts,0,0,1,0,0,0,0,2,1,0,0
-238736,Tinkerbox: Magnetic Displacement,0,0,1,0,0,0,0,2,1,0,0
-238737,Tinkerbox,10000,3000,1,0,0,0,0,1,1,0,0
-238782,Schematic: Tinkerbox,6250,1250,1,0,0,202,250,1,1,0,1
-238783,Schematic: Tinkerbox: Teleport,6500,1300,1,0,0,202,260,2,1,0,1
-238784,Schematic: Tinkerbox: Nitro Boosts,6500,1300,1,0,0,202,260,2,1,0,1
-238785,Schematic: Tinkerbox: Magnetic Displacement,6500,1300,1,0,0,202,260,2,1,0,1
-238786,Schematic: Tinker: Teleport,7000,1400,1,0,0,202,280,3,1,0,1
-238787,Schematic: Tinker: Nitro Boosts,7000,1400,1,0,0,202,280,3,1,0,1
-238788,Schematic: Tinker: Magnetic Displacement,7000,1400,1,0,0,202,280,3,1,0,1
 238789,Schematic: Semisafe Transporter: New Avalon,7500,1875,1,0,0,202,300,3,1,0,1
 238927,Pattern: Scarlet Quiver,7500,1875,1,0,0,165,275,2,1,0,1
 238928,Pattern: Scarlet Ammo Pouch,7500,1875,1,0,0,165,275,2,1,0,1
@@ -2440,12 +2429,12 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 247755,Elixir of Minor Force,125,25,1,0,0,0,0,1,5,0,0
 247786,Mote of Magic,10,1,1,0,0,0,0,1,5,0,0
 247789,Novice's Practice Wand,237,5,1,0,0,0,0,1,6,26,2
-248824,Fel Hide,3000,750,1,0,0,0,0,1,60,0,0
 248819,Fel Crystal,12000,3000,1,0,0,0,0,2,60,0,0
 248820,Torbernite,60000,15000,1,0,0,0,0,2,60,0,0
 248821,Demonsage,900,225,1,0,0,0,0,1,60,0,0
 248822,Death Lotus,6000,1500,1,0,0,0,0,2,60,0,0
 248823,Marefoil,600,150,1,0,0,0,0,1,60,0,0
+248824,Fel Hide,3000,750,1,0,0,0,0,1,60,0,0
 248825,Fel Leather,3000,750,1,0,0,0,0,1,60,0,0
 249144,Twisted Nether Wand,26316,1000,1,0,0,0,0,2,42,26,2
 249232,Lesser Eternal Wand,26316,2000,1,0,0,0,0,2,54,26,2
@@ -2456,13 +2445,13 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 249391,Pyrite,400,100,1,0,0,0,0,2,25,0,0
 249392,Glimmering Staff,3009,601,1,0,0,0,0,3,30,17,1
 249393,Soulstaff,3009,601,1,0,0,0,0,3,30,17,1
-249394,Orb of Mystic Insight,10782,2156,1,0,0,0,0,3,30,23,1
-249395,Orb of Souls,10782,2156,1,0,0,0,0,3,30,23,1
-249396,Mystic Mushroom,4050,1012,1,0,0,0,0,3,25,28,1
-249397,Tenets of the Silver Hand,4050,1012,1,0,0,0,0,3,25,28,1
-249398,Polished Driftwood Icon,4050,1012,1,0,0,0,0,3,25,28,1
+249394,Orb of Mystic Insight,2495,499,1,0,0,0,0,3,30,23,1
+249395,Orb of Souls,2480,496,1,0,0,0,0,3,30,23,1
+249396,Mystic Mushroom,2495,499,1,0,0,0,0,3,25,28,1
+249397,Tenets of the Silver Hand,2250,450,1,0,0,0,0,3,25,28,1
+249398,Polished Driftwood Icon,2495,499,1,0,0,0,0,3,25,28,1
 249399,Frilled Lichen,120,30,1,0,0,0,0,2,25,0,0
-249409,Cerulean Dye,500,125,1,0,0,0,0,2,25,0,0
+249409,Cerulean Dye,300,75,1,0,0,0,0,2,25,0,0
 249410,Sulfuric Acid,500,125,1,0,0,0,0,2,25,0,0
 249424,Rosecap,380,95,1,0,0,0,0,2,45,0,0
 249425,Bauxite,1000,250,1,0,0,0,0,2,45,0,0
@@ -2473,9 +2462,9 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 249430,Magenta Dye,1000,250,1,0,0,0,0,2,45,0,0
 249431,Viridian Dye,1500,375,1,0,0,0,0,2,60,0,0
 249432,Sandpaper,1000,250,1,0,0,0,0,2,45,0,0
-249441,Talons of Wrath,29165,5833,1,0,0,0,0,3,45,28,1
-249442,Libram of Invocation,29165,5833,1,0,0,0,0,3,45,28,1
-249443,Totem of Ancestral Protection,59402,11880,1,0,0,0,0,3,45,28,1
+249441,Talons of Wrath,10005,2001,1,0,0,0,0,3,45,28,1
+249442,Libram of Invocation,13275,2655,1,0,0,0,0,3,45,28,1
+249443,Totem of Ancestral Protection,23760,4752,1,0,0,0,0,3,45,28,1
 249453,Radiant Staff,3009,601,1,0,0,0,0,3,50,17,1
 249454,Dreamstaff,3009,601,1,0,0,0,0,3,50,17,1
 249455,Truesilver Conduit,10782,2156,1,0,0,0,0,3,50,23,1
@@ -2518,6 +2507,9 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 249514,Formula: Enchant Bracer - Greater Agility,10000,2000,1,0,0,333,240,2,48,0,1
 249515,Formula: Lesser Eternal Wand,10000,2000,1,0,0,333,245,2,49,0,1
 249516,Formula: Enchant Gloves - Advanced Skinning,10000,2000,1,0,0,333,250,2,50,0,1
+249519,Formula: Frozen Heart of the Mountain,10000,2000,1,0,0,333,265,3,53,0,1
+249520,Formula: Molten Heart of the Mountain,10000,2000,1,0,0,333,265,3,53,0,1
+249521,Formula: Dormant Heart of the Mountain,10000,2000,1,0,0,333,265,3,53,0,1
 249522,Formula: Greater Eternal Wand,10000,2000,1,0,0,333,275,2,55,0,1
 249523,Formula: Enchant 2H Weapon - Strength,10000,2000,1,0,0,333,290,2,58,0,1
 249524,Formula: Enchant Bracer - Superior Agility,10000,2000,1,0,0,333,295,2,59,0,1
@@ -2532,7 +2524,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 249537,Formula: Brilliant Wand,6875,1375,1,0,0,333,275,3,60,0,1
 249538,Formula: Enchant Bracer - Superior Intellect,7500,1500,1,0,0,333,300,2,60,0,1
 249539,Formula: Enchant Bracer - Superior Deflection,7500,1500,1,0,0,333,300,2,60,0,1
-249726,Azerothium Bar,20000,5000,1,0,0,0,0,2,55,0,0
+249726,Azerothium Bar,12000,3000,1,0,0,0,0,2,55,0,0
 249796,Hyjal Berries,750,150,1,0,0,0,0,1,55,0,0
 249865,Peace Tea,1,1,1,0,0,0,0,1,5,0,0
 249866,Royal Tea,1,1,1,0,0,0,0,1,15,0,0
@@ -2575,7 +2567,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250079,Tasty Raptor Bites,40,10,1,0,0,0,0,1,10,0,0
 250080,Breakfast Omelette,125,6,5,0,0,0,0,1,15,0,0
 250081,Clam Linguine,40,10,1,0,0,0,0,1,55,0,0
-250173,Recipe: Savory Stag Sliders,0,0,1,0,0,185,225,1,1,0,1
+250173,Recipe: Savory Stag Sliders,20000,5000,1,0,0,185,225,1,1,0,1
 250174,Recipe: Soaring Pamplona,0,0,1,0,0,185,275,1,1,0,1
 250175,Recipe: Bat Hachee,0,0,1,0,0,185,275,1,1,0,1
 250176,Recipe: Savory Turtle Stew,0,0,1,0,0,185,275,1,1,0,1
@@ -2592,7 +2584,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250187,Recipe: Tasty Raptor Bites,0,0,1,0,0,185,25,1,1,0,1
 250188,Recipe: Breakfast Omelette,0,0,1,0,0,185,75,1,1,0,1
 250189,Recipe: Clam Linguine,0,0,1,0,0,185,275,1,1,0,1
-250327,Draught of Predatory Senses,500,100,1,0,0,0,0,1,45,0,0
+250327,Potion of Predatory Senses,500,100,1,0,0,0,0,1,45,0,0
 250328,Elixir of Cunning,625,125,1,0,0,0,0,1,55,0,0
 250329,Elixir of the Phalanx,625,125,1,0,0,0,0,1,55,0,0
 250330,Minor Cleric's Elixir,125,25,1,0,0,0,0,1,5,0,0
@@ -2619,7 +2611,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250351,Elixir of the Grizzly,625,125,1,0,0,0,0,1,55,0,0
 250353,Elixir of Lesser Intellect,250,50,1,0,0,0,0,1,25,0,0
 250354,Elixir of Intellect,375,75,1,0,0,0,0,1,45,0,0
-250363,Recipe: Draught of Predatory Senses,0,0,1,0,0,171,195,1,1,0,0
+250363,Recipe: Potion of Predatory Senses,0,0,1,0,0,171,195,1,1,0,0
 250364,Recipe: Elixir of Cunning,6875,1375,1,0,0,171,275,1,1,0,1
 250365,Recipe: Elixir of the Phalanx,6250,1250,1,0,0,171,250,1,1,0,1
 250366,Recipe: Minor Cleric's Elixir,0,0,1,0,0,171,45,1,1,0,0
@@ -2646,27 +2638,27 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250387,Recipe: Elixir of the Grizzly,7500,1500,1,0,0,171,300,1,1,0,1
 250388,Recipe: Elixir of Lesser Intellect,2375,475,1,0,0,171,95,1,1,0,1
 250389,Recipe: Elixir of Intellect,0,0,1,0,0,171,135,1,1,0,0
-250482,Glowing Copper Boots,1974,394,1,0,0,0,0,3,15,8,1
+250482,Glowing Copper Boots,1024,256,1,0,0,0,0,3,15,8,1
 250483,Sterling Silver Boots,6337,1267,1,0,0,0,0,2,25,8,2
 250484,Sterling Silver Leggings,9541,1908,1,0,0,0,0,2,26,7,2
 250485,Sterling Silver Gauntlet,4787,957,1,0,0,0,0,2,26,10,2
-250486,Sterling Silver Shoulders,7962,1592,1,0,0,0,0,2,27,3,2
-250487,Sterling Silver Breastplate,14119,2823,1,0,0,0,0,2,30,5,2
+250486,Sterling Silver Shoulders,1960,490,1,0,0,0,0,2,27,3,2
+250487,Sterling Silver Breastplate,1940,485,1,0,0,0,0,2,30,5,2
 250488,Veteran's Chain Shirt,4873,974,1,0,0,0,0,3,20,5,1
 250489,Guard's Chain Shirt,4891,978,1,0,0,0,0,3,20,5,1
-250490,Protector's Chain Shirt,4910,982,1,0,0,0,0,3,20,5,1
-250491,Acolyte's Chain Shirt,4929,985,1,0,0,0,0,3,20,5,1
-250492,Crusader's Chain Shirt,4948,989,1,0,0,0,0,3,20,5,1
+250490,Protector's Chain Shirt,1952,488,1,0,0,0,0,3,20,5,1
+250491,Acolyte's Chain Shirt,1252,313,1,0,0,0,0,3,20,5,1
+250492,Crusader's Chain Shirt,1824,456,1,0,0,0,0,3,20,5,1
 250493,Veteran's Chain Leggings,9475,1895,1,0,0,0,0,3,25,7,1
 250494,Guard's Chain Leggings,9771,1954,1,0,0,0,0,3,25,7,1
-250495,Protector's Chain Leggings,9807,1961,1,0,0,0,0,3,25,7,1
-250496,Acolyte's Chain Leggings,9843,1968,1,0,0,0,0,3,25,7,1
-250497,Crusader's Chain Leggings,9878,1975,1,0,0,0,0,3,25,7,1
+250495,Protector's Chain Leggings,3152,788,1,0,0,0,0,3,25,7,1
+250496,Acolyte's Chain Leggings,3124,781,1,0,0,0,0,3,25,7,1
+250497,Crusader's Chain Leggings,3204,801,1,0,0,0,0,3,25,7,1
 250498,Veteran's Chain Helm,0,0,1,0,0,0,0,3,30,1,1
 250499,Guard's Chain Helm,12404,2480,1,0,0,0,0,3,30,1,1
-250500,Protector's Chain Helm,12449,2489,1,0,0,0,0,3,30,1,1
-250501,Acolyte's Chain Helm,12493,2498,1,0,0,0,0,3,30,1,1
-250502,Crusader's Chain Helm,12538,2507,1,0,0,0,0,3,30,1,1
+250500,Protector's Chain Helm,4404,1101,1,0,0,0,0,3,30,1,1
+250501,Acolyte's Chain Helm,4352,1088,1,0,0,0,0,3,30,1,1
+250502,Crusader's Chain Helm,4096,1024,1,0,0,0,0,3,30,1,1
 250503,Veteran's Boots,5271,1054,1,0,0,0,0,3,22,8,1
 250504,Guard's Boots,5289,1057,1,0,0,0,0,3,22,8,1
 250505,Protector's Boots,5308,1061,1,0,0,0,0,3,22,8,1
@@ -2710,11 +2702,11 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250543,Shining Mithril Helm,51279,10255,1,0,0,0,0,2,48,1,2
 250544,Shining Mithril Pants,73581,14716,1,0,0,0,0,2,49,7,2
 250545,Shining Mithril Gauntlet,37143,7428,1,0,0,0,0,2,49,10,2
-250546,Officer's Boots,49409,9881,1,0,0,0,0,3,45,8,1
-250547,Sentinel's Boots,49597,9919,1,0,0,0,0,3,45,8,1
-250548,Warder's Boots,49786,9957,1,0,0,0,0,3,45,8,1
+250546,Officer's Boots,13284,3321,1,0,0,0,0,3,45,8,1
+250547,Sentinel's Boots,13404,3351,1,0,0,0,0,3,45,8,1
+250548,Warder's Boots,13428,3357,1,0,0,0,0,3,45,8,1
 250549,Prefect's Boots,49974,9994,1,0,0,0,0,3,45,8,1
-250550,Justicar's Boots,50158,10031,1,0,0,0,0,3,45,8,1
+250550,Justicar's Boots,13552,3388,1,0,0,0,0,3,45,8,1
 250551,Officer's Gloves,65891,13178,1,0,0,0,0,3,55,10,1
 250552,Sentinel's Gloves,66138,13227,1,0,0,0,0,3,55,10,1
 250553,Warder's Gloves,66378,13275,1,0,0,0,0,3,55,10,1
@@ -2767,25 +2759,25 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250600,Martyr's Legplates,255338,51067,1,0,0,0,0,4,61,7,2
 250601,Breastplate of Salvation,231842,46368,1,0,0,0,0,4,61,5,2
 250602,Brass Knuckles,7811,1562,1,0,0,0,0,2,21,13,2
-250603,Bronze Dory,16266,3253,1,0,0,0,0,2,25,17,2
+250603,Bronze Dory,1952,488,1,0,0,0,0,2,25,17,2
 250604,Iron Fists,23773,4754,1,0,0,0,0,2,31,13,2
-250605,Steel Spear,52846,10569,1,0,0,0,0,2,37,17,2
+250605,Steel Spear,10004,2501,1,0,0,0,0,2,37,17,2
 250606,Iron Morningstar,47083,9416,1,0,0,0,0,2,38,21,2
 250607,Mithril Shortsword,59530,11906,1,0,0,0,0,2,41,13,2
-250608,Mithril Warhammer,87117,17423,1,0,0,0,0,2,43,17,2
-250609,Mithril Claws,81591,16318,1,0,0,0,0,2,45,13,2
+250608,Mithril Warhammer,17424,4356,1,0,0,0,0,2,43,17,2
+250609,Mithril Claws,16316,4079,1,0,0,0,0,2,45,13,2
 250610,Mithril Claymore,102353,20470,1,0,0,0,0,2,45,17,2
-250611,Mithril Stiletto,95857,19171,1,0,0,0,0,2,47,13,2
-250612,Charged Mithril Battleaxe,129879,25975,1,0,0,0,0,2,48,17,2
+250611,Mithril Stiletto,16532,4133,1,0,0,0,0,2,47,13,2
+250612,Charged Mithril Battleaxe,41092,10273,1,0,0,0,0,2,48,17,2
 250613,Thorium Greatmace,241921,48384,1,0,0,0,0,3,55,17,1
 250614,Thorium Cestus,194218,38843,1,0,0,0,0,3,55,13,1
 250615,Thorium Poleaxe,273764,54752,1,0,0,0,0,3,57,17,2
-250616,Bold Dirk,203863,40772,1,0,0,0,0,2,59,13,2
+250616,Bold Dirk,203863,40772,1,0,0,0,0,2,57,13,2
 250617,Stormcarver,372991,74598,1,0,0,0,0,3,63,17,2
 250618,Bagh Nakh,299458,59891,1,0,0,0,0,3,63,13,2
 250619,Legionite Glaive,375654,75130,1,0,0,0,0,3,63,17,1
 250620,Gemmed Copper Boots,2009,401,1,0,0,0,0,3,15,8,1
-250621,Strange Copper Boots,1824,364,1,0,0,0,0,3,15,8,1
+250621,Strange Copper Boots,972,243,1,0,0,0,0,3,15,8,1
 250932,Minor Spellblasting Potion,5,1,1,0,0,0,0,1,45,0,0
 250933,Lesser Spellblasting Potion,100,25,1,0,0,0,0,1,5,0,0
 250934,Spellblasting Potion,100,25,1,0,0,0,0,1,5,0,0
@@ -2806,11 +2798,10 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250949,Major Mender's Potion,5,1,1,0,0,0,0,1,25,0,0
 250950,Potion of Venomous Blood,5,1,1,0,0,0,0,1,55,0,0
 250951,Caustic Smog Potion,5,1,1,0,0,0,0,1,5,0,0
-250952,Disorienting Smog Potion,5,1,1,0,0,0,0,1,25,0,0
 250953,Dragonfire Potion,5,1,1,0,0,0,0,1,45,0,0
 250954,Potion of Elemental Purging,5,1,1,0,0,0,0,1,55,0,0
 250955,Potion of Beast Slaying,5,1,1,0,0,0,0,1,55,0,0
-250976,Recipe: Minor Spellblasting Potion,0,0,1,0,0,171,35,1,1,0,0
+250976,Recipe: Minor Spellblasting Potion,500,100,1,0,0,171,35,1,1,0,0
 250977,Recipe: Lesser Spellblasting Potion,0,0,1,0,0,171,85,1,1,0,0
 250978,Recipe: Spellblasting Potion,3375,675,1,0,0,171,135,1,1,0,1
 250979,Recipe: Greater Spellblasting Potion,0,0,1,0,0,171,185,2,1,0,1
@@ -2825,16 +2816,16 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 250988,Recipe: Minor Mender's Potion,0,0,1,0,0,171,30,1,1,0,0
 250989,Recipe: Lesser Mender's Potion,0,0,1,0,0,171,80,1,1,0,0
 250990,Recipe: Mender's Potion,3250,650,1,0,0,171,130,1,1,0,1
+250991,Recipe: Greater Mender's Potion,10000,2500,1,0,0,171,180,1,1,0,1
 250992,Recipe: Superior Mender's Potion,0,0,1,0,0,171,230,1,1,0,0
 250993,Recipe: Major Mender's Potion,7000,1400,1,0,0,171,280,1,1,0,1
 250994,Recipe: Potion of Venomous Blood,6875,1375,1,0,0,171,275,1,1,0,1
 250995,Recipe: Caustic Smog Potion,6625,1325,1,0,0,171,265,1,1,0,1
-250996,Recipe: Disorienting Smog Potion,4500,900,1,0,0,171,180,1,1,0,1
 250997,Recipe: Dragonfire Potion,6125,1225,1,0,0,171,245,1,1,0,1
 250998,Recipe: Potion of Elemental Purging,7000,1400,1,0,0,171,280,1,1,0,1
-250999,Recipe: Potion of Beast Slaying,0,0,1,0,0,171,280,1,1,0,0
+250999,Recipe: Potion of Beast Slaying,10000,2500,1,0,0,171,280,1,1,0,1
 251290,Legionite Bar,20000,5000,1,0,0,0,0,2,60,0,0
-251291,Heavy Thorium Bar,10000,2500,1,0,0,0,0,2,60,0,0
+251291,Heavy Thorium Bar,6000,1500,1,0,0,0,0,2,60,0,0
 251332,Plans: Gemmed Copper Boots,100,25,1,0,0,164,35,3,15,0,1
 251333,Plans: Strange Copper Boots,100,25,1,0,0,164,35,3,15,0,1
 251334,Plans: Glowing Copper Boots,100,25,1,0,0,164,35,3,15,0,1
@@ -2843,7 +2834,21 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 251337,Plans: Sterling Silver Gauntlet,1500,300,1,0,0,164,105,2,26,0,1
 251338,Plans: Sterling Silver Shoulders,2250,450,1,0,0,164,110,2,27,0,1
 251339,Plans: Sterling Silver Breastplate,2500,500,1,0,0,164,125,2,30,0,1
+251340,Plans: Veteran's Chain Shirt,750,150,1,0,0,164,80,3,20,0,1
 251341,Plans: Guard's Chain Shirt,750,150,1,0,0,164,80,3,20,0,1
+251342,Plans: Protector's Chain Shirt,750,150,1,0,0,164,80,3,20,0,1
+251343,Plans: Acolyte's Chain Shirt,750,150,1,0,0,164,80,3,20,0,1
+251344,Plans: Crusader's Chain Shirt,750,150,1,0,0,164,80,3,20,0,1
+251345,Plans: Veteran's Chain Leggings,1500,300,1,0,0,164,95,3,25,0,1
+251346,Plans: Guard's Chain Leggings,1500,300,1,0,0,164,95,3,25,0,1
+251347,Plans: Protector's Chain Leggings,1500,300,1,0,0,164,95,3,25,0,1
+251348,Plans: Acolyte's Chain Leggings,1500,300,1,0,0,164,95,3,25,0,1
+251349,Plans: Crusader's Chain Leggings,1500,300,1,0,0,164,95,3,25,0,1
+251350,Plans: Veteran's Chain Helm,2500,500,1,0,0,164,125,3,30,0,1
+251351,Plans: Guard's Chain Helm,2500,500,1,0,0,164,125,3,30,0,1
+251352,Plans: Protector's Chain Helm,2500,500,1,0,0,164,125,3,30,0,1
+251353,Plans: Acolyte's Chain Helm,2500,500,1,0,0,164,125,3,30,0,1
+251354,Plans: Crusader's Chain Helm,2500,500,1,0,0,164,125,3,30,0,1
 251355,Plans: Veteran's Boots,2125,425,1,0,0,164,85,3,22,0,1
 251356,Plans: Guard's Boots,2125,425,1,0,0,164,85,3,22,0,1
 251357,Plans: Protector's Boots,2125,425,1,0,0,164,85,3,22,0,1
@@ -2884,6 +2889,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 251392,Plans: Shining Mithril Breastplate,10000,2000,1,0,0,164,195,2,45,0,1
 251393,Plans: Shining Mithril Pauldrons,10000,2000,1,0,0,164,195,2,45,0,1
 251394,Plans: Shining Mithril Boots,10000,2000,1,0,0,164,200,2,45,0,1
+251395,Plans: Shining Mithril Helm,12500,2500,1,0,0,164,215,3,48,0,1
 251396,Plans: Shining Mithril Pants,12500,2500,1,0,0,164,220,2,49,0,1
 251397,Plans: Shining Mithril Gauntlet,12500,2500,1,0,0,164,220,2,49,0,1
 251398,Plans: Officer's Boots,10000,2000,1,0,0,164,200,3,45,0,1
@@ -2956,7 +2962,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 251465,Plans: Thorium Greatmace,6250,1250,1,0,0,164,250,3,55,0,1
 251466,Plans: Thorium Cestus,6250,1250,1,0,0,164,250,3,55,0,1
 251467,Plans: Thorium Poleaxe,25000,5000,1,0,0,164,260,3,57,0,1
-251468,Plans: Bold Dirk,100000,25000,1,0,0,164,270,3,59,0,1
+251468,Plans: Bold Dirk,100000,25000,1,0,0,164,270,3,57,0,1
 251469,Plans: Stormcarver,100000,20000,1,576,6,164,300,3,60,0,1
 251470,Plans: Bagh Nakh,100000,20000,1,576,6,164,300,3,60,0,1
 251471,Plans: Legionite Glaive,7500,1500,1,0,0,164,300,3,60,0,1
@@ -3096,11 +3102,11 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252531,Skulker's Leather Shoes,0,0,1,0,0,0,0,3,45,8,1
 252532,Skycaller's Leather Shoes,0,0,1,0,0,0,0,3,45,8,1
 252533,Mender's Leather Shoes,0,0,1,0,0,0,0,3,45,8,1
-252534,Prowler's Leather Shoulder,0,0,1,0,0,0,0,3,47,3,1
+252534,Prowler's Leather Shoulders,0,0,1,0,0,0,0,3,47,3,1
 252535,Skulker's Leather Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252536,Warden's Leather Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252537,Skycaller's Leather Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252538,Mender's Leather Shoulder,0,0,1,0,0,0,0,3,47,3,1
+252536,Warden's Leather Shoulders,0,0,1,0,0,0,0,3,47,3,1
+252537,Skycaller's Leather Shoulders,0,0,1,0,0,0,0,3,47,3,1
+252538,Mender's Leather Shoulders,0,0,1,0,0,0,0,3,47,3,1
 252539,Prowler's Leather Bracers,0,0,1,0,0,0,0,3,50,9,1
 252540,Skulker's Leather Bracers,0,0,1,0,0,0,0,3,50,9,1
 252541,Warden's Leather Bracers,0,0,1,0,0,0,0,3,50,9,1
@@ -3116,9 +3122,9 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252551,Mender's Leather Gauntlets,0,0,1,0,0,0,0,3,55,10,1
 252552,Tooled Leather Armor,0,0,1,0,0,0,0,2,56,5,2
 252553,Tooled Leather Gauntlets,0,0,1,0,0,0,0,2,57,10,2
-252554,Blue Suede Shoulder,0,0,1,0,0,0,0,2,57,3,2
+252554,Blue Suede Shoulders,0,0,1,0,0,0,0,2,57,3,2
 252555,Tooled Leather Crown,0,0,1,0,0,0,0,2,58,1,2
-252556,Wicked Leather Shoulder,0,0,1,0,0,0,0,2,59,3,2
+252556,Wicked Leather Shoulders,0,0,1,0,0,0,0,2,59,3,2
 252557,Tooled Leather Bracers,0,0,1,0,0,0,0,2,59,9,2
 252558,Tooled Leather Epaulets,0,0,1,0,0,0,0,2,60,3,2
 252559,Blue Suede Bracers,0,0,1,0,0,0,0,2,60,9,2
@@ -3128,10 +3134,10 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252563,Skycaller's Mail Boots,0,0,1,0,0,0,0,3,45,8,1
 252564,Skirmisher's Mail Boots,0,0,1,0,0,0,0,3,45,8,1
 252565,Mender's Mail Boots,0,0,1,0,0,0,0,3,45,8,1
-252566,Stalker's Mail Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252567,Skycaller's Mail Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252568,Skirmisher's Mail Shoulder,0,0,1,0,0,0,0,3,47,3,1
-252569,Mender's Mail Shoulder,0,0,1,0,0,0,0,3,47,3,1
+252566,Stalker's Mail Shoulders,0,0,1,0,0,0,0,3,47,3,1
+252567,Skycaller's Mail Shoulders,0,0,1,0,0,0,0,3,47,3,1
+252568,Skirmisher's Mail Shoulders,0,0,1,0,0,0,0,3,47,3,1
+252569,Mender's Mail Shoulders,0,0,1,0,0,0,0,3,47,3,1
 252570,Stalker's Mail Bracers,0,0,1,0,0,0,0,3,50,9,1
 252571,Skycaller's Mail Bracers,0,0,1,0,0,0,0,3,50,9,1
 252572,Skirmisher's Mail Bracers,0,0,1,0,0,0,0,3,50,9,1
@@ -3145,7 +3151,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252580,Supple Scorpid Leggings,0,0,1,0,0,0,0,2,53,7,2
 252581,Charged Scorpid Helm,0,0,1,0,0,0,0,2,53,1,2
 252582,Supple Scorpid Bracers,0,0,1,0,0,0,0,2,55,9,2
-252583,Charged Scorpid Shoulder,0,0,1,0,0,0,0,2,55,3,2
+252583,Charged Scorpid Shoulders,0,0,1,0,0,0,0,2,55,3,2
 252584,Stalker's Mail Gauntlets,0,0,1,0,0,0,0,3,55,10,1
 252585,Skycaller's Mail Gauntlets,0,0,1,0,0,0,0,3,55,10,1
 252586,Skirmisher's Mail Gauntlets,0,0,1,0,0,0,0,3,55,10,1
@@ -3154,7 +3160,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252589,Skycaller's Mail Belt,0,0,1,0,0,0,0,3,55,6,1
 252590,Skirmisher's Mail Belt,0,0,1,0,0,0,0,3,55,6,1
 252591,Mender's Mail Belt,0,0,1,0,0,0,0,3,55,6,1
-252592,Supple Scorpid Shoulder,0,0,1,0,0,0,0,2,56,3,2
+252592,Supple Scorpid Shoulders,0,0,1,0,0,0,0,2,56,3,2
 252593,Charged Scorpid Bracers,0,0,1,0,0,0,0,2,56,9,2
 252594,Heavy Scorpid Boots,0,0,1,0,0,0,0,2,56,8,2
 252595,Supple Scorpid Belt,0,0,1,0,0,0,0,2,56,6,2
@@ -3179,6 +3185,12 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252768,Pattern: Totemic Leather Belt,1500,300,1,0,0,165,60,3,17,0,1
 252769,Pattern: Stormrider's Leather Belt,1500,300,1,0,0,165,60,3,17,0,1
 252770,Pattern: Wisdom's Leather Belt,1500,300,1,0,0,165,60,3,17,0,1
+252771,Pattern: Brawler's Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
+252772,Pattern: Trapper's Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
+252773,Pattern: Defender's Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
+252774,Pattern: Totemic Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
+252775,Pattern: Stormrider's Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
+252776,Pattern: Wisdom's Leather Armor,1400,350,1,0,0,165,75,3,20,0,0
 252777,Pattern: Brawler's Leather Gloves,1875,375,1,0,0,165,75,3,20,0,1
 252778,Pattern: Trapper's Leather Gloves,1875,375,1,0,0,165,75,3,20,0,1
 252779,Pattern: Defender's Leather Gloves,1875,375,1,0,0,165,75,3,20,0,1
@@ -3187,16 +3199,22 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252782,Pattern: Wisdom's Leather Gloves,1875,375,1,0,0,165,75,3,20,0,1
 252783,Pattern: Mystic Medium Armor Kit,500,125,1,0,0,165,80,2,15,0,0
 252784,Pattern: Forceful Medium Armor Kit,500,125,1,0,0,165,80,2,15,0,0
-252801,Pattern: Totemic Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252786,Pattern: Brawler's Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
 252787,Pattern: Trapper's Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
 252788,Pattern: Defender's Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
 252789,Pattern: Totemic Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
 252790,Pattern: Stormrider's Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
 252791,Pattern: Wisdom's Leather Boots,2125,425,1,0,0,165,85,3,22,0,1
+252792,Pattern: Brawler's Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
+252793,Pattern: Trapper's Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
+252794,Pattern: Defender's Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
+252795,Pattern: Totemic Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
+252796,Pattern: Stormrider's Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
+252797,Pattern: Wisdom's Leather Pants,1600,400,1,0,0,165,100,3,25,0,0
 252798,Pattern: Brawler's Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252799,Pattern: Trapper's Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252800,Pattern: Defender's Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
+252801,Pattern: Totemic Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252802,Pattern: Stormrider's Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252803,Pattern: Wisdom's Leather Hood,2500,500,1,0,0,165,100,3,25,0,1
 252804,Pattern: Hillman's Leather Boots,2000,500,1,0,0,165,110,2,27,0,0
@@ -3208,6 +3226,12 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252810,Pattern: Wisdom's Leather Tunic,2750,550,1,0,0,165,110,3,27,0,1
 252811,Pattern: Mystic Heavy Armor Kit,2000,500,1,0,0,165,135,2,30,0,0
 252812,Pattern: Forceful Heavy Armor Kit,2000,500,1,0,0,165,135,2,30,0,0
+252814,Pattern: Brawler's Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
+252815,Pattern: Trapper's Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
+252816,Pattern: Defender's Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
+252817,Pattern: Totemic Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
+252818,Pattern: Stormrider's Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
+252819,Pattern: Wisdom's Leather Helm,2000,500,1,0,0,165,125,3,30,0,0
 252820,Pattern: Brawler's Leather Legguards,3125,625,1,0,0,165,125,3,30,0,1
 252821,Pattern: Trapper's Leather Legguards,3125,625,1,0,0,165,125,3,30,0,1
 252822,Pattern: Defender's Leather Kilt,3125,625,1,0,0,165,125,3,30,0,1
@@ -3235,11 +3259,11 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252845,Pattern: Warden's Leather Shoes,4500,1125,1,0,0,165,200,3,45,0,0
 252846,Pattern: Skycaller's Leather Shoes,4500,1125,1,0,0,165,200,3,45,0,0
 252847,Pattern: Mender's Leather Shoes,4500,1125,1,0,0,165,200,3,45,0,0
-252848,Pattern: Prowler's Leather Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
+252848,Pattern: Prowler's Leather Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
 252849,Pattern: Skulker's Leather Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252850,Pattern: Warden's Leather Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252851,Pattern: Skycaller's Leather Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252852,Pattern: Mender's Leather Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
+252850,Pattern: Warden's Leather Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
+252851,Pattern: Skycaller's Leather Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
+252852,Pattern: Mender's Leather Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
 252853,Pattern: Prowler's Leather Bracers,5625,1125,1,0,0,165,225,3,50,0,1
 252854,Pattern: Skulker's Leather Bracers,5625,1125,1,0,0,165,225,3,50,0,1
 252855,Pattern: Warden's Leather Bracers,5625,1125,1,0,0,165,225,3,50,0,1
@@ -3262,16 +3286,17 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252872,Pattern: Prowler's Leather Waistguard,6250,1250,1,0,0,165,250,3,55,0,1
 252873,Pattern: Skulker's Leather Waistguard,6250,1250,1,0,0,165,250,3,55,0,1
 252874,Pattern: Warden's Leather Waistguard,6250,1250,1,0,0,165,250,3,55,0,1
+253921,Pearly Gloves,1733,346,1,0,0,0,0,3,20,10,1
 252875,Pattern: Skycaller's Leather Waistguard,6250,1250,1,0,0,165,250,3,55,0,1
 252876,Pattern: Mender's Leather Waistguard,6250,1250,1,0,0,165,250,3,55,0,1
 252877,Pattern: Tooled Leather Armor,100000,25000,1,0,0,165,255,2,56,0,1
 252878,Pattern: Blue Suede Pants,20000,5000,1,0,0,165,255,2,56,0,0
 252879,Pattern: Wicked Leather Boots,20000,5000,1,0,0,165,260,2,57,0,0
 252880,Pattern: Tooled Leather Gauntlets,20000,5000,1,0,0,165,260,2,57,0,0
-252881,Pattern: Blue Suede Shoulder,20000,5000,1,0,0,165,260,2,57,0,0
+252881,Pattern: Blue Suede Shoulders,20000,5000,1,0,0,165,260,2,57,0,0
 252882,Pattern: Tooled Leather Crown,22000,5500,1,0,0,165,265,2,58,0,0
 252883,Pattern: Blue Suede Armor,22000,5500,1,0,0,165,265,2,58,0,1
-252884,Pattern: Wicked Leather Shoulder,25000,6250,1,0,0,165,270,2,59,0,0
+252884,Pattern: Wicked Leather Shoulders,25000,6250,1,0,0,165,270,2,59,0,0
 252885,Pattern: Tooled Leather Bracers,25000,6250,1,0,0,165,270,2,59,0,0
 252886,Pattern: Blue Suede Belt,25000,6250,1,0,0,165,270,2,59,0,0
 252887,Pattern: Tooled Leather Epaulets,30000,7500,1,0,0,165,275,2,60,0,0
@@ -3287,10 +3312,10 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252897,Pattern: Skycaller's Mail Boots,4500,1125,1,0,0,165,200,3,45,0,0
 252898,Pattern: Skirmisher's Mail Boots,4500,1125,1,0,0,165,200,3,45,0,0
 252899,Pattern: Mender's Mail Boots,4500,1125,1,0,0,165,200,3,45,0,0
-252900,Pattern: Stalker's Mail Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252901,Pattern: Skycaller's Mail Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252902,Pattern: Skirmisher's Mail Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
-252903,Pattern: Mender's Mail Shoulder,5250,1050,1,0,0,165,210,3,47,0,1
+252900,Pattern: Stalker's Mail Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
+252901,Pattern: Skycaller's Mail Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
+252902,Pattern: Skirmisher's Mail Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
+252903,Pattern: Mender's Mail Shoulders,5250,1050,1,0,0,165,210,3,47,0,1
 252904,Pattern: Stalker's Mail Bracers,5625,1125,1,0,0,165,225,3,50,0,1
 252905,Pattern: Skycaller's Mail Bracers,5625,1125,1,0,0,165,225,3,50,0,1
 252906,Pattern: Skirmisher's Mail Bracers,5625,1125,1,0,0,165,225,3,50,0,1
@@ -3304,7 +3329,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252914,Pattern: Supple Scorpid Leggings,12000,3000,1,0,0,165,240,2,53,0,0
 252915,Pattern: Charged Scorpid Helm,12000,3000,1,0,0,165,240,2,53,0,0
 252916,Pattern: Supple Scorpid Bracers,16000,4000,1,0,0,165,250,2,55,0,0
-252917,Pattern: Charged Scorpid Shoulder,16000,4000,1,0,0,165,250,2,55,0,0
+252917,Pattern: Charged Scorpid Shoulders,16000,4000,1,0,0,165,250,2,55,0,0
 252918,Pattern: Stalker's Mail Gauntlets,16000,4000,1,0,0,165,250,3,55,0,0
 252919,Pattern: Skycaller's Mail Gauntlets,16000,4000,1,0,0,165,250,3,55,0,0
 252920,Pattern: Skirmisher's Mail Gauntlets,16000,4000,1,0,0,165,250,3,55,0,0
@@ -3313,7 +3338,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252923,Pattern: Skycaller's Mail Belt,6250,1250,1,0,0,165,250,3,55,0,1
 252924,Pattern: Skirmisher's Mail Belt,6250,1250,1,0,0,165,250,3,55,0,1
 252925,Pattern: Mender's Mail Belt,6250,1250,1,0,0,165,250,3,55,0,1
-252926,Pattern: Supple Scorpid Shoulder,20000,5000,1,0,0,165,255,2,56,0,0
+252926,Pattern: Supple Scorpid Shoulders,20000,5000,1,0,0,165,255,2,56,0,0
 252927,Pattern: Charged Scorpid Bracers,20000,5000,1,0,0,165,255,2,56,0,0
 252928,Pattern: Heavy Scorpid Boots,20000,5000,1,0,0,165,255,2,56,0,0
 252929,Pattern: Supple Scorpid Belt,20000,5000,1,0,0,165,255,2,56,0,0
@@ -3332,7 +3357,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 252942,Pattern: Forceful Rugged Armor Kit,5500,1375,1,0,0,165,235,2,50,0,0
 253664,Linen Reagent Bag,20000,200,1,0,0,0,0,1,5,18,2
 253665,Pattern: Linen Reagent Bag,150,30,1,0,0,197,5,2,5,0,0
-253667,Woolen Reagent Bag,20000,5000,1,0,0,0,0,1,15,18,2
+253667,Woolen Reagent Bag,5000,1250,1,0,0,0,0,1,15,18,2
 253668,Pattern: Woolen Reagent Bag,250,50,1,0,0,197,70,2,10,0,0
 253885,Novice Arcanist's Sash,874,174,1,0,0,0,0,3,15,6,1
 253886,Pattern: Novice Arcanist's Sash,250,50,1,0,0,197,50,3,15,0,0
@@ -3370,7 +3395,6 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 253918,Pattern: Flame Gloves,1875,375,1,0,0,197,75,3,20,0,1
 253919,Shadow Gloves,1720,344,1,0,0,0,0,3,20,10,1
 253920,Pattern: Shadow Gloves,1875,375,1,0,0,197,75,3,20,0,1
-253921,Pearly Gloves,1733,346,1,0,0,0,0,3,20,10,1
 253922,Pattern: Pearly Gloves,1875,375,1,0,0,197,75,3,20,0,1
 253923,Shining Gloves,1745,349,1,0,0,0,0,3,20,10,1
 253924,Pattern: Shining Gloves,1875,375,1,0,0,197,75,3,20,0,1
@@ -3572,8 +3596,8 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 254120,Pattern: Earthenweave Mantle,25000,5000,1,0,0,197,240,2,57,0,0
 254121,Earthenweave Vest,76310,15262,1,0,0,0,0,2,59,5,2
 254122,Pattern: Earthenweave Vest,31250,6250,1,0,0,197,250,2,59,0,0
-254123,Runecloth Cuffs,38443,7688,1,0,0,0,0,2,59,9,2
-254124,Pattern: Runecloth Cuffs,100000,25000,1,0,0,197,250,2,59,0,1
+254123,Runecloth Cuffs,38443,7688,1,0,0,0,0,2,57,9,2
+254124,Pattern: Runecloth Cuffs,100000,25000,1,0,0,197,250,2,57,0,1
 254125,Earthenweave Leggings,73782,14756,1,0,0,0,0,2,58,7,2
 254126,Pattern: Earthenweave Leggings,31250,6250,1,0,0,197,245,2,58,0,0
 254127,Ghostweave Mantle,60104,12020,1,0,0,0,0,2,59,3,2
@@ -3631,7 +3655,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 260804,SAF-T Casing,4000,1000,1,0,0,0,0,1,43,0,0
 260805,SAF-T Bomb,3000,750,1,0,0,0,0,1,48,0,0
 260806,Emergency Field Cloak,20000,5000,1,0,0,0,0,1,40,12,1
-260807,Compact Critter Carrier,1000,200,1,0,0,0,0,1,45,0,0
+260807,Compact Critter Carrier,1000,200,1,0,0,202,225,1,45,0,0
 260808,EZ-Thro Tru-Trigger,4400,1100,1,0,0,0,0,1,48,0,0
 260809,Tru-Trigger Frag Bomb,3000,750,1,0,0,0,0,1,48,0,0
 260810,SAF-T Disposable Parachute,23482,4696,1,0,0,0,0,1,50,16,2
@@ -3654,7 +3678,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 260827,Stealthman 52,20000,5000,1,0,0,202,250,2,60,0,0
 260828,SAF-T Nitro Boosts,5000,1250,1,0,0,0,0,2,60,6,2
 260829,EZ-Thro Magnetic Displacer,5000,1250,1,0,0,0,0,2,60,6,2
-260830,SAF-T Teleport,5000,1250,1,0,0,0,0,2,60,6,2
+260830,SAF-T Teleport,5000,1250,1,0,0,0,0,2,60,0,0
 263509,Skywall Souffle,400,100,1,0,0,0,0,1,15,0,0
 263511,Recipe: Skywall Souffle,200,50,1,0,0,185,25,1,15,0,0
 263512,Pincer Bites,400,100,1,0,0,0,0,1,15,0,0
@@ -3805,10 +3829,10 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 274274,Flask of Natural Aggression,20000,5000,1,0,0,0,0,2,60,0,0
 274275,Flask of Natural Precision,20000,5000,1,0,0,0,0,2,60,0,0
 274276,Flask of Natural Swiftness,20000,5000,1,0,0,0,0,2,60,0,0
-274277,Recipe: Flask of Natural Accuracy,200000,0,1,0,0,171,300,4,1,0,1
-274278,Recipe: Flask of Natural Aggression,200000,0,1,0,0,171,300,4,1,0,1
-274279,Recipe: Flask of Natural Precision,200000,0,1,0,0,171,300,4,1,0,1
-274280,Recipe: Flask of Natural Swiftness,200000,0,1,0,0,171,300,4,1,0,1
+274277,Recipe: Flask of Natural Accuracy,200000,0,1,0,0,171,300,3,1,0,1
+274278,Recipe: Flask of Natural Aggression,200000,0,1,0,0,171,300,3,1,0,1
+274279,Recipe: Flask of Natural Precision,200000,0,1,0,0,171,300,3,1,0,1
+274280,Recipe: Flask of Natural Swiftness,200000,0,1,0,0,171,300,3,1,0,1
 274387,Swiftfeather Arrow,0,0,200,0,0,0,0,4,65,24,1
 274388,Swiftstrike Shot,0,0,200,0,0,0,0,4,65,24,1
 274389,Schematic: Swiftfeather Arrow,200000,0,1,0,0,202,300,4,1,0,1
@@ -3822,7 +3846,7 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 274399,Formula: Enchant Cloak - Agility,7500,1500,1,0,0,333,300,3,1,0,1
 274400,Formula: Enchant Shield - Critical Strike,5000,1250,1,0,0,333,300,3,1,0,1
 274401,Formula: Enchant Bracer - Greater Spellpower,7500,1500,1,0,0,333,300,3,1,0,1
-274415,Recipe: Sweetpaw Jam,0,0,1,0,0,185,275,1,1,0,1
+274415,Recipe: Sweetpaw Jam,5000,1000,1,0,0,185,275,1,1,0,1
 274424,Formula: Enchant Gloves - Lotus Claw,5000,1250,1,0,0,333,295,2,55,0,1
 274971,Briny Seafood Stew,240,12,5,0,0,0,0,1,35,0,0
 274972,Recipe: Briny Seafood Stew,2000,500,1,0,0,185,200,1,50,0,1
@@ -4106,11 +4130,11 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 279990,Alchemy Laboratory,40000,0,1,0,0,171,300,1,60,0,0
 280306,Whimsical Waistwrap,8550,1710,1,0,0,202,175,2,35,6,1
 280307,Gizmo Girdle,8582,1716,1,0,0,202,175,2,35,6,1
-280308,Clanking Cord,8614,1722,1,0,0,202,175,2,35,6,1
+280308,Clanking Cord,4132,1033,1,0,0,202,175,2,35,6,1
 280310,Floppy Goggles,24939,4987,1,0,0,202,200,2,45,1,1
-280311,Bent Goggles,31366,6273,1,0,0,202,200,2,45,1,1
-280312,Stuckbutton Goggles,37842,7568,1,0,0,202,200,2,45,1,1
-280313,Dented Goggles,44027,8805,1,0,0,202,200,2,45,1,1
+280311,Bent Goggles,15056,3764,1,0,0,202,200,2,45,1,1
+280312,Stuckbutton Goggles,15136,3784,1,0,0,202,200,2,45,1,1
+280313,Dented Goggles,8804,2201,1,0,0,202,200,2,45,1,1
 280321,Schematic: Whimsical Waistwrap,4375,875,1,0,0,202,175,2,1,0,1
 280322,Schematic: Gizmo Girdle,4375,875,1,0,0,202,175,2,1,0,1
 280323,Schematic: Clanking Cord,4375,875,1,0,0,202,175,2,1,0,1
@@ -4122,20 +4146,20 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 284869,Unsanctified Grenade,6000,1500,1,0,0,0,0,1,52,0,0
 284870,Schematic: Unsanctified Grenade,12000,3000,1,0,0,202,260,1,52,0,0
 284871,Recipe: Transmute Legionite,50000,12500,1,0,0,171,275,1,55,0,0
-285275,Satchel of Copper Bombs,37,9,1,0,0,2941,85,2,18,25,1
-285276,Satchel of Bronze Bombs,37,9,1,0,0,2941,165,2,33,25,1
-285277,Satchel of Iron Bombs,37,9,1,0,0,2941,230,2,46,25,1
-285278,Satchel of Dark Iron Bombs,37,9,1,0,0,2941,285,2,57,25,1
-285279,Cracked Blacksmith Hammer,37,9,1,0,0,0,0,2,22,25,1
-285280,Mithril Blacksmith Hammer,37,9,1,0,0,2938,195,2,39,25,1
-285281,Arcanite Blacksmith Hammer,37,9,1,0,0,2938,270,3,54,25,1
+285275,Satchel of Copper Bombs,4105,821,1,0,0,2941,85,2,18,25,1
+285276,Satchel of Bronze Bombs,22422,4484,1,0,0,2941,165,2,33,25,1
+285277,Satchel of Iron Bombs,65623,13124,1,0,0,2941,230,2,46,25,1
+285278,Satchel of Dark Iron Bombs,133011,26602,1,0,0,2941,285,2,57,25,1
+285279,Cracked Blacksmith Hammer,7056,1411,1,0,0,0,0,2,22,25,1
+285280,Mithril Blacksmith Hammer,38290,7658,1,0,0,2938,195,2,39,25,1
+285281,Arcanite Blacksmith Hammer,130932,26186,1,0,0,2938,270,3,54,25,1
 285285,Schematic: Satchel of Copper Bombs,5000,1000,1,0,0,202,85,2,1,0,1
 285286,Schematic: Satchel of Bronze Bombs,5000,1000,1,0,0,202,165,2,1,0,1
 285287,Schematic: Satchel of Iron Bombs,5000,1000,1,0,0,202,230,2,1,0,1
 285288,Schematic: Satchel of Dark Iron Bombs,5000,1000,1,0,0,202,285,2,1,0,1
-285289,Plans: Cracked Blacksmith Hammer,5000,1000,1,0,0,202,110,2,1,0,1
-285290,Plans: Mithril Blacksmith Hammer,5000,1000,1,0,0,202,195,2,1,0,1
-285291,Plans: Arcanite Blacksmith Hammer,5000,1000,1,0,0,202,270,3,1,0,1
+285289,Plans: Cracked Blacksmith Hammer,5000,1000,1,0,0,164,110,2,1,0,1
+285290,Plans: Mithril Blacksmith Hammer,5000,1000,1,0,0,164,195,2,1,0,1
+285291,Plans: Arcanite Blacksmith Hammer,5000,1000,1,0,0,164,270,3,1,0,1
 286076,Schematic: Small Purple Rocket,700,175,1,0,0,202,125,2,25,0,1
 286077,Schematic: Small White Rocket,700,175,1,0,0,202,125,2,25,0,1
 286078,Schematic: Small Yellow Rocket,700,175,1,0,0,202,125,2,25,0,1
@@ -4150,3 +4174,4 @@ ID,Display_lang,BuyPrice,SellPrice,VendorStackCount,MinFactionID,MinReputation,R
 286087,Schematic: Large Yellow Rocket Cluster,1100,275,1,0,0,202,275,2,35,0,1
 286152,Plated Armorfish,32,8,1,0,0,0,0,1,45,0,0
 286153,Recipe: Plated Armorfish,0,0,1,0,0,185,225,1,45,0,1
+289560,Formula: Enchant Boots - Speed,6200,1550,1,0,0,333,280,2,50,0,0

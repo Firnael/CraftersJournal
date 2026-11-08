@@ -10,6 +10,7 @@
 Uso:  python gen_profession.py [Leatherworking]
 """
 import csv
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -81,13 +82,19 @@ FOREVER_SELL = HERE / "forever" / "sell_prices.csv"
 MERCHANTS_FAVOR = HERE / "forever" / "merchants_favor.csv"
 
 
+def favor_key(name):
+    """Nombre para cruzar con merchants_favor.csv: en minúsculas y sin la "s" final de
+    "Shoulders" (el cliente definitivo renombró "Mender's Mail Shoulder" a "...Shoulders")."""
+    return re.sub(r"shoulders$", "shoulder", (name or "").lower())
+
+
 def merchants_favor(prof):
-    """{ nombre de receta en minúsculas: (coste, reputación) } de una profesión."""
+    """{ favor_key(receta): (coste, reputación) } de una profesión."""
     if not MERCHANTS_FAVOR.exists():
         return {}
     with open(MERCHANTS_FAVOR, encoding="utf-8") as f:
         rows = csv.DictReader(line for line in f if not line.startswith("#"))
-        return {r["recipe"].lower(): (int(r["favor"]), int(r["rep"])) for r in rows if r["profession"] == prof}
+        return {favor_key(r["recipe"]): (int(r["favor"]), int(r["rep"])) for r in rows if r["profession"] == prof}
 
 
 def quest_trainers():
@@ -282,7 +289,9 @@ def main():
     # Recetas: las de la profesión con materiales que dan puntos (amarilla < gris).
     # Umbrales del cliente: naranja = nivel para aprenderla, amarilla, gris; verde a mitad.
     # Fuera las que piden un material que no existe en el cliente de Forever (restos
-    # de Season of Discovery: Flask of Madness, Obsidian Reaver...): no se pueden hacer
+    # de Season of Discovery: Flask of Madness, Obsidian Reaver...): no se pueden hacer.
+    # El resultado no se comprueba: a ItemSparse de wago le faltan muchos objetos que sí
+    # existen (Rune Edge, Demon Forged Breastplate: los manda el servidor)
     recipes, thresholds, impossible = {}, {}, []
     for spell, r in sla.items():
         orange, yellow, grey = int(r["MinSkillLineRank"]), int(r["TrivialSkillLineRankLow"]), int(r["TrivialSkillLineRankHigh"])
@@ -305,7 +314,7 @@ def main():
         sc = c["scrolls"].get(s)
         if s in c["fees"]:
             data = 3
-        elif sc and (sc in sourced or c["names"].get(s, "").lower() in favor_names):
+        elif sc and (sc in sourced or favor_key(c["names"].get(s)) in favor_names):
             data = 2
         elif sc:
             data = 1
@@ -458,7 +467,7 @@ def main():
             # Todo objeto trae precio de compra en el cliente, lo venda alguien o no: solo
             # vale si algún vendedor lo vende (QuestieDB) y no es de Merchant's Favor (fichas)
             scroll_buy = item_info.get(scroll, (None, 0, 0))[1]
-            mf_name = c["names"].get(sid, "").lower() in favor
+            mf_name = favor_key(c["names"].get(sid)) in favor
             if scroll_buy > 0 and not mf_name and sold_by_vendor(scroll):
                 # Lo que cuesta si lo vende un PNJ (quién lo vende se lee de QuestieDB en el juego)
                 parts.append(f"scrollPrice = {int(round(scroll_buy))}")
@@ -474,9 +483,9 @@ def main():
             # Solo las de nivel bajo: las altas sin instructor ni pergamino son de misión o
             # reputación (Gordok Ogre Suit, Mooncloth Boots...) y no se pueden dar por instructor
             parts.append(f"trainer = true, train = {t[1]}")
-        mf = favor.get(c["names"].get(sid, "").lower())
+        mf = favor.get(favor_key(c["names"].get(sid)))
         if mf:
-            favor_found.add(c["names"][sid].lower())
+            favor_found.add(favor_key(c["names"][sid]))
             parts.append(f"favor = {mf[0]}" + (f", favorRep = {mf[1]}" if mf[1] else ""))
         faction = faction_of(sla[sid])
         if faction:

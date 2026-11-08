@@ -229,7 +229,7 @@ ES.Data.Tailoring = {
     [22870] = { name = "Cloak of Warding", t = { 1, 295, 310, 325 }, scroll = 18418, train = 280, sq = 3, r = { { 14048, 12 }, { 12809, 4 }, { 12360, 1 }, { 14341, 2 } }, out = { 18413, 1 }, oq = 3 },
     [22902] = { name = "Mooncloth Robe", t = { 1, 290, 305, 320 }, scroll = 18487, train = 275, scrollPrice = 40000, sq = 1, r = { { 14048, 6 }, { 14342, 4 }, { 13926, 2 }, { 14341, 2 } }, out = { 18486, 1 }, oq = 3 },
     [23662] = { name = "Wisdom of the Timbermaw", t = { 1, 270, 285, 300 }, scroll = 19215, train = 255, scrollPrice = 22000, rep = { 576, 5 }, sq = 1, r = { { 14048, 8 }, { 7076, 3 }, { 12803, 3 }, { 14227, 2 } }, out = { 19047, 1 }, oq = 3 },
-    [23663] = { name = "Mantle of the Timbermaw", t = { 1, 305, 319, 334 }, scroll = 19218, train = 290, scrollPrice = 40000, rep = { 576, 6 }, sq = 1, r = { { 14342, 5 }, { 7076, 5 }, { 12803, 5 }, { 14227, 2 } }, out = { 19050, 1 }, oq = 3 },
+    [23663] = { name = "Mantle of the Timbermaw", t = { 1, 305, 319, 334 }, scroll = 19218, train = 290, scrollPrice = 40000, rep = { 576, 6 }, sq = 3, r = { { 14342, 5 }, { 7076, 5 }, { 12803, 5 }, { 14227, 2 } }, out = { 19050, 1 }, oq = 3 },
     [23664] = { name = "Argent Boots", t = { 1, 270, 285, 300 }, scroll = 227896, train = 290, rep = { 529, 5 }, sq = 1, r = { { 14048, 6 }, { 12810, 4 }, { 13926, 2 }, { 12809, 2 }, { 14227, 2 } }, out = { 19056, 1 }, oq = 3 },
     [23665] = { name = "Argent Shoulders", t = { 1, 305, 320, 335 }, scroll = 227897, train = 300, rep = { 529, 6 }, sq = 1, r = { { 14342, 5 }, { 12809, 2 }, { 14227, 2 } }, out = { 19059, 1 }, oq = 3 },
     [23666] = { name = "Flarecore Robe", t = { 1, 315, 330, 345 }, scroll = 19219, train = 300, scrollPrice = 60000, rep = { 59, 5 }, sq = 1, r = { { 14342, 10 }, { 17010, 2 }, { 17011, 3 }, { 7078, 6 }, { 14227, 4 } }, out = { 19156, 1 }, oq = 4 },
@@ -622,7 +622,7 @@ ES.Data.SellPrices[10002] = 5276
 ES.Data.SellPrices[10003] = 2859
 ES.Data.SellPrices[10004] = 5738
 ES.Data.SellPrices[10007] = 5799
-ES.Data.SellPrices[10008] = 4365
+ES.Data.SellPrices[10008] = 3492
 ES.Data.SellPrices[10009] = 5284
 ES.Data.SellPrices[10010] = 5729
 ES.Data.SellPrices[10011] = 2875
@@ -789,20 +789,20 @@ ES.Data.SellPrices[22757] = 24961
 ES.Data.SellPrices[22758] = 25051
 ES.Data.SellPrices[34085] = 7
 ES.Data.SellPrices[34087] = 7
-ES.Data.SellPrices[210781] = 2481
+ES.Data.SellPrices[210781] = 744
 ES.Data.SellPrices[213379] = 280
 ES.Data.SellPrices[215365] = 1371
 ES.Data.SellPrices[215366] = 864
 ES.Data.SellPrices[227844] = 40000
 ES.Data.SellPrices[249391] = 100
-ES.Data.SellPrices[249409] = 125
+ES.Data.SellPrices[249409] = 75
 ES.Data.SellPrices[249427] = 125
 ES.Data.SellPrices[249428] = 250
 ES.Data.SellPrices[249429] = 375
 ES.Data.SellPrices[249430] = 250
 ES.Data.SellPrices[249431] = 375
 ES.Data.SellPrices[253664] = 200
-ES.Data.SellPrices[253667] = 5000
+ES.Data.SellPrices[253667] = 1250
 ES.Data.SellPrices[253889] = 351
 ES.Data.SellPrices[253891] = 320
 ES.Data.SellPrices[253893] = 323

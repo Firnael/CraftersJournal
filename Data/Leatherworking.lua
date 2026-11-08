@@ -35,8 +35,8 @@ ES.Data.Leatherworking = {
     [2163] = { name = "White Leather Jerkin", t = { 1, 70, 85, 100 }, scroll = 2407, train = 40, sq = 2, r = { { 2318, 8 }, { 2320, 2 }, { 2324, 1 } }, out = { 2311, 1 }, oq = 2 },
     [2164] = { name = "Fine Leather Gloves", t = { 1, 80, 95, 110 }, scroll = 2408, train = 50, sq = 2, r = { { 4231, 1 }, { 2318, 4 }, { 2320, 2 } }, out = { 2312, 1 }, oq = 2 },
     [2165] = { name = "Medium Armor Kit", t = { 1, 90, 97, 105 }, fee = 250, train = 75, r = { { 2319, 4 }, { 2320, 1 } }, out = { 2313, 1 }, oq = 1 },
-    [2166] = { name = "Toughened Leather Armor", t = { 1, 120, 132, 145 }, fee = 1400, train = 95, r = { { 2319, 10 }, { 4231, 2 }, { 2321, 2 } }, out = { 2314, 1 }, oq = 1 },
-    [2167] = { name = "Dark Leather Boots", t = { 1, 100, 112, 125 }, fee = 650, train = 75, r = { { 2319, 4 }, { 2321, 2 }, { 4340, 1 } }, out = { 2315, 1 }, oq = 2 },
+    [2166] = { name = "Toughened Leather Armor", t = { 1, 120, 132, 145 }, fee = 1400, train = 95, r = { { 2319, 10 }, { 4231, 2 }, { 2321, 2 } }, out = { 2314, 1 }, oq = 2 },
+    [2167] = { name = "Gray Leather Boots", t = { 1, 100, 112, 125 }, fee = 650, train = 75, r = { { 2319, 4 }, { 2321, 2 }, { 4340, 1 } }, out = { 2315, 1 }, oq = 2 },
     [2168] = { name = "Dark Leather Cloak", t = { 1, 110, 122, 135 }, fee = 1000, train = 85, r = { { 2319, 8 }, { 2321, 1 }, { 4340, 1 } }, out = { 2316, 1 }, oq = 2 },
     [2169] = { name = "Dark Leather Tunic", t = { 1, 100, 112, 125 }, scroll = 2409, train = 75, sq = 2, r = { { 2319, 6 }, { 2321, 1 }, { 4340, 1 } }, out = { 2317, 1 }, oq = 2 },
     [2881] = { name = "Light Leather", t = { 1, 20, 30, 40 }, basic = true, r = { { 2934, 3 } }, out = { 2318, 1 }, oq = 1 },
@@ -320,12 +320,12 @@ ES.Data.Leatherworking = {
     [1254978] = { name = "Supple Scorpid Belt", t = { 1, 275, 285, 295 }, scroll = 252929, train = 255, sq = 2, r = { { 8170, 9 }, { 15408, 6 }, { 14341, 1 } }, out = { 252595, 1 }, oq = 2 },
     [1254979] = { name = "Heavy Scorpid Boots", t = { 1, 275, 285, 295 }, scroll = 252928, train = 255, sq = 2, r = { { 8170, 6 }, { 15408, 8 }, { 14341, 1 } }, out = { 252594, 1 }, oq = 2 },
     [1254980] = { name = "Charged Scorpid Bracers", t = { 1, 275, 285, 295 }, scroll = 252927, train = 255, sq = 2, r = { { 8170, 2 }, { 15408, 4 }, { 14341, 1 }, { 7069, 2 } }, out = { 252593, 1 }, oq = 2 },
-    [1254981] = { name = "Supple Scorpid Shoulder", t = { 1, 275, 285, 295 }, scroll = 252926, train = 255, sq = 2, r = { { 8170, 9 }, { 15408, 6 }, { 14341, 1 } }, out = { 252592, 1 }, oq = 2 },
+    [1254981] = { name = "Supple Scorpid Shoulders", t = { 1, 275, 285, 295 }, scroll = 252926, train = 255, sq = 2, r = { { 8170, 9 }, { 15408, 6 }, { 14341, 1 } }, out = { 252592, 1 }, oq = 2 },
     [1254982] = { name = "Mender's Mail Belt", t = { 1, 270, 280, 290 }, scroll = 252925, train = 250, sq = 3, favor = 90, favorRep = 6, r = { { 8170, 12 }, { 8172, 4 }, { 249428, 10 }, { 8343, 2 }, { 5500, 8 }, { 249427, 5 } }, out = { 252591, 1 }, oq = 3, bop = true },
     [1254983] = { name = "Skirmisher's Mail Belt", t = { 1, 270, 280, 290 }, scroll = 252924, train = 250, sq = 3, favor = 90, favorRep = 6, r = { { 8170, 12 }, { 8172, 4 }, { 249428, 10 }, { 8343, 2 }, { 3864, 8 }, { 249427, 5 } }, out = { 252590, 1 }, oq = 3, bop = true },
     [1254984] = { name = "Skycaller's Mail Belt", t = { 1, 270, 280, 290 }, scroll = 252923, train = 250, sq = 3, favor = 90, favorRep = 6, r = { { 8170, 12 }, { 8172, 4 }, { 249428, 10 }, { 8343, 2 }, { 7070, 8 }, { 249427, 5 } }, out = { 252589, 1 }, oq = 3, bop = true },
     [1254985] = { name = "Stalker's Mail Belt", t = { 1, 270, 280, 290 }, scroll = 252922, train = 250, sq = 3, favor = 90, favorRep = 6, r = { { 8170, 12 }, { 8172, 4 }, { 249428, 10 }, { 8343, 2 }, { 7069, 8 }, { 249427, 5 } }, out = { 252588, 1 }, oq = 3, bop = true },
-    [1254990] = { name = "Charged Scorpid Shoulder", t = { 1, 270, 280, 290 }, scroll = 252917, train = 250, sq = 2, r = { { 8170, 4 }, { 15408, 8 }, { 14341, 1 }, { 7069, 2 } }, out = { 252583, 1 }, oq = 2 },
+    [1254990] = { name = "Charged Scorpid Shoulders", t = { 1, 270, 280, 290 }, scroll = 252917, train = 250, sq = 2, r = { { 8170, 4 }, { 15408, 8 }, { 14341, 1 }, { 7069, 2 } }, out = { 252583, 1 }, oq = 2 },
     [1254991] = { name = "Supple Scorpid Bracers", t = { 1, 270, 280, 290 }, scroll = 252916, train = 250, sq = 2, r = { { 8170, 7 }, { 15408, 2 }, { 14341, 1 } }, out = { 252582, 1 }, oq = 2 },
     [1254992] = { name = "Charged Scorpid Helm", t = { 1, 260, 270, 280 }, scroll = 252915, train = 240, sq = 2, r = { { 8170, 4 }, { 15408, 6 }, { 14341, 1 }, { 7069, 2 } }, out = { 252581, 1 }, oq = 2 },
     [1254993] = { name = "Supple Scorpid Leggings", t = { 1, 260, 270, 280 }, scroll = 252914, train = 240, sq = 2, r = { { 8170, 9 }, { 15408, 4 }, { 14341, 1 } }, out = { 252580, 1 }, oq = 2 },
@@ -339,10 +339,10 @@ ES.Data.Leatherworking = {
     [1255001] = { name = "Skirmisher's Mail Bracers", t = { 1, 220, 230, 240 }, scroll = 252906, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 3864, 4 }, { 249427, 3 } }, out = { 252572, 1 }, oq = 3, bop = true },
     [1255002] = { name = "Skycaller's Mail Bracers", t = { 1, 220, 230, 240 }, scroll = 252905, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 7070, 4 }, { 249427, 3 } }, out = { 252571, 1 }, oq = 3, bop = true },
     [1255003] = { name = "Stalker's Mail Bracers", t = { 1, 220, 230, 240 }, scroll = 252904, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 7069, 4 }, { 249427, 3 } }, out = { 252570, 1 }, oq = 3, bop = true },
-    [1255004] = { name = "Mender's Mail Shoulder", t = { 1, 220, 230, 240 }, scroll = 252903, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 5500, 3 }, { 249427, 2 } }, out = { 252569, 1 }, oq = 3, bop = true },
-    [1255005] = { name = "Skirmisher's Mail Shoulder", t = { 1, 220, 230, 240 }, scroll = 252902, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 3864, 3 }, { 249427, 2 } }, out = { 252568, 1 }, oq = 3, bop = true },
-    [1255006] = { name = "Skycaller's Mail Shoulder", t = { 1, 220, 230, 240 }, scroll = 252901, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7070, 3 }, { 249427, 2 } }, out = { 252567, 1 }, oq = 3, bop = true },
-    [1255007] = { name = "Stalker's Mail Shoulder", t = { 1, 220, 230, 240 }, scroll = 252900, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7069, 3 }, { 249427, 2 } }, out = { 252566, 1 }, oq = 3, bop = true },
+    [1255004] = { name = "Mender's Mail Shoulders", t = { 1, 220, 230, 240 }, scroll = 252903, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 5500, 3 }, { 249427, 2 } }, out = { 252569, 1 }, oq = 3, bop = true },
+    [1255005] = { name = "Skirmisher's Mail Shoulders", t = { 1, 220, 230, 240 }, scroll = 252902, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 3864, 3 }, { 249427, 2 } }, out = { 252568, 1 }, oq = 3, bop = true },
+    [1255006] = { name = "Skycaller's Mail Shoulders", t = { 1, 220, 230, 240 }, scroll = 252901, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7070, 3 }, { 249427, 2 } }, out = { 252567, 1 }, oq = 3, bop = true },
+    [1255007] = { name = "Stalker's Mail Shoulders", t = { 1, 220, 230, 240 }, scroll = 252900, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7069, 3 }, { 249427, 2 } }, out = { 252566, 1 }, oq = 3, bop = true },
     [1255012] = { name = "Ironfeather Leggings", t = { 1, 320, 330, 340 }, scroll = 252895, train = 300, sq = 4, r = { { 8170, 20 }, { 15420, 120 }, { 1529, 4 }, { 15407, 2 }, { 14341, 4 }, { 249429, 10 }, { 248825, 20 } }, out = { 252486, 1 }, oq = 4 },
     [1255013] = { name = "Warbear Helm", t = { 1, 320, 330, 340 }, scroll = 252894, train = 300, sq = 4, r = { { 8170, 20 }, { 15419, 20 }, { 14341, 4 }, { 15407, 2 }, { 249429, 10 }, { 248825, 20 } }, out = { 252485, 1 }, oq = 4 },
     [1255014] = { name = "Timbermaw Tunic", t = { 1, 320, 330, 340 }, scroll = 252893, train = 300, sq = 4, r = { { 12810, 6 }, { 12804, 20 }, { 12803, 20 }, { 249429, 10 }, { 15407, 4 }, { 14341, 10 }, { 248825, 20 } }, out = { 252484, 1 }, oq = 4 },
@@ -354,10 +354,10 @@ ES.Data.Leatherworking = {
     [1255020] = { name = "Tooled Leather Epaulets", t = { 1, 295, 305, 315 }, scroll = 252887, train = 275, sq = 2, r = { { 8170, 12 }, { 14341, 1 }, { 6261, 1 }, { 15407, 1 } }, out = { 252558, 1 }, oq = 2 },
     [1255021] = { name = "Blue Suede Belt", t = { 1, 290, 300, 310 }, scroll = 252886, train = 270, sq = 2, r = { { 8170, 14 }, { 14341, 1 }, { 6260, 2 } }, out = { 252481, 1 }, oq = 2 },
     [1255022] = { name = "Tooled Leather Bracers", t = { 1, 290, 300, 310 }, scroll = 252885, train = 270, sq = 2, r = { { 8170, 10 }, { 14341, 1 }, { 6261, 1 } }, out = { 252557, 1 }, oq = 2 },
-    [1255023] = { name = "Wicked Leather Shoulder", t = { 1, 290, 300, 310 }, scroll = 252884, train = 270, sq = 2, r = { { 8170, 12 }, { 14341, 1 }, { 2325, 1 }, { 15407, 1 } }, out = { 252556, 1 }, oq = 2 },
+    [1255023] = { name = "Wicked Leather Shoulders", t = { 1, 290, 300, 310 }, scroll = 252884, train = 270, sq = 2, r = { { 8170, 12 }, { 14341, 1 }, { 2325, 1 }, { 15407, 1 } }, out = { 252556, 1 }, oq = 2 },
     [1255024] = { name = "Blue Suede Armor", t = { 1, 285, 295, 305 }, scroll = 252883, train = 265, sq = 2, r = { { 8170, 14 }, { 15407, 2 }, { 14341, 2 }, { 6260, 4 }, { 15415, 6 } }, out = { 252480, 1 }, oq = 2 },
     [1255025] = { name = "Tooled Leather Crown", t = { 1, 285, 295, 305 }, scroll = 252882, train = 265, sq = 2, r = { { 8170, 14 }, { 14341, 1 }, { 6261, 1 } }, out = { 252555, 1 }, oq = 2 },
-    [1255026] = { name = "Blue Suede Shoulder", t = { 1, 280, 290, 300 }, scroll = 252881, train = 260, sq = 2, r = { { 8170, 10 }, { 14341, 1 }, { 6260, 2 } }, out = { 252554, 1 }, oq = 2 },
+    [1255026] = { name = "Blue Suede Shoulders", t = { 1, 280, 290, 300 }, scroll = 252881, train = 260, sq = 2, r = { { 8170, 10 }, { 14341, 1 }, { 6260, 2 } }, out = { 252554, 1 }, oq = 2 },
     [1255027] = { name = "Tooled Leather Gauntlets", t = { 1, 280, 290, 300 }, scroll = 252880, train = 260, sq = 2, r = { { 8170, 10 }, { 14341, 1 }, { 6261, 1 } }, out = { 252553, 1 }, oq = 2 },
     [1255028] = { name = "Wicked Leather Boots", t = { 1, 280, 290, 300 }, scroll = 252879, train = 260, sq = 2, r = { { 8170, 10 }, { 14341, 1 }, { 2325, 1 } }, out = { 252479, 1 }, oq = 2 },
     [1255029] = { name = "Blue Suede Pants", t = { 1, 275, 285, 295 }, scroll = 252878, train = 255, sq = 2, r = { { 8170, 14 }, { 14341, 1 }, { 6260, 3 }, { 15407, 1 } }, out = { 252478, 1 }, oq = 2 },
@@ -381,11 +381,11 @@ ES.Data.Leatherworking = {
     [1255052] = { name = "Warden's Leather Bracers", t = { 1, 245, 255, 265 }, scroll = 252855, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 7067, 4 }, { 249427, 3 } }, out = { 252541, 1 }, oq = 3, bop = true },
     [1255053] = { name = "Skulker's Leather Bracers", t = { 1, 245, 255, 265 }, scroll = 252854, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 3182, 4 }, { 249427, 3 } }, out = { 252540, 1 }, oq = 3, bop = true },
     [1255054] = { name = "Prowler's Leather Bracers", t = { 1, 245, 255, 265 }, scroll = 252853, train = 225, sq = 3, favor = 90, favorRep = 6, r = { { 4304, 12 }, { 4236, 4 }, { 249428, 6 }, { 8343, 2 }, { 1529, 4 }, { 249427, 3 } }, out = { 252539, 1 }, oq = 3, bop = true },
-    [1255055] = { name = "Mender's Leather Shoulder", t = { 1, 230, 240, 250 }, scroll = 252852, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 5500, 3 }, { 249427, 2 } }, out = { 252538, 1 }, oq = 3, bop = true },
-    [1255056] = { name = "Skycaller's Leather Shoulder", t = { 1, 230, 240, 250 }, scroll = 252851, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7070, 3 }, { 249427, 2 } }, out = { 252537, 1 }, oq = 3, bop = true },
-    [1255057] = { name = "Warden's Leather Shoulder", t = { 1, 230, 240, 250 }, scroll = 252850, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7067, 3 }, { 249427, 2 } }, out = { 252536, 1 }, oq = 3, bop = true },
-    [1255058] = { name = "Skulker's Leather Shoulder", t = { 1, 230, 240, 250 }, scroll = 252849, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 3182, 3 }, { 249427, 2 } }, out = { 252535, 1 }, oq = 3, bop = true },
-    [1255059] = { name = "Prowler's Leather Shoulder", t = { 1, 230, 240, 250 }, scroll = 252848, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 1529, 3 }, { 249427, 2 } }, out = { 252534, 1 }, oq = 3, bop = true },
+    [1255055] = { name = "Mender's Leather Shoulders", t = { 1, 230, 240, 250 }, scroll = 252852, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 5500, 3 }, { 249427, 2 } }, out = { 252538, 1 }, oq = 3, bop = true },
+    [1255056] = { name = "Skycaller's Leather Shoulders", t = { 1, 230, 240, 250 }, scroll = 252851, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7070, 3 }, { 249427, 2 } }, out = { 252537, 1 }, oq = 3, bop = true },
+    [1255057] = { name = "Warden's Leather Shoulders", t = { 1, 230, 240, 250 }, scroll = 252850, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 7067, 3 }, { 249427, 2 } }, out = { 252536, 1 }, oq = 3, bop = true },
+    [1255058] = { name = "Skulker's Leather Shoulders", t = { 1, 230, 240, 250 }, scroll = 252849, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 3182, 3 }, { 249427, 2 } }, out = { 252535, 1 }, oq = 3, bop = true },
+    [1255059] = { name = "Prowler's Leather Shoulders", t = { 1, 230, 240, 250 }, scroll = 252848, train = 210, sq = 3, favor = 60, favorRep = 5, r = { { 4304, 10 }, { 4236, 3 }, { 249428, 4 }, { 4291, 2 }, { 1529, 3 }, { 249427, 2 } }, out = { 252534, 1 }, oq = 3, bop = true },
     [1255065] = { name = "Mender's Leather Gloves", t = { 1, 195, 205, 215 }, scroll = 252842, train = 175, sq = 3, favor = 60, favorRep = 5, r = { { 4234, 16 }, { 4236, 2 }, { 249428, 2 }, { 4291, 2 }, { 5500, 2 }, { 249427, 1 } }, out = { 252530, 1 }, oq = 3, bop = true },
     [1255066] = { name = "Skycaller's Leather Gloves", t = { 1, 195, 205, 215 }, scroll = 252841, train = 175, sq = 3, favor = 60, favorRep = 5, r = { { 4234, 16 }, { 4236, 2 }, { 249428, 2 }, { 4291, 2 }, { 7070, 2 }, { 249427, 1 } }, out = { 252529, 1 }, oq = 3, bop = true },
     [1255067] = { name = "Skirmisher's Leather Gloves", t = { 1, 195, 205, 215 }, scroll = 252840, train = 175, sq = 3, favor = 60, favorRep = 5, r = { { 4234, 16 }, { 4236, 2 }, { 249428, 2 }, { 4291, 2 }, { 3864, 2 }, { 249427, 1 } }, out = { 252528, 1 }, oq = 3, bop = true },
@@ -567,9 +567,9 @@ ES.Data.SellPrices[2300] = 192
 ES.Data.SellPrices[2302] = 29
 ES.Data.SellPrices[2303] = 71
 ES.Data.SellPrices[2304] = 15
-ES.Data.SellPrices[2307] = 243
+ES.Data.SellPrices[2307] = 195
 ES.Data.SellPrices[2308] = 267
-ES.Data.SellPrices[2309] = 268
+ES.Data.SellPrices[2309] = 217
 ES.Data.SellPrices[2310] = 112
 ES.Data.SellPrices[2311] = 150
 ES.Data.SellPrices[2312] = 181
@@ -733,8 +733,8 @@ ES.Data.SellPrices[8171] = 500
 ES.Data.SellPrices[8172] = 500
 ES.Data.SellPrices[8173] = 1000
 ES.Data.SellPrices[8174] = 4131
-ES.Data.SellPrices[8175] = 5971
-ES.Data.SellPrices[8176] = 4495
+ES.Data.SellPrices[8175] = 3881
+ES.Data.SellPrices[8176] = 2922
 ES.Data.SellPrices[8185] = 10952
 ES.Data.SellPrices[8187] = 3477
 ES.Data.SellPrices[8189] = 7567
@@ -809,8 +809,8 @@ ES.Data.SellPrices[15049] = 20543
 ES.Data.SellPrices[15050] = 26071
 ES.Data.SellPrices[15051] = 21736
 ES.Data.SellPrices[15052] = 31933
-ES.Data.SellPrices[15053] = 17275
-ES.Data.SellPrices[15054] = 14559
+ES.Data.SellPrices[15053] = 9501
+ES.Data.SellPrices[15054] = 8007
 ES.Data.SellPrices[15055] = 16019
 ES.Data.SellPrices[15056] = 20966
 ES.Data.SellPrices[15057] = 18728
@@ -933,7 +933,7 @@ ES.Data.SellPrices[213369] = 280
 ES.Data.SellPrices[213379] = 280
 ES.Data.SellPrices[248824] = 750
 ES.Data.SellPrices[248825] = 750
-ES.Data.SellPrices[249409] = 125
+ES.Data.SellPrices[249409] = 75
 ES.Data.SellPrices[249410] = 125
 ES.Data.SellPrices[249427] = 125
 ES.Data.SellPrices[249428] = 250
@@ -981,7 +981,7 @@ ES.Data.ItemNames[2311] = "White Leather Jerkin"
 ES.Data.ItemNames[2312] = "Fine Leather Gloves"
 ES.Data.ItemNames[2313] = "Medium Armor Kit"
 ES.Data.ItemNames[2314] = "Toughened Leather Armor"
-ES.Data.ItemNames[2315] = "Dark Leather Boots"
+ES.Data.ItemNames[2315] = "Gray Leather Boots"
 ES.Data.ItemNames[2316] = "Dark Leather Cloak"
 ES.Data.ItemNames[2317] = "Dark Leather Tunic"
 ES.Data.ItemNames[2318] = "Light Leather"
@@ -1422,11 +1422,11 @@ ES.Data.ItemNames[252527] = "Warden's Leather Gloves"
 ES.Data.ItemNames[252528] = "Skirmisher's Leather Gloves"
 ES.Data.ItemNames[252529] = "Skycaller's Leather Gloves"
 ES.Data.ItemNames[252530] = "Mender's Leather Gloves"
-ES.Data.ItemNames[252534] = "Prowler's Leather Shoulder"
+ES.Data.ItemNames[252534] = "Prowler's Leather Shoulders"
 ES.Data.ItemNames[252535] = "Skulker's Leather Shoulder"
-ES.Data.ItemNames[252536] = "Warden's Leather Shoulder"
-ES.Data.ItemNames[252537] = "Skycaller's Leather Shoulder"
-ES.Data.ItemNames[252538] = "Mender's Leather Shoulder"
+ES.Data.ItemNames[252536] = "Warden's Leather Shoulders"
+ES.Data.ItemNames[252537] = "Skycaller's Leather Shoulders"
+ES.Data.ItemNames[252538] = "Mender's Leather Shoulders"
 ES.Data.ItemNames[252539] = "Prowler's Leather Bracers"
 ES.Data.ItemNames[252540] = "Skulker's Leather Bracers"
 ES.Data.ItemNames[252541] = "Warden's Leather Bracers"
@@ -1437,18 +1437,18 @@ ES.Data.ItemNames[252545] = "Tooled Leather Boots"
 ES.Data.ItemNames[252546] = "Blue Suede Gloves"
 ES.Data.ItemNames[252552] = "Tooled Leather Armor"
 ES.Data.ItemNames[252553] = "Tooled Leather Gauntlets"
-ES.Data.ItemNames[252554] = "Blue Suede Shoulder"
+ES.Data.ItemNames[252554] = "Blue Suede Shoulders"
 ES.Data.ItemNames[252555] = "Tooled Leather Crown"
-ES.Data.ItemNames[252556] = "Wicked Leather Shoulder"
+ES.Data.ItemNames[252556] = "Wicked Leather Shoulders"
 ES.Data.ItemNames[252557] = "Tooled Leather Bracers"
 ES.Data.ItemNames[252558] = "Tooled Leather Epaulets"
 ES.Data.ItemNames[252559] = "Blue Suede Bracers"
 ES.Data.ItemNames[252560] = "Tooled Leather Pants"
 ES.Data.ItemNames[252561] = "Living Crown"
-ES.Data.ItemNames[252566] = "Stalker's Mail Shoulder"
-ES.Data.ItemNames[252567] = "Skycaller's Mail Shoulder"
-ES.Data.ItemNames[252568] = "Skirmisher's Mail Shoulder"
-ES.Data.ItemNames[252569] = "Mender's Mail Shoulder"
+ES.Data.ItemNames[252566] = "Stalker's Mail Shoulders"
+ES.Data.ItemNames[252567] = "Skycaller's Mail Shoulders"
+ES.Data.ItemNames[252568] = "Skirmisher's Mail Shoulders"
+ES.Data.ItemNames[252569] = "Mender's Mail Shoulders"
 ES.Data.ItemNames[252570] = "Stalker's Mail Bracers"
 ES.Data.ItemNames[252571] = "Skycaller's Mail Bracers"
 ES.Data.ItemNames[252572] = "Skirmisher's Mail Bracers"
@@ -1462,12 +1462,12 @@ ES.Data.ItemNames[252579] = "Mender's Mail Sabatons"
 ES.Data.ItemNames[252580] = "Supple Scorpid Leggings"
 ES.Data.ItemNames[252581] = "Charged Scorpid Helm"
 ES.Data.ItemNames[252582] = "Supple Scorpid Bracers"
-ES.Data.ItemNames[252583] = "Charged Scorpid Shoulder"
+ES.Data.ItemNames[252583] = "Charged Scorpid Shoulders"
 ES.Data.ItemNames[252588] = "Stalker's Mail Belt"
 ES.Data.ItemNames[252589] = "Skycaller's Mail Belt"
 ES.Data.ItemNames[252590] = "Skirmisher's Mail Belt"
 ES.Data.ItemNames[252591] = "Mender's Mail Belt"
-ES.Data.ItemNames[252592] = "Supple Scorpid Shoulder"
+ES.Data.ItemNames[252592] = "Supple Scorpid Shoulders"
 ES.Data.ItemNames[252593] = "Charged Scorpid Bracers"
 ES.Data.ItemNames[252594] = "Heavy Scorpid Boots"
 ES.Data.ItemNames[252595] = "Supple Scorpid Belt"

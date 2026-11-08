@@ -39,6 +39,7 @@ ES.Data.FirstAid = {
     [23787] = { name = "Powerful Anti-Venom", t = { 1, 300, 330, 360 }, scroll = 19442, train = 300, scrollPrice = 100000, rep = { 529, 5 }, sq = 1, r = { { 19441, 1 } }, out = { 19440, 3 }, oq = 1 },
     [30021] = { name = "Crystal Infused Bandage", t = { 1, 300, 330, 360 }, scroll = 23689, train = 290, sq = 1, r = { { 23567, 1 }, { 14047, 10 } }, out = { 23684, 4 }, oq = 1 },
     [470349] = { name = "Dense Runecloth Bandage", t = { 1, 315, 327, 340 }, scroll = 232434, train = 300, sq = 1, r = { { 14530, 2 } }, out = { 232433, 1 }, oq = 1 },
+    [1230117] = { name = "First Aid Kit", t = { 1, 20, 22, 25 }, trainer = true, train = 20, r = { { 1251, 3 }, { 159, 1 } }, out = { 279968, 1 }, oq = 1 },
     [1244431] = { name = "Minor Healing Potion", t = { 1, 55, 75, 95 }, r = { { 3371, 1 }, { 2678, 1 }, { 2447, 1 } }, out = { 118, 1 }, oq = 1 },
     [1244432] = { name = "Lesser Healing Potion", t = { 1, 85, 105, 125 }, r = { { 3371, 1 }, { 2678, 2 }, { 2450, 1 } }, out = { 858, 1 }, oq = 1 },
     [1244433] = { name = "Healing Potion", t = { 1, 135, 155, 175 }, r = { { 3372, 1 }, { 2692, 1 }, { 2453, 1 } }, out = { 929, 1 }, oq = 1 },
@@ -53,6 +54,7 @@ ES.Data.FirstAid = {
     [1259347] = { name = "Woolen Tourniquet", t = { 1, 120, 155, 190 }, r = { { 2592, 2 }, { 2321, 2 } }, out = { 255720, 1 }, oq = 1 },
     [1259348] = { name = "Leather Tourniquet", t = { 1, 220, 250, 280 }, scroll = 255726, train = 200, sq = 2, r = { { 4304, 2 }, { 4291, 2 } }, out = { 255721, 1 }, oq = 1 },
     [1259349] = { name = "Surgical Tourniquet", t = { 1, 280, 310, 340 }, scroll = 255730, train = 265, sq = 2, r = { { 8170, 2 }, { 14047, 2 }, { 8343, 2 } }, out = { 255722, 1 }, oq = 1 },
+    [1262996] = { name = "Toxin Study", t = { 1, 140, 142, 145 }, scroll = 273105, train = 140, sq = 2, r = { { 6452, 1 }, { 8544, 2 }, { 4470, 2 } }, out = { 279940, 1 }, oq = 1 },
   },
 }
 
@@ -70,6 +72,7 @@ ES.Data.Tools[377] = { item = 16207, mask = 31, family = "rod" }
 
 ES.Data.VendorPrices = ES.Data.VendorPrices or {}
 ES.Data.SellPrices = ES.Data.SellPrices or {}
+ES.Data.VendorPrices[159] = 5
 ES.Data.VendorPrices[2321] = 100
 ES.Data.VendorPrices[2594] = 1500
 ES.Data.VendorPrices[2596] = 120
@@ -81,9 +84,11 @@ ES.Data.VendorPrices[3371] = 4
 ES.Data.VendorPrices[3372] = 40
 ES.Data.VendorPrices[3713] = 160
 ES.Data.VendorPrices[4291] = 500
+ES.Data.VendorPrices[4470] = 38
 ES.Data.VendorPrices[8343] = 2000
 ES.Data.VendorPrices[8925] = 500
 ES.Data.SellPrices[118] = 5
+ES.Data.SellPrices[159] = 1
 ES.Data.SellPrices[858] = 25
 ES.Data.SellPrices[929] = 75
 ES.Data.SellPrices[1251] = 10
@@ -100,6 +105,7 @@ ES.Data.SellPrices[2589] = 13
 ES.Data.SellPrices[2592] = 33
 ES.Data.SellPrices[2594] = 375
 ES.Data.SellPrices[2596] = 30
+ES.Data.SellPrices[2678] = 1
 ES.Data.SellPrices[2686] = 12
 ES.Data.SellPrices[2692] = 10
 ES.Data.SellPrices[2723] = 12
@@ -115,6 +121,7 @@ ES.Data.SellPrices[4291] = 125
 ES.Data.SellPrices[4304] = 300
 ES.Data.SellPrices[4306] = 150
 ES.Data.SellPrices[4338] = 250
+ES.Data.SellPrices[4470] = 9
 ES.Data.SellPrices[6450] = 200
 ES.Data.SellPrices[6451] = 400
 ES.Data.SellPrices[6452] = 28
@@ -149,6 +156,7 @@ ES.Data.SellPrices[255722] = 500
 -- Nombre de cada objeto (inglés, del cliente): se muestra mientras el juego no lo ha cargado
 ES.Data.ItemNames = ES.Data.ItemNames or {}
 ES.Data.ItemNames[118] = "Minor Healing Potion"
+ES.Data.ItemNames[159] = "Refreshing Spring Water"
 ES.Data.ItemNames[858] = "Lesser Healing Potion"
 ES.Data.ItemNames[929] = "Healing Potion"
 ES.Data.ItemNames[1251] = "Linen Bandage"
@@ -181,6 +189,7 @@ ES.Data.ItemNames[4291] = "Silken Thread"
 ES.Data.ItemNames[4304] = "Thick Leather"
 ES.Data.ItemNames[4306] = "Silk Cloth"
 ES.Data.ItemNames[4338] = "Mageweave Cloth"
+ES.Data.ItemNames[4470] = "Simple Wood"
 ES.Data.ItemNames[6450] = "Silk Bandage"
 ES.Data.ItemNames[6451] = "Heavy Silk Bandage"
 ES.Data.ItemNames[6452] = "Anti-Venom"
@@ -212,6 +221,8 @@ ES.Data.ItemNames[255719] = "Powerful Poultice"
 ES.Data.ItemNames[255720] = "Woolen Tourniquet"
 ES.Data.ItemNames[255721] = "Leather Tourniquet"
 ES.Data.ItemNames[255722] = "Surgical Tourniquet"
+ES.Data.ItemNames[279940] = "Toxin Study"
+ES.Data.ItemNames[279968] = "First Aid Kit"
 
 -- Material -> profesión de recolección que lo consigue (393 Desuello, 182 Herboristería, 186 Minería).
 -- Sin uso por ahora: reservado para la vía "Vender en bruto" de Ganar dinero (docs/PLAN.md, G1).

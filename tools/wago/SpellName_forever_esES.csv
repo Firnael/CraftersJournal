@@ -14,7 +14,7 @@ ID,Name
 2164,Guantes finos de cuero
 2165,Refuerzo para armadura medio
 2166,Armadura de cuero fortalecido
-2167,Botas oscuras de cuero
+2167,Botas de cuero gris
 2168,Capa oscura de cuero
 2169,Túnica oscura de cuero
 2259,Alquimia
@@ -328,6 +328,7 @@ ID,Name
 7443,Encantar torso: intelecto menor
 7454,Encantar capa: resistencia menor
 7457,Encantar brazal: aguante menor
+7620,Pesca
 7623,Toga marrón de lino
 7624,Toga blanca de lino
 7629,Jubón rojo de lino
@@ -336,6 +337,7 @@ ID,Name
 7636,Toga verde de lana
 7639,Bata azul
 7643,Toga de adepto superior
+7738,Cañas de pescar
 7745,Encantar arma 2M: impacto menor
 7748,Encantar torso: aguante inferior
 7751,Pececito brillante
@@ -413,7 +415,7 @@ ID,Name
 9059,Brazales de cuero cosidos a mano
 9060,Carcaj ligero de cuero
 9062,Faltriquera pequeña de cuero para munición
-9064,Pantralones de cuero basto
+9064,Pantalones de cuero basto
 9065,Brazales ligeros de cuero
 9068,Pantalones ligeros de cuero
 9070,Capa negra de cría
@@ -489,7 +491,7 @@ ID,Name
 10499,Túnica Nochefugaz
 10507,Cinta Nochefugaz
 10509,Guantes de escamas de tortuga
-10511,Peto de escamas de tortuga
+10511,Coraza de escamas de tortuga
 10516,Hombreras Nochefugaz
 10518,Brazales de escamas de tortuga
 10520,Toga de gran vudú
@@ -633,7 +635,7 @@ ID,Name
 12903,Cinturón gnomo de prevención de daños
 12904,Radio gnoma
 12905,Botas cohete gnomas
-12906,Pollo de batalla gnomo
+12906,Gallo de batalla gnómico
 12907,Gorra de control mental gnoma
 12908,Escopeta dragón goblin
 13028,Té espina de oro
@@ -1096,6 +1098,7 @@ ID,Name
 24367,Poción de acción viviente
 24399,Botas Hierro Negro
 24418,Guiso de crocolisco
+24914,Peto Runanegra
 24654,Leotardos de escamas de dragón azul
 24655,Guanteletes de escamas de dragón verde
 24703,Peto de escamas del sueño
@@ -1111,7 +1114,6 @@ ID,Name
 24903,Botas rúnicas estigias
 24912,Guanteletes Runanegra
 24913,Yelmo Runanegra
-24914,Peto Runanegra
 24940,Túnica negra de cría
 25072,Encantar guantes: amenaza
 25073,Encantar guantes: poder de las Sombras
@@ -1162,7 +1164,7 @@ ID,Name
 28205,Guantes glaciales
 28207,Jubón glacial
 28208,Capa glacial
-28209,Muñequera glacial
+28209, Muñequeras glaciales
 28210,Abrazo de Gaea
 28219,Túnica polar
 28220,Guantes polares
@@ -1184,6 +1186,7 @@ ID,Name
 28481,Corona nemorosa
 28482,Hombreras nemorosas
 30021,Venda de cristal imbuido
+43308,Buscar pescado
 44950,Ropa de invierno verde
 44953,Botas de invierno
 44958,Ropa de invierno roja
@@ -1225,7 +1228,6 @@ ID,Name
 439110,Brazales de cuero de guardián
 439112,Cinturón de guardián
 439114,Pantalones de guardián
-439116,Coraza de escamas de tortuga
 439124,Loriga de escamas doradas
 439126,Almófar de escamas doradas
 446179,Hombreras de terror
@@ -1382,7 +1384,6 @@ ID,Name
 1223768,Jubón escarchado
 1223770,Guantes escarchados
 1223772,Muñequeras escarchadas
-1223774,Coraza de escamas heladas
 1223776,Guanteletes de escamas heladas
 1223778,Brazales de escamas heladas
 1224607,Caperuza de augur Escarlata
@@ -1433,6 +1434,7 @@ ID,Name
 1227724,Bolsa de tela del Alba Carmesí
 1229432,Tienda de campamento
 1229504,Estandarte de facción
+1229745,Cuenco con pescado
 1230117,Equipo de primeros auxilios
 1230171,Rueda de afilar
 1230564,Pozo de maná
@@ -1502,7 +1504,7 @@ ID,Name
 1249071,Encantar torso: absorción
 1249107,Corazón de la montaña congelado
 1249112,Corazón de la montaña fundido
-1249114,Dormant Heart of the Mountain
+1249114,Corazón de la montaña durmiente
 1249128,Ídolo del Sueño
 1249630,Tinte cerúleo
 1249631,Tinte magenta
@@ -1539,7 +1541,7 @@ ID,Name
 1250157,Tortilla de desayuno
 1250158,Linguini de almejas
 1250775,Jarabe revelador
-1250776,Jarabe de instintos depredadores
+1250776,Poción de instintos depredadores
 1250777,Elixir de astucia
 1250778,Elixir de la falange
 1250779,Elixir de clérigo menor
@@ -1583,7 +1585,6 @@ ID,Name
 1251747,Poción de ensalmador sublime
 1251748,Poción de sangre venenosa
 1251749,Poción de humo cáustico
-1251750,Poción de humo desorientador
 1251751,Poción de fuego de dragón
 1251752,Poción de purga elemental
 1251753,Poción de matanza de bestias
@@ -1750,7 +1751,7 @@ ID,Name
 1254987,Guanteletes de malla de hostigador
 1254988,Guanteletes de malla de clamacielos
 1254989,Guanteletes de malla de acechador
-1254990,Hombreras de escórpido cargadas
+1254990,Hombreras de escórpido electrificadas
 1254991,Brazales de escórpido flexibles
 1254992,Yelmo de escórpido cargado
 1254993,Leotardos de escórpido flexibles
@@ -1765,7 +1766,7 @@ ID,Name
 1255002,Brazales de malla de clamacielos
 1255003,Brazales de malla de acechador
 1255004,Hombreras de malla de ensalmador
-1255005,Hombreras de malla de hostigador
+1255005,Hombreras de malla de tramador
 1255006,Hombreras de malla de clamacielos
 1255007,Hombreras de malla de acechador
 1255008,Botas de malla de ensalmador
@@ -2031,7 +2032,9 @@ ID,Name
 1257494,Corona de tejido terráneo
 1257495,Bolsa de componentes sin fondo
 1262978,Festín de Cocinitas
+1262990,Expositor de pesca
 1262996,Estudio sobre toxinas
+1262998,Cabaña de pesca
 1263001,Laboratorio de doctor de peste
 1263005,Fermentador
 1263031,Bastidor para pieles
@@ -2088,6 +2091,7 @@ ID,Name
 1270632,Galleta con forma de alimaña
 1270633,Suflé del Muro Celeste
 1270635,Pinchitos de cangrejo
+1278067,Cebo y aparejos
 1283400,Hoguera de oficial
 1286792,Dispositivo de despliegue de estandarte centauro
 1286796,Pedal de pie con forma de pezuña
@@ -2141,7 +2145,7 @@ ID,Name
 1292967,Bufas de costura nefasta
 1292968,Botas de costura nefasta
 1292969,Leotardos de clamaespíritus
-1292970,Spiritcaller Grips
+1292970,Mandiletes de clamaespíritus
 1292971,Bufas de clamaespíritus
 1292972,Botines de clamaespíritus
 1292973,Pantalones de clamaespíritus
@@ -2195,7 +2199,7 @@ ID,Name
 1297142,Ajustador de señor del nido
 1297143,Apisonadoras de señor del nido
 1299914,Falda de clamaespíritus
-1299915,Spiritcaller Gloves
+1299915,Guantes de clamaespíritus
 1299916,Manto de clamaespíritus
 1299917,Botas de clamaespíritus
 1301421,Malla nublada cieloforjada
@@ -2322,6 +2326,7 @@ ID,Name
 1319164,Ristra de cohetes blancos grandes
 1319165,Ristra de cohetes amarillos grandes
 1319313,Pez coraza de placas
+1328948,Encantar botas: velocidad
 16985,Corrupción
 7183,Elixir de defensa menor
 461718,Tranquilidad
@@ -2402,6 +2407,13 @@ ID,Name
 1240957,Encantamiento
 1240968,Encantamiento
 1240981,Encantamiento
+7731,Pesca
+7732,Pesca
+18248,Pesca
+1240948,Pesca
+1240959,Pesca
+1240970,Pesca
+1240983,Pesca
 7934,Antídoto
 7935,Antídoto fuerte
 9271,Atraepeces acuadinámico
@@ -2414,6 +2426,7 @@ ID,Name
 10011,Toxicidad
 10487,Complemento grueso para armadura
 439118,Guantes de escamas de tortuga
+439116,Coraza de escamas de tortuga
 439108,Toga de gran vudú
 439105,Máscara de gran vudú
 11466,Regalo de Arthas
@@ -2504,6 +2517,7 @@ ID,Name
 1223787,Peto Deliriohelado
 1223789,Guanteletes Deliriohelado
 1223791,Brazales Deliriohelado
+1223774,Peto de escamas heladas
 1213744,Jubón nemoroso
 1213742,Corona nemorosa
 1213740,Hombreras nemorosas
