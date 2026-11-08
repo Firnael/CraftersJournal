@@ -1412,7 +1412,7 @@ step("inventario: qué vender de las bolsas, dónde y qué guardar", function()
   ES.Ledger.MerchantOpen, ES.Ledger.SellToVendor, ES.Ledger.PostOnAH, ES.IsAuctionHouseOpen = savedMerchant, savedSell, savedPost, savedAH
   ES:SelectPage("home")
 end)
-step("inventario: desencantar cuando vale más que venderlo", function()
+step("inventario: lo que daría desencantar (solo informativo)", function()
   -- Un verde de armadura nivel 22 ligado (4-6 polvos extraños de media al 75%), un arma
   -- verde del mismo nivel (sobre todo esencias), un gris y un verde que se vende caro
   local ARMOR, WEAPON, GREY, PRICEY = 9001, 9002, 9003, 9004
@@ -1440,38 +1440,35 @@ step("inventario: desencantar cuando vale más que venderlo", function()
     for _, e in ipairs(ES.Inventory:List()) do by[e.itemID] = e end
     return by
   end
-  -- Sin Encantamiento: no se propone, pero el tooltip dice lo que sacaría un encantador
+  -- Solo informativo: el reparto AH / vendedor no cambia, y se dice lo que daría
   ES.GetProfessionSkill = function() return nil end
   local by = By()
-  assert(by[ARMOR] and by[ARMOR].deN == 0 and by[ARMOR].de, "sin Encantamiento no se desencanta, pero se calcula")
-  -- Con Encantamiento 30 (pide 25 para nivel 22)
-  ES.GetProfessionSkill = function(_, line) if line == 333 then return 30, 75 end end
-  by = By()
   local de = by[ARMOR] and by[ARMOR].de
   -- 0.75 x 5 polvos x ~47c + 0.15 x 1.5 esencias x ~95c + 0.10 x fragmento (sin precio: vendedor 1c)
-  log[#log+1] = string.format("     verde nivel 22 (armadura): desencantar ~%dc frente a 100c del vendedor", de and de.value or -1)
-  assert(by[ARMOR].deN == 1 and by[ARMOR].vendorN == 0, "el verde de armadura (ligado) se desencanta: " .. tostring(by[ARMOR].deN))
+  log[#log+1] = string.format("     verde nivel 22 (armadura): desencantado ~%dc frente a 100c del vendedor", de and de.value or -1)
+  assert(de and not by[ARMOR].deCan and by[ARMOR].vendorN == 1, "sin Encantamiento: se informa y se sigue vendiendo")
   assert(de.value > 150 and de.value < 220, "valor medio del verde de armadura: " .. de.value)
   assert(de.partial, "el fragmento no estaba en el escaneo: se avisa")
   assert(by[WEAPON] and by[WEAPON].de and by[WEAPON].de.value < de.value, "un arma da sobre todo esencias (aquí valen menos que los polvos)")
   assert(not by[GREY] or not by[GREY].de, "un gris no se desencanta")
-  assert(by[PRICEY] and by[PRICEY].deN == 0 and by[PRICEY].ahN == 1, "si en la AH vale más, a la AH")
-  -- Nivel insuficiente: Encantamiento 10
+  assert(by[PRICEY] and not by[PRICEY].de and by[PRICEY].ahN == 1, "si en la AH vale más, no se habla de desencantar")
+  -- Con Encantamiento: 30 llega al 25 que pide el nivel 22; 10 no
+  ES.GetProfessionSkill = function(_, line) if line == 333 then return 30, 75 end end
+  by = By()
+  assert(by[ARMOR].deCan and by[ARMOR].vendorN == 1, "con Encantamiento 30 se puede, pero sigue en vender")
   ES.GetProfessionSkill = function(_, line) if line == 333 then return 10, 75 end end
   by = By()
-  assert(by[ARMOR].deN == 0 and by[ARMOR].deRank == 10, "con 10 no llega al 25 que pide")
-  -- La página: sección y botón seguro con la macro del hueco del objeto
-  ES.GetProfessionSkill = function(_, line) if line == 333 then return 30, 75 end end
+  assert(not by[ARMOR].deCan and by[ARMOR].deRank == 10, "con 10 no llega al 25 que pide")
+  -- La página: la fila lo dice; no hay botón de desencantar
   ES:SelectPage("inventory")
   local page = ES.inventoryPage
   page._shown = true
   ES:RenderInventory()
-  local btn = page.deButton
-  assert(btn._shown and (btn.itemID == ARMOR or btn.itemID == WEAPON), "botón Desencantar: " .. tostring(btn.itemID))
-  assert(tostring(btn._text):find("Desencantar"), "texto del botón: " .. tostring(btn._text))
-  local sections = {}
-  for _, row in ipairs(page.rows) do if row._shown and row.title then sections[#sections + 1] = tostring(row.title._text) end end
-  log[#log+1] = "     desencantar: " .. tostring(btn._text) .. " · " .. table.concat(sections, " | "):sub(1, 200)
+  assert(page.deButton == nil, "no debe haber botón de desencantar")
+  local found
+  for _, row in ipairs(page.rows) do if row._shown and row.sub and tostring(row.sub._text):find("desencantado") then found = tostring(row.sub._text) end end
+  assert(found, "la fila debería decir lo que daría desencantado")
+  log[#log+1] = "     fila: " .. found:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
   C_Container, ES.db.scans, ES.VendorSellPrice, GetItemInfo = savedCC, savedScans, savedVendor, savedGII
   ES.GetProfessionSkill, GetSpellInfo, ES.Market.Signals = savedSkill, savedSpell, savedSig
   ES:SelectPage("home")

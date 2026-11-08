@@ -1,8 +1,8 @@
 local _, ES = ...
 
 -- Desencantar: qué da cada objeto (tabla de Classic por calidad, nivel de objeto y si
--- es arma o armadura) y cuánto vale de media a precios de tu AH. Lo usa el Inventario
--- para proponer desencantar en vez de vender cuando sale más a cuenta.
+-- es arma o armadura) y cuánto vale de media a precios de tu AH. Solo informativo: el
+-- Inventario lo dice cuando desencantar vale más que venderlo; el addon no desencanta.
 -- Es una estimación: la tabla es la de Classic (Forever podría haberla tocado) y el
 -- resultado de cada desencantamiento es al azar; aquí va la media.
 
@@ -124,11 +124,4 @@ end
 function Disenchant:CanDisenchant(skill)
   local rank = ES:GetProfessionSkill(ENCHANTING)
   return rank ~= nil and rank >= skill, rank
-end
-
--- Nombre del hechizo Desencantar en el idioma del cliente (para la macro)
-function Disenchant:SpellName()
-  local name = GetSpellInfo and GetSpellInfo(13262)
-  if not name and C_Spell and C_Spell.GetSpellName then name = C_Spell.GetSpellName(13262) end
-  return name
 end
