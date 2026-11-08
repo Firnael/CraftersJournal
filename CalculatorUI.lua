@@ -9,7 +9,8 @@ local L = ES.L
 local Calc = ES.Calc
 local GREY, ORANGE, GOLD = "|cff999999", "|cffff9933", "|cffffd100"
 local LIST_W = 250
-local ROW_H = 24
+local ROW_H = 30      -- filas de material: casillas de 20 px con aire arriba y abajo
+local LINE_H = 26     -- líneas de resumen (materiales, venta, comisión, depósito)
 local MAX_RESULTS = 8
 
 local function Money(c) return ES.Money(c) end
@@ -40,12 +41,15 @@ end
 -- Precio con tres casillas, oro, plata y cobre, cada una con su icono (como el correo
 -- del juego). Al pulsar Intro o salir de una casilla, `commit(cobre)`; con las tres
 -- vacías, commit(nil): vuelve al precio automático. Tab pasa a la siguiente.
-local MONEY_W = 136 -- ancho de las tres casillas con sus iconos
 local COIN_ICONS = { "Interface\\MoneyFrame\\UI-GoldIcon", "Interface\\MoneyFrame\\UI-SilverIcon", "Interface\\MoneyFrame\\UI-CopperIcon" }
+local BOX_W = { 40, 28, 28 }  -- oro (hasta 5 cifras), plata y cobre (2)
+local ICON_GAP, COIN_GAP = 4, 9 -- casilla → icono, icono → siguiente casilla
+-- Ancho de las tres casillas con sus iconos (el marco de la plantilla sobresale ~6 px a la izquierda)
+local MONEY_W = 6 + BOX_W[1] + BOX_W[2] + BOX_W[3] + 3 * (ICON_GAP + 12) + 2 * COIN_GAP
 local function MoneyInput(parent, commit)
   local input = CreateFrame("Frame", nil, parent)
   input:SetSize(MONEY_W, 20)
-  local widths, maxLetters = { 40, 24, 24 }, { 5, 2, 2 }
+  local widths, maxLetters = BOX_W, { 5, 2, 2 }
   local boxes, x = {}, 6
   local function Value()
     local g, s, c = tonumber(boxes[1]:GetText()), tonumber(boxes[2]:GetText()), tonumber(boxes[3]:GetText())
@@ -68,9 +72,9 @@ local function MoneyInput(parent, commit)
     box:SetJustifyH("RIGHT")
     local icon = input:CreateTexture(nil, "ARTWORK")
     icon:SetSize(12, 12)
-    icon:SetPoint("LEFT", box, "RIGHT", 1, 0)
+    icon:SetPoint("LEFT", box, "RIGHT", ICON_GAP, 0)
     icon:SetTexture(COIN_ICONS[i])
-    x = x + widths[i] + 6 + 13
+    x = x + widths[i] + ICON_GAP + 12 + COIN_GAP
     box:SetScript("OnEnterPressed", function(self) self.leaving = true self:ClearFocus() Save() self.leaving = false end)
     box:SetScript("OnEditFocusLost", function(self)
       -- Pasar a otra casilla del mismo precio (Tab) no guarda todavía
@@ -276,10 +280,13 @@ end
 ---------------------------------------------------------------------------
 -- Hoja del cálculo elegido
 ---------------------------------------------------------------------------
--- Columnas (x desde la izquierda del panel; el total, pegado a la derecha, ~90 px).
--- La hoja mide ~610 px con la ventana de 840: nombre 150, cantidad 40, precio 136,
--- de dónde 90, total 90
-local COL_NAME, COL_QTY_RIGHT, COL_PRICE, COL_SOURCE = 36, 228, 236, 384
+-- Columnas (x desde la izquierda del panel; el total, pegado a la derecha). La hoja
+-- mide ~610 px con la ventana de 840: nombre 130, cantidad 36 (14 de aire), precio
+-- ~170, 12 de aire, de dónde 78 y el total, ~100 a la derecha
+local COL_NAME, COL_QTY_RIGHT = 36, 208
+local COL_PRICE = COL_QTY_RIGHT + 14
+local COL_SOURCE = COL_PRICE + MONEY_W + 12
+local SOURCE_W = 78
 
 local function SheetRow(page, i)
   local row = page.sheetRows[i]
@@ -293,12 +300,12 @@ local function SheetRow(page, i)
   row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
   row.name = ES.UI.Label(row, "", "GameFontHighlightSmall")
   row.name:SetPoint("LEFT", COL_NAME, 0)
-  row.name:SetWidth(COL_QTY_RIGHT - 44 - COL_NAME)
+  row.name:SetWidth(COL_QTY_RIGHT - 42 - COL_NAME)
   row.name:SetJustifyH("LEFT")
   row.name:SetWordWrap(false)
   row.qty = ES.UI.Label(row, "", "GameFontHighlightSmall")
   row.qty:SetPoint("RIGHT", row, "LEFT", COL_QTY_RIGHT, 0)
-  row.qty:SetWidth(40)
+  row.qty:SetWidth(36)
   row.qty:SetJustifyH("RIGHT")
   row.box = MoneyInput(row, function(copper)
     local c = Calc:Selected()
@@ -309,7 +316,7 @@ local function SheetRow(page, i)
   row.box:SetPoint("LEFT", COL_PRICE, 0)
   row.source = ES.UI.Label(row, "", "GameFontDisableSmall")
   row.source:SetPoint("LEFT", COL_SOURCE, 0)
-  row.source:SetWidth(88)
+  row.source:SetWidth(SOURCE_W)
   row.source:SetJustifyH("LEFT")
   row.source:SetWordWrap(false)
   row.total = ES.UI.Label(row, "", "GameFontHighlightSmall")
@@ -322,7 +329,7 @@ end
 -- Línea de resumen (etiqueta a la izquierda, importe a la derecha)
 local function SummaryLine(p, template)
   local line = CreateFrame("Frame", nil, p)
-  line:SetHeight(20)
+  line:SetHeight(LINE_H)
   line.label = ES.UI.Label(line, "", template or "GameFontHighlightSmall")
   line.label:SetPoint("LEFT", COL_NAME, 0)
   line.label:SetJustifyH("LEFT")
@@ -388,7 +395,7 @@ local function CreateSheet(page)
   page.saleBox:SetPoint("LEFT", COL_PRICE, 0)
   page.saleSource = ES.UI.Label(page.saleLine, "", "GameFontDisableSmall")
   page.saleSource:SetPoint("LEFT", COL_SOURCE, 0)
-  page.saleSource:SetWidth(88)
+  page.saleSource:SetWidth(SOURCE_W)
   page.saleSource:SetJustifyH("LEFT")
   page.saleSource:SetWordWrap(false)
   page.cutLine = SummaryLine(p)
@@ -509,7 +516,7 @@ function ES:RenderCalculator()
     .. (ES:IsRecipeKnown(selected.recipe) and "" or (ORANGE .. " · " .. L["no la sabes"] .. "|r")))
   if page.qty:HasFocus() ~= true then page.qty:SetText(tostring(selected.qty or 1)) end
 
-  local y = -76
+  local y = -78
   for i, r in ipairs(res.rows) do
     local row = SheetRow(page, i)
     row:ClearAllPoints()
@@ -534,9 +541,9 @@ function ES:RenderCalculator()
     line:ClearAllPoints()
     line:SetPoint("TOPLEFT", 6, y)
     line:SetPoint("TOPRIGHT", -6, y)
-    y = y - 22
+    y = y - LINE_H
   end
-  Place(page.matTotal, 6)
+  Place(page.matTotal, 8)
   page.matTotal.label:SetText(L["Materiales"])
   page.matTotal.value:SetText(Signed(res.cost))
 
@@ -562,7 +569,7 @@ function ES:RenderCalculator()
   Place(page.depositLine)
   page.depositLine.label:SetText(L["Depósito (24 h)"] .. GREY .. " · " .. L["se devuelve si se vende; lo pierdes si caduca"] .. "|r")
   page.depositLine.value:SetText(res.deposit > 0 and (GREY .. ES.Money(res.deposit) .. "|r") or (GREY .. "—|r"))
-  Place(page.profitLine, 6)
+  Place(page.profitLine, 8)
   page.profitLine.label:SetText(L["Beneficio"])
   page.profitLine.value:SetText(Signed(-res.profit))
 
