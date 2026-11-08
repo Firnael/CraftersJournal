@@ -11,7 +11,12 @@ ES.Scanner = Scanner
 
 local BATCH_SIZE = 300   -- sin debugprofilestop: subastas por fotograma
 local FRAME_BUDGET = 12  -- ms por fotograma procesando (~60 fps se mantiene jugable)
-local TIMEOUT = 60       -- s esperando al servidor; si no responde, se abandona
+-- s esperando al servidor; si no responde, se abandona. Con 60 s, en los días de
+-- lanzamiento (reinos llenos) se abandonaban escaneos que el servidor sí iba a mandar
+local TIMEOUT = 120
+-- s que el número de subastas debe quedarse quieto para darlas por recibidas: el
+-- servidor las manda por tandas (un escaneo se quedó en 1024 justas con 2 s)
+local STABLE_SECONDS = 4
 local SERVER_LIMIT = 15 * 60
 
 -- Límite del servidor: el de Forever no responde a un escaneo completo si el
@@ -117,6 +122,7 @@ function Scanner:Start()
   self.key = ES:RealmKey() -- AH en la que empezó el escaneo
   self.requestTime = time()
   self.waited = 0
+  self.gotEvent = false
   -- La barrera cuenta desde la petición: el servidor la cuenta aunque no responda
   LastFullScan()[ES:CharKey()] = self.requestTime
 
@@ -147,7 +153,11 @@ function Scanner:Start()
     if self.scanID ~= id or self.state ~= "waiting" then return end
     local elapsed = math.floor(GetTime() - started)
 
-    if elapsed >= TIMEOUT then
+    local count = self:CountResults()
+    -- Llegan datos: cambió el número, o llegó el evento (con la API clásica el número
+    -- puede ser el mismo que el del escaneo anterior)
+    local arriving = count > 0 and (count ~= before or self.gotEvent)
+    if elapsed >= TIMEOUT and not arriving then
       -- Sin respuesta (p. ej. otro addon escaneó hace poco): se abandona y la
       -- cuenta atrás de 15 min ya corre desde esta petición
       self:Abort(string.format(L["El servidor no respondió: solo permite un escaneo completo cada 15 min. Podrás volver a escanear en %s."],
@@ -157,16 +167,17 @@ function Scanner:Start()
     self.waited = elapsed
     SetProgress(WAIT_PROGRESS) -- el botón muestra los segundos de espera
 
-    -- Si el número de resultados cambió y se mantiene estable 2 s, procesamos
-    local count = self:CountResults()
-    if count > 0 and count ~= before then
+    -- Si el número de resultados cambió y se mantiene estable STABLE_SECONDS, procesamos
+    -- (el evento no basta: llega con la primera tanda, y en Forever a veces ni llega)
+    if arriving then
       if count == lastCount then
         stableTicks = stableTicks + 1
-        if stableTicks >= 2 then
+        if stableTicks >= STABLE_SECONDS then
           self:Process()
           return
         end
       else
+        ES:ScanLog(string.format("llegando: %d subastas", count))
         stableTicks = 0
       end
     end
@@ -234,6 +245,7 @@ function Scanner:Process()
     first = 0
   end
   local last = first + total - 1
+  ES:ScanLog(string.format("procesando %d subastas (%s)", total, self.gotEvent and "con evento" or "sin evento"))
 
   local items = {}
   local sigs = {}
@@ -295,6 +307,15 @@ function Scanner:Process()
     SetStatus(string.format(L["Procesando subastas... %d / %d"], index - first, total))
     SetProgress(WAIT_PROGRESS + (1 - WAIT_PROGRESS) * (index - first) / math.max(1, total))
 
+    if index > last then
+      -- Si mientras se procesaba llegó otra tanda, se lee también
+      local now = self:CountResults()
+      if now > total then
+        ES:ScanLog(string.format("llegaron más al procesar: %d -> %d", total, now))
+        total = now
+        last = first + total - 1
+      end
+    end
     if index <= last then
       C_Timer.After(0, Step)
     else
@@ -409,7 +430,10 @@ function Scanner:Finish(items, sigs, total)
 end
 
 frame:SetScript("OnEvent", function(_, event)
-  if event == Scanner.event and Scanner.state == "waiting" then
-    Scanner:Process()
+  -- Solo se anota: procesar aquí cogía solo la primera tanda; el sondeo de cada
+  -- segundo procesa cuando el número de subastas deja de crecer
+  if event == Scanner.event and Scanner.state == "waiting" and not Scanner.gotEvent then
+    Scanner.gotEvent = true
+    ES:ScanLog(string.format("evento %s: %d subastas", event, Scanner:CountResults()))
   end
 end)

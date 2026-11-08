@@ -2,6 +2,8 @@
 
 ## 0.37.0
 
+- **Full AH scans on Forever.** The server sends the auctions in batches and the addon kept only the first one (a scan stopped at exactly 1024 auctions), so many items had no price. It now waits until all batches have arrived and also reads any that arrive while it processes. It waits up to 2 minutes for the server (busy realms at launch took longer than the old 60 s).
+- **Inventory says when an item has no AH price.** Items missing from the last scan showed "vendor" as if the AH paid less; now the row says "no AH price".
 - **Data updated to the launch client of WoW Forever (1.60.1.70862).** 94 vendor sell prices went down at launch (Bronze Dory 32s 53c → 4s 88c, Mithril weapons, the Chain sets, Volcanic and Nightscape gear...): profit and routes now use the real values. The addon also prefers the price the game reports for the item over its own data, so a future price change is picked up on its own.
 - **New and changed recipes from the launch client:** new Enchant Boots - Speed (from a formula), First Aid Kit and Toxin Study; Disorienting Smog Potion removed; Shining Mithril Helm, the Heart of the Mountain formulas and Greater Mender's Potion can be learned earlier; Draught of Water Walking is learned from a recipe.
 - **Merchant's Favor recipes for leather and mail shoulders work again.** The game renamed them ("Shoulder" → "Shoulders") and they no longer showed their Merchant's Favor price.

@@ -68,6 +68,9 @@ function Inventory:List()
     local vendor = not it.noValue and ES:VendorSellPrice(id) or 0
     local e = { itemID = id, count = it.count, keep = keep, vendorUnit = vendor, vendorN = 0, ahN = 0, value = 0 }
     local entry = scan and scan.items[id]
+    -- Sin precio en la AH no se ha comparado: que se vea (si no, "al vendedor" parece
+    -- que la AH paga menos)
+    if n > 0 and not it.bound and not (entry and entry.minUnit) then e.noAH = true end
     if n > 0 and not it.bound and entry and entry.minUnit then
       local fair = ES.Market:FairPrice(id, entry.minUnit)
       local listPrice = ES.Market.ListPrice(fair)
@@ -184,6 +187,9 @@ local function Tooltip(e)
       GameTooltip:AddDoubleLine(string.format(L["%d al vendedor a %s"], e.vendorN, ES.Money(e.vendorUnit)),
         "+" .. ES.Money(e.vendorN * e.vendorUnit), 1, 0.82, 0, 1, 1, 1)
     end
+    if e.noAH then
+      GameTooltip:AddLine(L["No salía en el último escaneo de la AH: no se sabe si allí vale más. Escanea la AH para compararlo."], 1, 0.6, 0.2, true)
+    end
     if e.rise then
       GameTooltip:AddLine(string.format(L["Ha subido un %d%%: los últimos días estaba a ~%s."], math.floor(e.rise * 100 + 0.5), ES.Money(e.ref)),
         0.4, 1, 0.4, true)
@@ -226,6 +232,7 @@ local function Line(e, mode)
       parts[#parts + 1] = string.format(L["%sAH: %d a %s|r (%s)"], GOLD, e.ahN, ES.Money(e.listPrice), ES.Market.LABELS[e.verdict] or "")
     end
     if e.vendorN > 0 then parts[#parts + 1] = string.format(L["vendedor: %d a %s"], e.vendorN, ES.Money(e.vendorUnit)) end
+    if e.noAH then parts[#parts + 1] = ORANGE .. L["sin precio de AH"] .. "|r" end
     if e.rise then parts[1] = GREEN .. string.format(L["+%d%% sobre su precio habitual"], math.floor(e.rise * 100 + 0.5)) .. "|r · " .. (parts[1] or "") end
     if e.keep > 0 then parts[#parts + 1] = GREY .. string.format(L["guarda %d para tus rutas"], e.keep) .. "|r" end
     sub = table.concat(parts, " · ")

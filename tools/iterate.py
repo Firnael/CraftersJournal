@@ -355,6 +355,22 @@ step("H. escaneo con API moderna", function()
   RunTimers()
   local scan = CraftersJournalDB.scans[ES:RealmKey()]
   check(scan.total == #AUCTIONS, "API moderna: total %d ~= %d", scan.total, #AUCTIONS)
+  -- Por tandas (como el servidor de Forever): el evento llega con la primera; antes se
+  -- procesaba ahí y el escaneo se quedaba en 1024 justas
+  local avail = 0
+  C_AuctionHouse.GetNumReplicateItems = function() return avail end
+  local getInfo = C_AuctionHouse.GetReplicateItemInfo
+  C_AuctionHouse.GetReplicateItemInfo = function(i) if i < avail then return getInfo(i) end end
+  C_AuctionHouse.ReplicateItems = function()
+    C_Timer.After(5, function() avail = math.floor(#AUCTIONS / 2) FireEvent("REPLICATE_ITEM_LIST_UPDATE") end)
+    C_Timer.After(8, function() avail = #AUCTIONS FireEvent("REPLICATE_ITEM_LIST_UPDATE") end)
+  end
+  NOW = NOW + 3600
+  SlashCmdList.CRAFTERSJOURNAL("scan")
+  RunTimers()
+  scan = CraftersJournalDB.scans[ES:RealmKey()]
+  check(scan.total == #AUCTIONS, "API moderna por tandas: total %d ~= %d", scan.total, #AUCTIONS)
+  log("      por tandas: %d de %d subastas", scan.total, #AUCTIONS)
   QueryAuctionItems, GetNumAuctionItems, GetAuctionItemInfo, GetAuctionItemTimeLeft, CanSendAuctionQuery = unpack(saved)
   C_AuctionHouse, AuctionHouseFrame = nil, nil
 end)

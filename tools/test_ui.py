@@ -496,15 +496,17 @@ step("escanear con barrera de 15 min", function()
   started = false
   ES.Scanner:Start()
   assert(not started and not ES.Scanner:IsBusy(), "no debe pedirse otra vez antes de 15 min")
-  -- El servidor no responde: se abandona a los 60 s con la cuenta atrás ya corriendo
+  -- El servidor no responde: se abandona a los 120 s con la cuenta atrás ya corriendo
   ES.db.lastFullScan = { [ES:CharKey()] = NOW - 16 * 60 }
   ES:RefreshScanButtons()
   assert(f.scanButton._text == "Escanear", "pasados 15 min se puede escanear")
   ES.Scanner:Start()
   assert(ES.Scanner:IsBusy(), "debería pedir")
   clock = clock + 61 pending()
+  assert(ES.Scanner:IsBusy(), "a los 60 s aún debe esperar (reinos llenos tardan)")
+  clock = clock + 60 pending()
   assert(not ES.Scanner:IsBusy(), "debería abandonar sin respuesta")
-  assert(f.scanButton._text:match("^1[45]:%d%d$"), "cuenta atrás tras no responder: " .. tostring(f.scanButton._text))
+  assert(f.scanButton._text:match("^1[345]:%d%d$"), "cuenta atrás tras no responder: " .. tostring(f.scanButton._text))
   -- Si el cliente dice que no se puede, no se pide
   ES.db.lastFullScan = nil
   CanSendAuctionQuery = function() return true, false end
