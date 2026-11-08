@@ -1,6 +1,6 @@
 # Crafter's Journal
 
-## Unreleased
+## 0.37.0
 
 - **Data updated to the launch client of WoW Forever (1.60.1.70862).** 94 vendor sell prices went down at launch (Bronze Dory 32s 53c → 4s 88c, Mithril weapons, the Chain sets, Volcanic and Nightscape gear...): profit and routes now use the real values. The addon also prefers the price the game reports for the item over its own data, so a future price change is picked up on its own.
 - **New and changed recipes from the launch client:** new Enchant Boots - Speed (from a formula), First Aid Kit and Toxin Study; Disorienting Smog Potion removed; Shining Mithril Helm, the Heart of the Mountain formulas and Greater Mender's Potion can be learned earlier; Draught of Water Walking is learned from a recipe.
