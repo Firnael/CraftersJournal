@@ -1588,7 +1588,15 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   -- vendedor) se devuelve al venderse: se enseña, pero no resta
   assert(math.abs(res.profit - (res.revenue - res.cut - res.cost)) < 0.01, "beneficio mal sumado")
   local outVendor = ES:VendorSellPrice(outID) or 0
-  assert(math.abs(res.deposit - outVendor * 0.6 * res.outN) < 0.01, "depósito 24 h = 60% del vendedor: " .. res.deposit)
+  assert(res.hours == 24 and math.abs(res.deposit - outVendor * 0.6 * res.outN) < 0.01, "depósito 24 h = 60% del vendedor: " .. res.deposit)
+  -- Duración elegida: 2 h = 5%, 8 h = 20% (y el beneficio no cambia: se devuelve)
+  for hours, pct in pairs({ [2] = 0.05, [8] = 0.20 }) do
+    c.hours = hours
+    local rh = Calc:Compute(c)
+    assert(math.abs(rh.deposit - outVendor * pct * rh.outN) < 0.01 and rh.depositPct == pct * 100, hours .. " h: " .. rh.deposit)
+    assert(math.abs(rh.profit - res.profit) < 0.01, "la duración no cambia el beneficio")
+  end
+  c.hours = nil
   assert(res.cutRate == 0.05 and res.saleSource == "ah" and res.sale == 49999, "venta en la AH a 1c menos: " .. tostring(res.sale))
   -- Precio a mano: solo en este cálculo
   c.prices[SILK] = Calc.ParseMoney("2,7")
@@ -1634,6 +1642,12 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   b.g:SetText("") b.s:SetText("") b.c:SetText("")
   b.c._scripts.OnEnterPressed(b.c)
   assert(c.prices[SILK] == nil, "con las tres vacías vuelve al automático")
+  -- Selector de duración: 24 h marcado; pulsar 8 h lo guarda en el cálculo
+  assert(page.duration._shown, "el selector de duración se ve al vender en la AH")
+  local b8 = page.duration.buttons[2]
+  b8._scripts.OnClick(b8)
+  assert(c.hours == 8, "pulsar 8 h guarda la duración: " .. tostring(c.hours))
+  b8._scripts.OnEnter(b8)
   log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
   -- Buscar y añadir; borrar con la ✕
   page.search:SetText("silk")

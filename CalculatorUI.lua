@@ -400,6 +400,43 @@ local function CreateSheet(page)
   page.saleSource:SetWordWrap(false)
   page.cutLine = SummaryLine(p)
   page.depositLine = SummaryLine(p)
+  -- Duración de la subasta: 2 h · 8 h · 24 h (botones unidos; el elegido, en dorado)
+  local seg = CreateFrame("Frame", nil, page.depositLine)
+  seg:SetSize(3 * 44 + 4, 20)
+  seg:SetPoint("LEFT", COL_PRICE + 6, 0)
+  seg.buttons = {}
+  for i, hours in ipairs(Calc.DURATIONS) do
+    local b = CreateFrame("Button", nil, seg, "BackdropTemplate")
+    b:SetSize(44, 20)
+    b:SetPoint("LEFT", (i - 1) * 46, 0)
+    b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    b.text = ES.UI.Label(b, string.format(L["%d h"], hours), "GameFontHighlightSmall")
+    b.text:SetPoint("CENTER", 0, 0)
+    b.hours = hours
+    b:SetScript("OnClick", function(self)
+      local c = Calc:Selected()
+      if c then c.hours = self.hours end
+      ES:RenderCalculator()
+    end)
+    b:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine(string.format(L["Subasta de %d h"], self.hours))
+      GameTooltip:AddLine(string.format(L["Depósito: el %d%% del precio de vendedor. Se devuelve si se vende; lo pierdes si caduca o la cancelas."],
+        Calc.DepositPct(self.hours)), 0.8, 0.8, 0.8, true)
+      GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    seg.buttons[i] = b
+  end
+  function seg:SetSelected(hours)
+    for _, b in ipairs(self.buttons) do
+      local on = b.hours == hours
+      b:SetBackdropColor(on and 0.55 or 0.10, on and 0.40 or 0.08, on and 0.12 or 0.06, 0.95)
+      b:SetBackdropBorderColor(0.52, 0.38, 0.17, 1)
+      b.text:SetTextColor(on and 1 or 0.75, on and 0.85 or 0.72, on and 0.35 or 0.65)
+    end
+  end
+  page.duration = seg
   page.profitLine = SummaryLine(p, "GameFontNormalLarge")
   page.note = ES.UI.Label(p, "", "GameFontDisableSmall")
   page.note:SetJustifyH("LEFT")
@@ -567,13 +604,19 @@ function ES:RenderCalculator()
   page.cutLine.value:SetText(res.cut > 0 and Signed(res.cut) or (GREY .. "—|r"))
   -- El depósito se devuelve al venderse: no resta, se enseña en gris (lo que arriesgas)
   Place(page.depositLine)
-  page.depositLine.label:SetText(L["Depósito (24 h)"] .. GREY .. " · " .. L["se devuelve si se vende; lo pierdes si caduca"] .. "|r")
+  page.depositLine.label:SetText(L["Depósito"])
   page.depositLine.value:SetText(res.deposit > 0 and (GREY .. ES.Money(res.deposit) .. "|r") or (GREY .. "—|r"))
+  page.duration:SetSelected(res.hours)
+  page.duration:SetShown(res.outID ~= nil and res.saleSource ~= "vendor")
   Place(page.profitLine, 8)
   page.profitLine.label:SetText(L["Beneficio"])
   page.profitLine.value:SetText(Signed(-res.profit))
 
   local notes = {}
+  if res.deposit > 0 then
+    notes[#notes + 1] = string.format(L["Depósito de %d h: el %d%% del precio de vendedor. Se devuelve si se vende (no resta del beneficio); lo pierdes si caduca."],
+      res.hours, res.depositPct)
+  end
   if #res.made > 0 then
     local parts = {}
     for _, m in ipairs(res.made) do parts[#parts + 1] = Qty(m.qty) .. "× " .. (ES.UI.ItemLabel(m.itemID, "#" .. m.itemID)) end

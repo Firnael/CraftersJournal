@@ -11,7 +11,7 @@ local _, ES = ...
 --
 -- CraftersJournalDB.calcs = { list = { calc, ... }, nextID, selected }
 --   calc = { id, prof, recipe (hechizo), qty (fabricaciones), prices = { [itemID] = cobre },
---            sale (cobre por unidad, a mano), time }
+--            sale (cobre por unidad, a mano), hours (duración de la subasta), time }
 
 local Calc = {}
 ES.Calc = Calc
@@ -52,6 +52,18 @@ function Calc:Add(prof, spellID)
   table.insert(s.list, 1, c)
   s.selected = c.id
   return c
+end
+
+-- Duración de la subasta del cálculo (2, 8 o 24 h; por defecto 24): cambia el depósito
+Calc.DURATIONS = { 2, 8, 24 }
+function Calc.Hours(c)
+  for _, h in ipairs(Calc.DURATIONS) do if c.hours == h then return h end end
+  return 24
+end
+
+-- Depósito de una duración en % del precio de vendedor (5/20/60; más en la AH neutral)
+function Calc.DepositPct(hours)
+  return math.floor(ES.Planner.AuctionCosts(100, { hours = hours, neutral = ES:IsNeutralAH() }) + 0.5)
 end
 
 function Calc:Remove(id)
@@ -188,10 +200,13 @@ function Calc:Compute(c)
   end
   res.revenue = (res.sale or 0) * res.outN
   res.cut, res.cutRate, res.deposit = 0, 0, 0
+  res.hours = Calc.Hours(c)
+  res.depositPct = Calc.DepositPct(res.hours)
   if res.outID and res.saleSource ~= "vendor" then
-    -- En la AH: comisión sobre la venta y depósito (24 h: 60% del precio de vendedor).
-    -- El depósito se devuelve si se vende: no resta del beneficio, solo se arriesga
-    local deposit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = 24, neutral = ES:IsNeutralAH() })
+    -- En la AH: comisión sobre la venta y depósito según la duración (2/8/24 h: 5/20/60%
+    -- del precio de vendedor, la fórmula de Classic). El depósito se devuelve si se
+    -- vende: no resta del beneficio, solo se arriesga
+    local deposit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = res.hours, neutral = ES:IsNeutralAH() })
     res.cutRate, res.cut, res.deposit = cut, res.revenue * cut, deposit * res.outN
   end
   res.profit = res.revenue - res.cut - res.cost
