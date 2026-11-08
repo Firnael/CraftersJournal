@@ -592,6 +592,24 @@ step("colección de las 8 profesiones", function()
     cf.search:SetText("")
     cf.search._scripts.OnTextChanged(cf.search)
     log[#log+1] = string.format("     %s: %d recetas", cf.profKey, cf.data.total)
+    if cf.profKey == "Tailoring" then
+      -- Buscar tras bajar en la lista: antes las filas quedaban fuera de la vista (vacía)
+      local sc = cf.scroll
+      sc._vs = 0
+      sc.GetVerticalScroll = function(self) return self._vs end
+      sc.SetVerticalScroll = function(self, v) self._vs = v end
+      sc.GetHeight = function() return 400 end
+      sc._vs = 6000
+      cf.search:SetText("bag")
+      cf.search._scripts.OnTextChanged(cf.search)
+      local drawn = 0
+      for _, row in ipairs(cf.rows) do if row._shown and row.entry then drawn = drawn + 1 end end
+      assert(cf.shown > 0, "'bag' no encuentra recetas de sastrería")
+      assert(sc._vs == 0 and drawn > 0, "buscar tras bajar deja la lista vacía: scroll " .. sc._vs .. ", filas " .. drawn)
+      log[#log+1] = string.format("     buscar 'bag' tras bajar: %d recetas, %d filas a la vista", cf.shown, drawn)
+      cf.search:SetText("")
+      cf.search._scripts.OnTextChanged(cf.search)
+    end
   end
 end)
 step("portada: tarjetas de profesiones", function()

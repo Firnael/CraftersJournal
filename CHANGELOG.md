@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Data updated to the launch client of WoW Forever (1.60.1.70862).** 94 vendor sell prices went down at launch (Bronze Dory 32s 53c → 4s 88c, Mithril weapons, the Chain sets, Volcanic and Nightscape gear...): profit and routes now use the real values. The addon also prefers the price the game reports for the item over its own data, so a future price change is picked up on its own.
+- **New and changed recipes from the launch client:** new Enchant Boots - Speed (from a formula), First Aid Kit and Toxin Study; Disorienting Smog Potion removed; Shining Mithril Helm, the Heart of the Mountain formulas and Greater Mender's Potion can be learned earlier; Draught of Water Walking is learned from a recipe.
+- **Merchant's Favor recipes for leather and mail shoulders work again.** The game renamed them ("Shoulder" → "Shoulders") and they no longer showed their Merchant's Favor price.
+- **Recipe search no longer shows an empty list.** If you had scrolled down the list, searching (for example "bag") left the results out of view. The list now goes back to the top when you search.
 - **New Inventory tab (bag icon).** What to sell from your bags, where and how much you get. Items sell on the Auction House when that leaves you more than the vendor, after the cut and deposit; the rest go to the vendor. Items that went up in price are listed at the top ("sell it now"). What your started routes still need is kept, not sold. With the vendor open, one button sells everything that goes to the vendor. Clicking a row lists it on the AH or sells it, depending on which is open.
 - **Make money: no more gold budget.** The "Budget (gold)" box is gone: the batch always picks the best recipes, up to its usual size.
 - **The addon no longer reads or saves anything from your mailbox.** Make money no longer has the "Your auctions" list, the "Sold (7 days, mailbox)" figure or the mailbox notes on each idea. What was saved by earlier versions is deleted the first time you log in.

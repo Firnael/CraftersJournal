@@ -767,6 +767,18 @@ function ES:RenderCollection(frame)
   frame.counterSub:SetText(GREY .. string.format(L["%d%% · %d puedes aprender ya"], pct, now) .. "|r"
     .. (hidden > 0 and (ORANGE .. string.format(L[" · %d ocultas por los filtros"], hidden) .. "|r") or ""))
   frame.content:SetHeight(math.max(1, #list * ROW_STEP))
+  -- Al buscar, arriba del todo; y nunca más abajo que el final de la lista: si se había
+  -- bajado y la búsqueda deja pocas recetas, las filas quedaban fuera de la vista
+  -- (la lista parecía vacía)
+  local maxScroll = math.max(0, #list * ROW_STEP - (tonumber(frame.scroll:GetHeight()) or 0))
+  local offset = tonumber(frame.scroll:GetVerticalScroll()) or 0
+  if query ~= frame.lastQuery then offset = 0 end
+  frame.lastQuery = query
+  if offset > maxScroll then offset = maxScroll end
+  if offset ~= (tonumber(frame.scroll:GetVerticalScroll()) or 0) then
+    if frame.scroll.UpdateScrollChildRect then frame.scroll:UpdateScrollChildRect() end
+    frame.scroll:SetVerticalScroll(offset)
+  end
   PlaceRows(frame)
   frame.scrollIndicator:Update()
   frame.empty:SetText(#list == 0 and (res.known == res.total and L["¡Las tienes todas!"] or L["Ninguna receta cumple los filtros."]) or "")
