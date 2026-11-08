@@ -1412,6 +1412,32 @@ step("inventario: qué vender de las bolsas, dónde y qué guardar", function()
   ES.Ledger.MerchantOpen, ES.Ledger.SellToVendor, ES.Ledger.PostOnAH, ES.IsAuctionHouseOpen = savedMerchant, savedSell, savedPost, savedAH
   ES:SelectPage("home")
 end)
+step("inventario: sin saber si se vende, el depósito que se pierde cuenta", function()
+  -- Crimson Silk Pantaloons: 32s en la AH (30s 39c tras la comisión) frente a 24s 30c del
+  -- vendedor; el depósito de 24 h (14s 58c) se pierde si caduca. Con pocos datos, vendedor
+  local PANTS = 7062
+  local savedCC, savedScans, savedVendor, savedSig, savedRef = C_Container, ES.db.scans, ES.VendorSellPrice, ES.Market.Signals, ES.Market.ReferencePrice
+  C_Container = {
+    GetContainerNumSlots = function(bag) return bag == 0 and 1 or 0 end,
+    GetContainerItemID = function(bag, slot) return slot == 1 and PANTS or nil end,
+    GetContainerItemInfo = function() return { stackCount = 5 } end,
+  }
+  ES.VendorSellPrice = function(_, id) return id == PANTS and 2430 or 1 end
+  ES.Market.ReferencePrice = function() return nil end
+  ES.db.scans = { [ES:RealmKey()] = { time = time() - 600, items = { [PANTS] = { minUnit = 3200, quantity = 3 } } } }
+  local function Pants()
+    for _, e in ipairs(ES.Inventory:List()) do if e.itemID == PANTS then return e end end
+  end
+  ES.Market.Signals = function() return { verdict = "unknown" } end
+  local e = Pants()
+  assert(e.ahN == 0 and e.vendorN == 5 and e.riskyAH, "con pocos datos, al vendedor (y avisando): ah " .. e.ahN)
+  assert(math.abs(e.depositRisk - 2430 * 0.6) < 1, "riesgo = depósito de 24 h: " .. tostring(e.depositRisk))
+  -- Si se sabe que se vende, a la AH (el depósito se devuelve)
+  ES.Market.Signals = function() return { verdict = "good" } end
+  e = Pants()
+  assert(e.ahN == 5 and not e.riskyAH, "con buen mercado, a la AH")
+  C_Container, ES.db.scans, ES.VendorSellPrice, ES.Market.Signals, ES.Market.ReferencePrice = savedCC, savedScans, savedVendor, savedSig, savedRef
+end)
 step("inventario: lo que daría desencantar (solo informativo)", function()
   -- Un verde de armadura nivel 22 ligado (4-6 polvos extraños de media al 75%), un arma
   -- verde del mismo nivel (sobre todo esencias), un gris y un verde que se vende caro

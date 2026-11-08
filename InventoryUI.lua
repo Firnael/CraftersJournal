@@ -76,13 +76,27 @@ function Inventory:List()
     if n > 0 and not it.bound and entry and entry.minUnit then
       local fair = ES.Market:FairPrice(id, entry.minUnit)
       local listPrice = ES.Market.ListPrice(fair)
-      -- El depósito se devuelve al venderse: no resta (lo que te queda es tras la comisión)
-      local _, cut = ES.Planner.AuctionCosts(vendor, { hours = 24, neutral = ES:IsNeutralAH() })
+      -- Lo que te queda es tras la comisión: el depósito se devuelve al venderse
+      local perUnit, cut = ES.Planner.AuctionCosts(vendor, { hours = 24, neutral = ES:IsNeutralAH() })
       local net = listPrice and listPrice * (1 - cut)
       local verdict = ES.Market:Signals(id).verdict
       e.fair, e.verdict, e.listPrice, e.ref = fair, verdict, listPrice, fair.ref
       if fair.ref and entry.minUnit >= fair.ref * RISE then e.rise = entry.minUnit / fair.ref - 1 end
-      if net and net - vendor >= math.max(AH_MIN_GAIN, vendor * AH_MIN_PCT) and verdict ~= "avoid" then
+      -- ...pero si no sabemos que se venda (pocos datos, ojo), puede caducar y el
+      -- depósito se pierde (60% del vendedor, mínimo 1s por subasta): la AH tiene que
+      -- compensar aunque se pierda una vez. Si no, al vendedor (Crimson Silk Pantaloons:
+      -- 30s en la AH frente a 24s del vendedor, pero 14s de depósito por cada una que caduca)
+      local compare = net
+      if net and verdict ~= "good" then
+        local stack = ES.Calc.StackSize(id)
+        local m = math.max(1, math.min(n, stack))
+        e.depositRisk = ES.Calc.Deposit(perUnit, m, m) / m
+        compare = net - e.depositRisk
+      end
+      if net and compare - vendor < math.max(AH_MIN_GAIN, vendor * AH_MIN_PCT) and net - vendor >= math.max(AH_MIN_GAIN, vendor * AH_MIN_PCT) then
+        e.riskyAH, e.ahNet = true, net -- en la AH valdría más, pero no compensa el riesgo de perder el depósito
+      end
+      if net and compare - vendor >= math.max(AH_MIN_GAIN, vendor * AH_MIN_PCT) and verdict ~= "avoid" then
         local onAH = verdict == "good" and n or math.min(n, AH_FEW)
         e.ahN, e.ahUnit = onAH, net
       end
@@ -212,6 +226,10 @@ local function Tooltip(e)
           or string.format(L["Un encantador (Encantamiento %d) sacaría más desencantándolo."], e.de.skill), 1, 0.6, 0.2, true)
       end
     end
+    if e.riskyAH then
+      GameTooltip:AddLine(string.format(L["En la AH te quedarían %s, pero no se sabe si se vende: si caduca pierdes %s de depósito por subasta. Al vendedor es seguro."],
+        ES.Money(e.ahNet), ES.Money(e.depositRisk)), 1, 0.6, 0.2, true)
+    end
     if e.noAH then
       GameTooltip:AddLine(L["No salía en el último escaneo de la AH: no se sabe si allí vale más. Escanea la AH para compararlo."], 1, 0.6, 0.2, true)
     end
@@ -258,6 +276,7 @@ local function Line(e, mode)
     end
     if e.vendorN > 0 then parts[#parts + 1] = string.format(L["vendedor: %d a %s"], e.vendorN, ES.Money(e.vendorUnit)) end
     if e.noAH then parts[#parts + 1] = ORANGE .. L["sin precio de AH"] .. "|r" end
+    if e.riskyAH then parts[#parts + 1] = GREY .. L["AH arriesgada: puede caducar"] .. "|r" end
     if e.de then parts[#parts + 1] = GOLD .. string.format(L["desencantado: ~%s"], ES.Money(e.de.value)) .. "|r" end
     if e.rise then parts[1] = GREEN .. string.format(L["+%d%% sobre su precio habitual"], math.floor(e.rise * 100 + 0.5)) .. "|r · " .. (parts[1] or "") end
     if e.keep > 0 then parts[#parts + 1] = GREY .. string.format(L["guarda %d para tus rutas"], e.keep) .. "|r" end

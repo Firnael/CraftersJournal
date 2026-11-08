@@ -1,5 +1,9 @@
 # Crafter's Journal
 
+## 0.37.1
+
+- **Inventory: no more AH suggestions that expire.** When the AH market for an item is uncertain (little data or mixed signals), the AH now has to pay more than the vendor even if the auction expires once and you lose the deposit (60% of the vendor price for 24 h, at least 1s per auction). Otherwise the item goes to the vendor, and the row and tooltip say the AH is risky. Items with a good market still go to the AH. (Crimson Silk Pantaloons: 30s on the AH vs 24s at the vendor, but 14s lost per expired auction.)
+
 ## 0.37.0
 
 - **Full AH scans on Forever.** The server sends the auctions in batches and the addon kept only the first one (a scan stopped at exactly 1024 auctions), so many items had no price. It now waits until all batches have arrived and also reads any that arrive while it processes. It waits up to 2 minutes for the server (busy realms at launch took longer than the old 60 s).
