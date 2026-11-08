@@ -269,6 +269,7 @@ local function CreateMainFrame()
   ES:CreateHomePage(AddPage("home", L["Subir profesiones"]))
   ES:CreateEarnPage(AddPage("money", ""))
   ES:CreateInventoryPage(AddPage("inventory", ""))
+  ES:CreateCalculatorPage(AddPage("calc", ""))
   ES:CreateFlippingPage(AddPage("flipping", ""))
   ES:CreatePatternsPage(AddPage("patterns", L["Colección de recetas"]))
   for _, prof in ipairs(ES.PROFESSIONS) do
@@ -432,6 +433,8 @@ local TABS = ES.Localize({
     desc = "Qué fabricar hoy con tus recetas porque da beneficio." },
   { key = "inventory", label = "Inventario",          icon = "Interface\\Icons\\INV_Misc_Bag_08",
     desc = "Qué vender de tus bolsas, dónde y cuánto sacas; y lo que ha subido de precio." },
+  { key = "calc",     label = "Calculadora",          icon = "Interface\\Icons\\INV_Misc_Note_02",
+    desc = "Cuánto ganas con una receta, como en una hoja de cálculo: guarda varios cálculos y escribe tus precios." },
   { key = "flipping", label = "Flipping",             icon = "flip", dev = true,
     desc = "Objetos de la AH que han bajado de precio: cómpralos barato y revéndelos." },
   { key = "patterns", label = "Colección de recetas", icon = "Interface\\Icons\\INV_Scroll_03",

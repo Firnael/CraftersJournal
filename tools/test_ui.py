@@ -683,7 +683,7 @@ step("portada: tarjetas de profesiones", function()
   assert(tostring(lw.level._text):find("%d+|r / %d+"), "nivel no mostrado: " .. tostring(lw.level._text))
   -- Pestañas laterales: cada una abre su página y queda marcada
   local mf = ES:GetMainFrame()
-  assert(#mf.tabs == 6, "pestañas: " .. #mf.tabs)
+  assert(#mf.tabs == 7, "pestañas: " .. #mf.tabs)
   for _, tab in ipairs(mf.tabs) do
     tab._scripts.OnClick(tab)
     assert(ES.db.lastPage == tab.key, "la pestaña " .. tab.key .. " no abre su página")
@@ -1536,7 +1536,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Vista de jugador: ventana nueva sin las pestañas, el buscador ni la Pesca
   local g = ES:GetMainFrame()
   assert(ES.DEV == false and ES.db.userPreview == true, "no pasó a vista de jugador")
-  assert(#g.tabs == 4, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario y colección
+  assert(#g.tabs == 5, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario, calculadora y colección
   ES:SelectPage("home")
   for _, c in ipairs(ES.homePage.cards) do
     if c._shown ~= false then assert(c.key ~= "Fishing", "la Pesca no debería verse") end
@@ -1546,7 +1546,98 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Y vuelta al modo desarrollo
   panel.devCheck:SetChecked(false)
   panel.devCheck._scripts.OnClick(panel.devCheck)
-  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 6, "no volvió al modo desarrollo")
+  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 7, "no volvió al modo desarrollo")
+end)
+step("calculadora: desglose en crudo, precios a mano y cálculos guardados", function()
+  local Calc = ES.Calc
+  -- Dinero escrito como en una hoja de cálculo
+  assert(Calc.ParseMoney("2,7") == 270 and Calc.ParseMoney("2.7") == 270, "2,7 = 2s 70c")
+  assert(Calc.ParseMoney("1g 20s 5c") == 12005 and Calc.ParseMoney("1o 20p") == 12000, "con unidades")
+  assert(Calc.ParseMoney("27c") == 27 and Calc.ParseMoney("") == nil and Calc.ParseMoney("abc") == nil, "cobre, vacío y basura")
+  assert(Calc.FormatMoney(12005) == "1g 20s 5c" and Calc.FormatMoney(0) == "0c", "formato: " .. Calc.FormatMoney(12005))
+  -- Una receta de sastrería que pide Bolt of Silk Cloth (4305), que sabes fabricar
+  local data = ES.Data.Tailoring
+  local SILK, BOLT, recipeID, boltID = 4306, 4305
+  for id, r in pairs(data.recipes) do
+    if r.out and r.out[1] == BOLT then boltID = id end
+  end
+  for id, r in pairs(data.recipes) do
+    for _, rq in ipairs(r.r) do if rq[1] == BOLT and r.out and (not recipeID or id < recipeID) then recipeID = id end end
+  end
+  assert(boltID and recipeID, "no hay receta con Bolt of Silk Cloth")
+  local savedKnown, savedScans, savedStanding, savedCalcs = ES.IsRecipeKnown, ES.db.scans, ES.Standing, ES.db.calcs
+  ES.IsRecipeKnown = function(_, id) return id == boltID end
+  ES.db.calcs = nil
+  local outID = data.recipes[recipeID].out[1]
+  ES.db.scans = { [ES:RealmKey()] = { time = time() - 600, items = {
+    [SILK] = { minUnit = 200, quantity = 500 }, [outID] = { minUnit = 50000, quantity = 3 } } } }
+  ES.Standing = function() return 4 end
+  local c = Calc:Add("Tailoring", recipeID)
+  local res = Calc:Compute(c)
+  local by = {}
+  for _, row in ipairs(res.rows) do by[row.itemID] = row end
+  assert(not by[BOLT] and by[SILK], "el Bolt de seda debería desglosarse en su tela")
+  assert(#res.made == 1 and res.made[1].itemID == BOLT, "y decirse que lo fabricas tú")
+  local boltsNeeded
+  for _, rq in ipairs(data.recipes[recipeID].r) do if rq[1] == BOLT then boltsNeeded = rq[2] end end
+  local silkPerBolt
+  for _, rq in ipairs(data.recipes[boltID].r) do if rq[1] == SILK then silkPerBolt = rq[2] end end
+  assert(by[SILK].qty == boltsNeeded * silkPerBolt / (data.recipes[boltID].out[2] or 1), "tela: " .. by[SILK].qty)
+  assert(by[SILK].source == "ah" and by[SILK].price == 200, "la seda, del escaneo")
+  -- Las cuentas: venta - comisión - depósito - materiales
+  assert(math.abs(res.profit - (res.revenue - res.cut - res.deposit - res.cost)) < 0.01, "beneficio mal sumado")
+  assert(res.cutRate == 0.05 and res.saleSource == "ah" and res.sale == 49999, "venta en la AH a 1c menos: " .. tostring(res.sale))
+  -- Precio a mano: solo en este cálculo
+  c.prices[SILK] = Calc.ParseMoney("2,7")
+  local res2 = Calc:Compute(c)
+  for _, row in ipairs(res2.rows) do if row.itemID == SILK then assert(row.source == "manual" and row.price == 270, "precio a mano") end end
+  assert(res2.cost > res.cost, "con la seda más cara, más coste")
+  local c2 = Calc:Add("Tailoring", boltID)
+  local r3 = Calc:Compute(c2)
+  assert(r3.rows[1].price == 200, "el precio a mano de un cálculo no cambia otro")
+  -- Cantidad: el doble de fabricaciones, el doble de materiales
+  c.qty = 2
+  assert(math.abs(Calc:Compute(c).cost - 2 * res2.cost) < 0.01, "cantidad x2")
+  -- Descuento de vendedor por reputación con una capital (honorable: -10%)
+  local vendorItem
+  for _, rq in ipairs(data.recipes[recipeID].r) do if ES.Data.VendorPrices[rq[1]] then vendorItem = rq[1] end end
+  if vendorItem then
+    ES.Standing = function(_, id) return id == 72 and 6 or 4 end
+    local r4 = Calc:Compute(c)
+    for _, row in ipairs(r4.rows) do
+      if row.itemID == vendorItem then
+        assert(row.source == "vendor" and row.price == math.floor(ES.Data.VendorPrices[vendorItem] * 0.9 + 0.5), "descuento de ciudad")
+      end
+    end
+    assert(r4.discount == 0.10, "descuento: " .. r4.discount)
+  end
+  -- La página: lista de guardados, hoja y escribir un precio en su casilla
+  ES:SelectPage("calc")
+  local page = ES.calculatorPage
+  page._shown = true
+  Calc:Select(c.id)
+  ES:RenderCalculator()
+  assert(page.saved[1]._shown and page.saved[2]._shown, "dos cálculos guardados en la lista")
+  local silkRow
+  for _, row in ipairs(page.sheetRows) do if row._shown and row.itemID == SILK then silkRow = row end end
+  assert(silkRow and silkRow.box._text == "2s 70c", "casilla con el precio a mano: " .. tostring(silkRow and silkRow.box._text))
+  silkRow.box:SetText("3")
+  silkRow.box._scripts.OnEnterPressed(silkRow.box)
+  assert(c.prices[SILK] == 300, "escribir 3 en la casilla = 3s")
+  silkRow.box:SetText("")
+  silkRow.box._scripts.OnEnterPressed(silkRow.box)
+  assert(c.prices[SILK] == nil, "vaciar la casilla vuelve al automático")
+  log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
+  -- Buscar y añadir; borrar con la ✕
+  page.search:SetText("silk")
+  page.search._scripts.OnTextChanged(page.search)
+  assert(page.results._shown and page.results.rows[1].result, "el buscador no encuentra 'silk'")
+  page.results.rows[1]._scripts.OnClick(page.results.rows[1])
+  assert(#Calc:List() == 3, "el buscador debería añadir un cálculo")
+  page.saved[1].del._scripts.OnClick(page.saved[1].del)
+  assert(#Calc:List() == 2, "la ✕ debería borrarlo")
+  ES.IsRecipeKnown, ES.db.scans, ES.Standing, ES.db.calcs = savedKnown, savedScans, savedStanding, savedCalcs
+  ES:SelectPage("home")
 end)
 step("materiales: o se fabrican o se compran, y la ✕ los compra hechos", function()
   local data = ES.Data.Leatherworking
