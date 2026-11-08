@@ -428,7 +428,7 @@ ES.SKILLS_ICON = 8197101
 local TABS = ES.Localize({
   { key = "home",     label = "Subir profesiones",    icon = "skills",
     desc = "Cómo subir cada profesión: la ruta más barata paso a paso." },
-  { key = "money",    label = "Ganar dinero",         icon = "Interface\\Icons\\INV_Misc_Coin_02", dev = true,
+  { key = "money",    label = "Ganar dinero",         icon = "Interface\\Icons\\INV_Misc_Coin_02",
     desc = "Qué fabricar hoy con tus recetas porque da beneficio." },
   { key = "inventory", label = "Inventario",          icon = "Interface\\Icons\\INV_Misc_Bag_08",
     desc = "Qué vender de tus bolsas, dónde y cuánto sacas; y lo que ha subido de precio." },
@@ -530,7 +530,7 @@ end
 function ES:SelectPage(key)
   if key == "lw" or key == "profit" then key = "Leatherworking" end -- nombres de versiones anteriores
   if not main or not main.pages[key] then key = "home" end
-  if not ES.DEV and (key == "money" or key == "ah" or key == "flipping") then key = "home" end -- pestañas solo de desarrollo
+  if not ES.DEV and (key == "ah" or key == "flipping") then key = "home" end -- pestañas solo de desarrollo
   if not ES.DEV then -- profesiones solo de desarrollo (Pesca) y su colección
     for _, p in ipairs(ES.PROFESSIONS) do
       if p.dev and (key == p.key or key == "pattern:" .. p.key) then key = "home" end

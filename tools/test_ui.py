@@ -1510,12 +1510,15 @@ step("versión publicada: sin las pestañas en desarrollo", function()
   local src
   for i, n in ipairs(SOURCE_NAMES) do if n == "Core.lua" then src = SOURCES[i] end end
   assert(src:find("%-%-@debug@\nES.DEV_BUILD = true\n%-%-@end%-debug@"), "falta el bloque @debug@ de ES.DEV_BUILD")
-  -- Como en la publicada: Ganar dinero, Subastas y la Pesca no se abren
+  -- Como en la publicada: Subastas, Flipping y la Pesca no se abren; Ganar dinero sí
   ES.DEV = false
-  for _, key in ipairs({ "money", "ah", "flipping", "Fishing", "pattern:Fishing" }) do
+  for _, key in ipairs({ "ah", "flipping", "Fishing", "pattern:Fishing" }) do
     ES:SelectPage(key)
     assert(ES.db.lastPage == "home", key .. " no debería abrirse en la versión publicada")
   end
+  ES:SelectPage("money")
+  assert(ES.db.lastPage == "money", "Ganar dinero debería abrirse en la versión publicada")
+  ES:SelectPage("home")
   ES.DEV = true
 end)
 step("interruptor de desarrollo: vista de jugador", function()
@@ -1533,7 +1536,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Vista de jugador: ventana nueva sin las pestañas, el buscador ni la Pesca
   local g = ES:GetMainFrame()
   assert(ES.DEV == false and ES.db.userPreview == true, "no pasó a vista de jugador")
-  assert(#g.tabs == 3, "pestañas en vista de jugador: " .. #g.tabs) -- portada, inventario y colección
+  assert(#g.tabs == 4, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario y colección
   ES:SelectPage("home")
   for _, c in ipairs(ES.homePage.cards) do
     if c._shown ~= false then assert(c.key ~= "Fishing", "la Pesca no debería verse") end

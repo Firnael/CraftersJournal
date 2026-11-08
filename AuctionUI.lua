@@ -23,14 +23,14 @@ end
 -- empezada ("Empezar ruta"): es lo que vas a comprar. Sin ninguna, el panel dice
 -- cómo empezar una.
 local MONEY = "money"
--- (Ganar dinero solo en desarrollo, ES.DEV; la Pesca no compra nada: fuera)
+-- (la Pesca no compra nada: fuera)
 local function ProfessionKeys()
   local keys = {}
   for _, p in ipairs(ES.PROFESSIONS) do
     local data = ES.Data[p.key]
     if data and not data.guide and ES:RouteLock(p.key) then keys[#keys + 1] = p.key end
   end
-  if ES.DEV then keys[#keys + 1] = MONEY end -- al final: por defecto sale una ruta
+  keys[#keys + 1] = MONEY -- al final: por defecto sale una ruta
   return keys
 end
 

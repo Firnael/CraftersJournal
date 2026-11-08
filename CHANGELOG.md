@@ -10,8 +10,8 @@
 - **Merchant's Favor recipes for leather and mail shoulders work again.** The game renamed them ("Shoulder" → "Shoulders") and they no longer showed their Merchant's Favor price.
 - **Recipe search no longer shows an empty list.** If you had scrolled down the list, searching (for example "bag") left the results out of view. The list now goes back to the top when you search.
 - **New Inventory tab (bag icon).** What to sell from your bags, where and how much you get. Items sell on the Auction House when that leaves you more than the vendor, after the cut and deposit; the rest go to the vendor. Items that went up in price are listed at the top ("sell it now"). What your started routes still need is kept, not sold. With the vendor open, one button sells everything that goes to the vendor. Clicking a row lists it on the AH or sells it, depending on which is open.
-- **Make money: no more gold budget.** The "Budget (gold)" box is gone: the batch always picks the best recipes, up to its usual size.
-- **The addon no longer reads or saves anything from your mailbox.** Make money no longer has the "Your auctions" list, the "Sold (7 days, mailbox)" figure or the mailbox notes on each idea. What was saved by earlier versions is deleted the first time you log in.
+- **New Make money tab (coin icon).** What to craft today with the recipes you know because it sells for more than it costs, using your last AH scan. Its shopping list also shows in the AH panel, next to your started routes.
+- **The addon no longer reads or saves anything from your mailbox.** What earlier versions saved is deleted the first time you log in.
 
 ## 0.36.0
 
