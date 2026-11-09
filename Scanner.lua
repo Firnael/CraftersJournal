@@ -23,15 +23,27 @@ local SERVER_LIMIT = 15 * 60
 -- anterior fue hace menos de 15 min, aunque el cliente diga que se puede. Así que
 -- se cuentan 15 min desde cada petición y el botón muestra la cuenta atrás: mejor
 -- esperar viendo el tiempo que pulsar y que no pase nada.
--- CraftersJournalDB.lastFullScan[personaje] = hora de la última petición enviada.
+-- El límite es de la CUENTA, no del personaje: un escaneo con un personaje (o el de
+-- otro addon, como el automático de ForeverForge_Auction) gasta el de todos.
+-- CraftersJournalDB.lastFullScan[personaje u "otro addon"] = hora de la última petición;
+-- cuenta la más reciente de todas.
+local OTHER_ADDON = "otro addon"
 local function LastFullScan()
   if type(ES.db.lastFullScan) ~= "table" then ES.db.lastFullScan = {} end
   return ES.db.lastFullScan
 end
 
+local function LastRequest()
+  local last
+  for _, t in pairs(LastFullScan()) do
+    if type(t) == "number" and (not last or t > last) then last = t end
+  end
+  return last
+end
+
 function Scanner:SecondsUntilNextScan()
   if not ES.db then return 0 end
-  local last = LastFullScan()[ES:CharKey()]
+  local last = LastRequest()
   return last and math.max(0, SERVER_LIMIT - (time() - last)) or 0
 end
 
@@ -98,6 +110,7 @@ function Scanner:Start()
     return
   end
 
+  local api
   if UseLegacyAPI() then
     local _, canGetAll = CanSendAuctionQuery()
     if not canGetAll then
@@ -106,17 +119,24 @@ function Scanner:Start()
       SetStatus(msg)
       return
     end
-    self.api = "legacy"
-    self.event = "AUCTION_ITEM_LIST_UPDATE"
+    api = "legacy"
   elseif C_AuctionHouse and C_AuctionHouse.ReplicateItems then
-    self.api = "modern"
-    self.event = "REPLICATE_ITEM_LIST_UPDATE"
+    api = "modern"
   else
     ES:Print(L["No se encontró ninguna API de subastas compatible en este cliente."])
     return
   end
+  self:Begin(api, false)
+end
 
-  ES:ScanLog("pedido, API " .. self.api)
+-- Empieza a esperar los datos. Con `piggyback`, la petición la hizo otro addon: no se
+-- vuelve a pedir (el servidor no contestaría) y se leen los mismos datos que le llegan
+function Scanner:Begin(api, piggyback)
+  self.api = api
+  self.event = api == "legacy" and "AUCTION_ITEM_LIST_UPDATE" or "REPLICATE_ITEM_LIST_UPDATE"
+  self.piggyback = piggyback
+
+  ES:ScanLog((piggyback and "aprovechando el escaneo de otro addon" or "pedido") .. ", API " .. self.api)
   self.state = "waiting"
   self.scanID = (self.scanID or 0) + 1
   self.key = ES:RealmKey() -- AH en la que empezó el escaneo
@@ -124,30 +144,35 @@ function Scanner:Start()
   self.waited = 0
   self.gotEvent = false
   -- La barrera cuenta desde la petición: el servidor la cuenta aunque no responda
-  LastFullScan()[ES:CharKey()] = self.requestTime
+  LastFullScan()[piggyback and OTHER_ADDON or ES:CharKey()] = self.requestTime
 
-  self:MuteOthers(self.event)
+  -- Al aprovechar el de otro addon no se le silencia: necesita sus eventos
+  if not piggyback then self:MuteOthers(self.event) end
   ES.SafeRegister(frame, self.event) -- si no existe, el sondeo de cada segundo detecta los datos igual
   ES:RefreshScanButtons()
   SetProgress(WAIT_PROGRESS)
 
   local before = self:CountResults()
 
-  if self.api == "legacy" then
-    -- Evita un error conocido de la UI clásica con calidad -1
-    if ITEM_QUALITY_COLORS and not ITEM_QUALITY_COLORS[-1] then
-      ITEM_QUALITY_COLORS[-1] = { r = 0, g = 0, b = 0 }
+  if not piggyback then
+    self.ownRequest = true -- para que el gancho no lo tome por otro addon
+    if self.api == "legacy" then
+      -- Evita un error conocido de la UI clásica con calidad -1
+      if ITEM_QUALITY_COLORS and not ITEM_QUALITY_COLORS[-1] then
+        ITEM_QUALITY_COLORS[-1] = { r = 0, g = 0, b = 0 }
+      end
+      pcall(QueryAuctionItems, "", nil, nil, 0, nil, nil, true, false, nil)
+    else
+      pcall(C_AuctionHouse.ReplicateItems)
     end
-    QueryAuctionItems("", nil, nil, 0, nil, nil, true, false, nil)
-  else
-    C_AuctionHouse.ReplicateItems()
+    self.ownRequest = false
   end
 
   -- Contador visible + sondeo por si el evento no llega
   local id = self.scanID
   local started = GetTime()
   local apiName = self.api == "legacy" and L["clásica"] or L["moderna"]
-  local lastCount, stableTicks = before, 0
+  local lastCount, stableTicks, changed = before, 0, false
 
   local function Tick()
     if self.scanID ~= id or self.state ~= "waiting" then return end
@@ -156,8 +181,16 @@ function Scanner:Start()
     local count = self:CountResults()
     -- Llegan datos: cambió el número, o llegó el evento (con la API clásica el número
     -- puede ser el mismo que el del escaneo anterior)
-    local arriving = count > 0 and (count ~= before or self.gotEvent)
+    -- (una vez cambiado, sigue contando aunque vuelva al número de antes: el nuevo
+    -- escaneo puede acabar con las mismas subastas que el anterior)
+    changed = changed or count ~= before
+    local arriving = count > 0 and (changed or self.gotEvent)
     if elapsed >= TIMEOUT and not arriving then
+      if self.piggyback then
+        -- El servidor no contestó al otro addon: no es un fallo nuestro
+        self:Abort(nil, true)
+        return
+      end
       -- Sin respuesta (p. ej. otro addon escaneó hace poco): se abandona y la
       -- cuenta atrás de 15 min ya corre desde esta petición
       self:Abort(string.format(L["El servidor no respondió: solo permite un escaneo completo cada 15 min. Podrás volver a escanear en %s."],
@@ -183,7 +216,9 @@ function Scanner:Start()
     end
     lastCount = count
 
-    SetStatus(string.format(L["Pidiendo los datos de la AH al servidor... %d s (API %s, /es cancel para cancelar)"], elapsed, apiName))
+    SetStatus(string.format(self.piggyback
+      and L["Leyendo el escaneo que pidió otro addon... %d s (API %s, /es cancel para cancelar)"]
+      or L["Pidiendo los datos de la AH al servidor... %d s (API %s, /es cancel para cancelar)"], elapsed, apiName))
     C_Timer.After(1, Tick)
   end
   Tick()
@@ -196,12 +231,19 @@ function Scanner:CountResults()
   return C_AuctionHouse.GetNumReplicateItems() or 0
 end
 
-function Scanner:Abort(reason)
+-- `quiet`: sin aviso ni marca de fallo (el escaneo de otro addon que no llegó)
+function Scanner:Abort(reason, quiet)
   if not self:IsBusy() then return end
   frame:UnregisterAllEvents()
   self:UnmuteOthers()
   self.state = "idle"
   self.scanID = (self.scanID or 0) + 1 -- invalida lotes pendientes
+  if quiet then
+    ES:ScanLog("el escaneo de otro addon no llegó")
+    SetStatus(L["El servidor no respondió al escaneo de otro addon."])
+    ES:RefreshScanButtons()
+    return
+  end
   -- Para avisar junto a "Último escaneo" de que el último intento no acabó
   -- (si no, "hace 2 días" parece un fallo al guardar)
   if type(ES.db.lastScanFail) ~= "table" then ES.db.lastScanFail = {} end
@@ -428,6 +470,36 @@ function Scanner:Finish(items, sigs, total)
   ES:RefreshScanButtons()
   ES:OnScanComplete(scan)
 end
+
+-- Otro addon (ForeverForge_Auction escanea solo al abrir la AH, Auctionator, TSM...)
+-- pide un escaneo completo: gasta los 15 min de la cuenta. Se anota la barrera y, con
+-- la AH abierta, se leen esos mismos datos en vez de pedirlos y esperar 2 min en vano.
+function Scanner:OnForeignScan(api)
+  if self.ownRequest or not ES.db then return end
+  LastFullScan()[OTHER_ADDON] = time()
+  ES:ScanLog("otro addon pidió un escaneo completo (API " .. api .. ")")
+  if self:IsBusy() or not ES:IsAuctionHouseOpen() then
+    ES:RefreshScanButtons()
+    return
+  end
+  self:Begin(api, true)
+end
+
+-- Ganchos sobre las dos APIs (se rehacen si algo cambia la función por otra)
+function Scanner:InstallHooks()
+  if not hooksecurefunc then return end
+  if C_AuctionHouse and C_AuctionHouse.ReplicateItems and C_AuctionHouse.ReplicateItems ~= self.hookedReplicate then
+    hooksecurefunc(C_AuctionHouse, "ReplicateItems", function() Scanner:OnForeignScan("modern") end)
+    self.hookedReplicate = C_AuctionHouse.ReplicateItems
+  end
+  if QueryAuctionItems and QueryAuctionItems ~= self.hookedQuery then
+    hooksecurefunc("QueryAuctionItems", function(_, _, _, _, _, _, getAll)
+      if getAll then Scanner:OnForeignScan("legacy") end
+    end)
+    self.hookedQuery = QueryAuctionItems
+  end
+end
+pcall(Scanner.InstallHooks, Scanner)
 
 frame:SetScript("OnEvent", function(_, event)
   -- Solo se anota: procesar aquí cogía solo la primera tanda; el sondeo de cada

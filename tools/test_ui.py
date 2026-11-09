@@ -1765,6 +1765,21 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   b8._scripts.OnClick(b8)
   assert(c.hours == 8, "pulsar 8 h guarda la duración: " .. tostring(c.hours))
   b8._scripts.OnEnter(b8)
+  -- AH / chat de comercio: por el chat no hay comisión ni depósito
+  assert(page.channel._shown and page.profitCompare._shown, "selector AH/chat y comparación visibles")
+  local before = Calc:Compute(c)
+  assert(before.channel == "ah" and math.abs(before.profit - before.profitAH) < 0.01, "por defecto, la AH")
+  local bt = page.channel.buttons[2]
+  bt._scripts.OnClick(bt)
+  bt._scripts.OnEnter(bt)
+  local rt = Calc:Compute(c)
+  assert(c.channel == "trade" and rt.cut == 0 and rt.deposit == 0, "por el chat: sin comisión ni depósito")
+  assert(math.abs(rt.profit - (rt.revenue - rt.cost)) < 0.01, "beneficio por el chat = venta - materiales")
+  assert(math.abs((rt.profitTrade - rt.profitAH) - rt.revenue * rt.cutRate) < 0.01, "la diferencia es la comisión")
+  assert(not page.duration._shown, "sin duración al vender por el chat")
+  log[#log+1] = "     calculadora chat: " .. tostring(page.profitCompare._text)
+  page.channel.buttons[1]._scripts.OnClick(page.channel.buttons[1])
+  assert(c.channel == "ah", "vuelve a la AH")
   log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
   -- Buscar y añadir; borrar con la ✕
   page.search:SetText("silk")

@@ -61,6 +61,13 @@ function Calc.Hours(c)
   return 24
 end
 
+-- Por dónde se vende: "ah" (comisión y depósito) o "trade" (chat de comercio, cara a
+-- cara: sin comisión ni depósito). Por defecto, la AH
+Calc.CHANNELS = { "ah", "trade" }
+function Calc.Channel(c)
+  return c.channel == "trade" and "trade" or "ah"
+end
+
 -- Depósito mínimo por subasta en Forever: 1s, aunque el porcentaje dé menos (Wowhead,
 -- noviembre de 2026; por montón en lo que se apila). Blizzard ha dicho que volverá a la
 -- fórmula de Classic: entonces bastará con cambiar este valor
@@ -225,14 +232,24 @@ function Calc:Compute(c)
   res.cut, res.cutRate, res.deposit = 0, 0, 0
   res.hours = Calc.Hours(c)
   res.depositPct = Calc.DepositPct(res.hours)
-  if res.outID and res.saleSource ~= "vendor" then
+  res.channel = Calc.Channel(c)
+  -- Se puede elegir AH o chat de comercio salvo si se vende al vendedor
+  res.canChoose = res.outID ~= nil and res.saleSource ~= "vendor"
+  local ahCut = 0
+  if res.canChoose then
     -- En la AH: comisión sobre la venta y depósito según la duración (2/8/24 h: 5/20/60%
     -- del precio de vendedor, la fórmula de Classic). El depósito se devuelve si se
     -- vende: no resta del beneficio, solo se arriesga
     local perUnit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = res.hours, neutral = ES:IsNeutralAH() })
-    res.cutRate, res.cut = cut, res.revenue * cut
-    res.deposit, res.listings = Calc.Deposit(perUnit, res.outN, Calc.StackSize(res.outID))
+    res.cutRate, ahCut = cut, res.revenue * cut
+    if res.channel == "ah" then
+      res.cut = ahCut
+      res.deposit, res.listings = Calc.Deposit(perUnit, res.outN, Calc.StackSize(res.outID))
+    end
   end
+  -- Los dos beneficios, para comparar: en la AH y por el chat de comercio (sin comisión)
+  res.profitAH = res.revenue - ahCut - res.cost
+  res.profitTrade = res.revenue - res.cost
   res.profit = res.revenue - res.cut - res.cost
   return res
 end

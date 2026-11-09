@@ -1,7 +1,12 @@
 # Crafter's Journal
 
-## Unreleased
+## 0.38.0
 
+- **AH scans no longer fail because of other addons.** The server allows one full scan every 15 minutes per account, and other addons spend it too (ForeverForge_Auction scans on its own 3 seconds after you open the AH). Your scan then got nothing and gave up after 2 minutes. Now, when another addon asks for a full scan, Crafter's Journal reads that same data instead of waiting for nothing, and its countdown includes that scan.
+- **The 15-minute scan limit counts for your whole account.** Scanning with one character used to leave the button enabled on your alts, where it couldn't work.
+- **Scans that end with the same number of auctions are no longer dropped.** If the new scan had exactly as many auctions as the previous one and the game didn't send its event, the addon thought nothing had arrived.
+- **Calculator: sell on the AH or through trade chat.** A new AH / Trade chat toggle in each calculation: through trade chat there's no AH cut and no deposit. Under the profit, both results side by side and the cut you save ("AH +19s 14c · Trade +27s 99c (8s 85c cut)").
+- **Calculator: the price boxes are centered** so the numbers don't sit against the edge.
 - **Calculator: the source no longer overlaps the total.** With a typed price, "typed" ran into totals with gold ("1g 48s 80c"). The total column now always has its own space.
 
 ## 0.37.2

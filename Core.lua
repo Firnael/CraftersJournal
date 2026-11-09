@@ -586,6 +586,8 @@ events:SetScript("OnEvent", function(_, event, arg1)
     ES.ahSession = (ES.ahSession or 0) + 1
     ES.ahOpen = true
     ES:RefreshScanButtons() -- lo primero: si algo de abajo falla, el botón ya está activo
+    -- Antes que los addons que escanean solos al abrir (ForeverForge, a los 3 s)
+    pcall(ES.Scanner.InstallHooks, ES.Scanner)
     DetectAuctionHouse()
     ES:OnAuctionHouseShow()
     ES:RefreshAllViews()
