@@ -619,6 +619,7 @@ ES.Locales.en = {
   ["Necesitas Encantamiento %d para desencantarlo (tienes %d)."] = "You need Enchanting %d to disenchant it (you have %d).",
   ["Un encantador (Encantamiento %d) sacaría más desencantándolo."] = "An enchanter (Enchanting %d) would get more by disenchanting it.",
   ["desencantado: ~%s"] = "disenchanted: ~%s",
+  ["en lotes de %d"] = "in lots of %d",
   -- Alternativas de cada paso de la ruta
   ["materiales más caros"] = "more expensive materials",
   ["se recupera menos vendiéndolo"] = "sells back for less",

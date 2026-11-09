@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **The vendor window no longer buys more than you need.** After buying, it checked your bags after 1 second and, if the server hadn't delivered yet, bought again. Now it waits until the items stop arriving before asking for anything missing. It also no longer asks for the materials of intermediates you've already crafted (the salt for cured hides, for example). When a vendor sells in lots (5 at a time), the row says so.
+- **The vendor window shows up more reliably.** It looks again when the game finishes loading the vendor's items, and it still uses the last profession you looked at after you open Make money.
 - **Every route step shows its second-best recipe and why it's worse.** Under each step: "2nd: White Bandit Mask, +57s (sells back for less)". The tooltip compares the best alternatives with the route's recipe (crafts, cost and sale per craft, learning cost) and says when selling on the AH would make one better. If an alternative is cheaper, it says so: either the route pays a little more for fewer crafts, or it shows in green so you can switch with the ✕. It's worked out in the background without freezing the game.
 - **Calculator: no more cut-off text.** The vendor discount moved to the note below ("vendor −10%" overlapped the total), and the notes under the sheet are shorter.
 - **Inventory tells you that clicking a row sells it.** The line under the totals now says what a click does right now: sell it to the open vendor, list it on the open AH, or that you need to open one of them. No more looking for the item in your bags.

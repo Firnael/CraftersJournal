@@ -16,6 +16,7 @@ local Vendor = { queue = {} }
 ES.VendorShop = Vendor
 
 local BUY_GAP = 0.35
+local MAX_WAITS = 5 -- comprobaciones (de 1 s) esperando a que llegue lo comprado
 local ROW_H, MAX_ROWS = 34, 12
 local WIDTH = 270
 
@@ -29,8 +30,12 @@ local function Plans()
     local plan = ES:RouteLock(prof.key) and ES:LockedPlan(prof.key)
     if plan then plans[#plans + 1] = { key = prof.key, plan = plan } end
   end
-  if #plans == 0 and ES.db.lastProf then
-    local key, plan = ES.db.lastProf, nil
+  -- La última profesión que miraste (si después abriste Ganar dinero, lastProf es
+  -- "money": entonces la última profesión de esta sesión)
+  local key = ES.db.lastProf
+  if not (key and ES.Data[key]) then key = ES.lastRouteProf end
+  if #plans == 0 and key then
+    local plan
     for _, page in ipairs(ES.professionPages or {}) do
       if page.profKey == key then plan = page.plan end
     end
@@ -48,6 +53,24 @@ local function Needs()
     local rank = ES:GetProfessionSkill(ES.Data[p.key].skillLine)
     for itemID, q in pairs(ES.Planner.NeedFrom(p.plan, math.max(p.plan.from, rank or p.plan.from))) do
       need[itemID] = (need[itemID] or 0) + q
+    end
+  end
+  -- Lo intermedio que ya has fabricado (Bolt of Silk Cloth, Cured Light Hide...) y
+  -- llevas encima ya no necesita sus materiales: si no, se volvían a comprar (la sal
+  -- del cuero curado, por ejemplo)
+  for _, p in ipairs(Plans()) do
+    -- (lo que ya llevabas al calcular la ruta no cuenta: la ruta lo usa sin pedir sus materiales)
+    local ownedAtPlan = p.plan.ctx and p.plan.ctx.opts and p.plan.ctx.opts.owned or {}
+    for _, c in ipairs(p.plan.crafted or {}) do
+      local r = c.recipe
+      local made = r and r.r and math.max(0, ES:ItemCount(c.itemID) - (ownedAtPlan[c.itemID] or 0)) or 0
+      if made > 0 then
+        made = math.min(made, c.quantity or made)
+        local per = (r.out and r.out[2]) or 1
+        for _, rq in ipairs(r.r) do
+          if need[rq[1]] then need[rq[1]] = math.max(0, need[rq[1]] - made * rq[2] / per) end
+        end
+      end
     end
   end
   local out = {}
@@ -179,9 +202,16 @@ function Vendor:Pump()
   end
   self.pumping = true
   if q.check then
-    -- Comprobación final: lo que no llegó se vuelve a pedir (hasta 2 veces)
-    local short = q.check - ES:ItemCount(q.itemID)
-    if short > 0 and q.tries < 2 then
+    -- Comprobación final: lo que no llegó se vuelve a pedir (hasta 2 veces). Pero solo
+    -- cuando ya no llega nada más: si el servidor tarda en entregar, volver a pedir al
+    -- primer vistazo compraba de más. Se espera (1 s cada vez, hasta MAX_WAITS) mientras
+    -- las bolsas sigan cambiando
+    local count = ES:ItemCount(q.itemID)
+    local short = q.check - count
+    if short > 0 and count ~= q.lastCount and (q.waits or 0) < MAX_WAITS then
+      table.insert(self.queue, 1, { itemID = q.itemID, check = q.check, tries = q.tries, batch = q.batch,
+        lastCount = count, waits = (q.waits or 0) + 1 })
+    elseif short > 0 and q.tries < 2 then
       if FindIndex(q.itemID) then
         short = math.ceil(short / q.batch) * q.batch
         table.insert(self.queue, 1, { itemID = q.itemID, check = q.check, tries = q.tries + 1, batch = q.batch })
@@ -359,7 +389,9 @@ function Vendor:Refresh()
     if e.qty > 0 then
       row.name:SetText(label)
       row.qty:SetText(string.format(L["Tienes %d/%d · compras %d × %s"], math.min(e.have, e.need), e.need, e.qty,
-        ES.Money(e.price / e.batch)))
+        ES.Money(e.price / e.batch))
+        -- Vende de N en N: puede comprar algo más de lo que falta (que se sepa por qué)
+        .. (e.batch > 1 and e.qty > e.need - e.have and (" · " .. string.format(L["en lotes de %d"], e.batch)) or ""))
       row.cost:SetText(ES.Money(e.cost))
     else
       -- Ya lo tienes: se ve, en gris, para que sepas que este vendedor también lo vende
@@ -417,8 +449,12 @@ end
 
 do
   local f = CreateFrame("Frame")
-  for _, e in ipairs({ "MERCHANT_SHOW", "MERCHANT_CLOSED", "MERCHANT_UPDATE", "BAG_UPDATE_DELAYED" }) do
+  for _, e in ipairs({ "MERCHANT_SHOW", "MERCHANT_CLOSED", "MERCHANT_UPDATE", "BAG_UPDATE_DELAYED", "GET_ITEM_INFO_RECEIVED" }) do
     ES.SafeRegister(f, e)
+  end
+  local queued = false
+  local function Later(delay)
+    C_Timer.After(delay, function() if MerchantFrame and MerchantFrame:IsShown() then Vendor:Refresh() end end)
   end
   f:SetScript("OnEvent", function(_, event)
     if not ES.db then return end
@@ -426,7 +462,17 @@ do
       Vendor.queue, Vendor.pumping, Vendor.selling = {}, nil, nil
       if panel then panel:Hide() end
     elseif MerchantFrame and MerchantFrame:IsShown() then
+      if event == "GET_ITEM_INFO_RECEIVED" then
+        -- Llegan los objetos del vendedor que el juego aún no tenía: una vez, agrupado
+        if not queued then
+          queued = true
+          C_Timer.After(0.3, function() queued = false if MerchantFrame:IsShown() then Vendor:Refresh() end end)
+        end
+        return
+      end
       Vendor:Refresh()
+      -- Al abrir, el juego a veces aún no sabe qué vende (sin enlaces): se vuelve a mirar
+      if event == "MERCHANT_SHOW" then Later(0.4) Later(1.5) end
     end
   end)
 end

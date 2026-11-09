@@ -1285,6 +1285,7 @@ function ES:SelectProfessionView(page, key)
   page.view = key
   self.db.prof[page.profKey].view = key
   self.db.lastProf = page.profKey -- la lista de compra de la AH empieza por esta
+  self.lastRouteProf = page.profKey -- (y la ventana del vendedor, aunque luego abras Ganar dinero)
   for _, b in ipairs(page.viewButtons) do
     if b.key == key then b:LockHighlight() else b:UnlockHighlight() end
   end

@@ -966,6 +966,36 @@ step("portada: tarjetas de profesiones", function()
   ES.VendorShop:Buy({ itemID = buyItem, qty = 3, batch = 3, price = 300, cost = 300 })
   assert(#ES.VendorShop.queue == queued, "compró dos veces el mismo material")
   log[#log+1] = string.format("     vendedor: %s · primera compra de %d", tostring(vp.buyAll._text), bought[1])
+  -- Entrega lenta del servidor: la comprobación final no vuelve a comprar mientras lo
+  -- comprado sigue llegando (antes, al primer vistazo, compraba otra vez: de más)
+  local V = ES.VendorShop
+  V.queue, V.pumping = {}, nil
+  bought = {}
+  counts[buyItem] = 0
+  local function Bought() local n = 0 for _, b in ipairs(bought) do n = n + b end return n end
+  V:Buy({ itemID = buyItem, qty = 6, batch = 3, price = 300, cost = 600 })
+  while V.queue[1] and not V.queue[1].check do V:Pump() end
+  assert(Bought() == 6, "debería pedir 6: " .. Bought())
+  V:Pump() -- aún no ha llegado nada: espera
+  assert(Bought() == 6, "volvió a comprar antes de que llegara lo comprado")
+  counts[buyItem] = 3
+  V:Pump() -- va llegando: espera
+  assert(Bought() == 6, "volvió a comprar mientras llegaba")
+  counts[buyItem] = 6
+  V:Pump() -- ya está todo
+  assert(Bought() == 6 and not V.queue[1], "con todo en las bolsas no debería quedar nada en cola")
+  -- Si de verdad no llega (sin existencias), sí lo vuelve a pedir: tras ver que no cambia
+  V.queue, V.pumping = {}, nil
+  bought = {}
+  counts[buyItem] = 0
+  V:Buy({ itemID = buyItem, qty = 3, batch = 3, price = 300, cost = 300 })
+  while V.queue[1] and not V.queue[1].check do V:Pump() end
+  V:Pump() -- primer vistazo: espera
+  V:Pump() -- no ha cambiado: vuelve a pedir lo que falta
+  while V.queue[1] and not V.queue[1].check do V:Pump() end
+  assert(Bought() == 6, "lo que no llegó debería pedirse otra vez: " .. Bought())
+  log[#log+1] = "     vendedor: con entrega lenta no compra de más; si no llega, lo vuelve a pedir"
+  V.queue, V.pumping = {}, nil
   -- Lo que la vista Profit dice que vendas al vendedor, en la misma ventana, con "Vender todo"
   local savedBag, savedSell, savedOpen2 = ES.Ledger.BagCount, ES.Ledger.SellToVendor, ES.Ledger.MerchantOpen
   local sold = {}
