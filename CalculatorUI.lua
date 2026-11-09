@@ -29,12 +29,8 @@ end
 local function SourceText(res, source)
   if source == "manual" then return GOLD .. L["a mano"] .. "|r" end
   if source == "ah" then return L["AH"] end
-  if source == "vendor" then
-    if res.discount > 0 then -- la ciudad, en la nota de abajo: aquí no cabe
-      return string.format(L["vendedor −%d%%"], math.floor(res.discount * 100 + 0.5))
-    end
-    return L["vendedor"]
-  end
+  -- (el descuento de ciudad va en la nota de abajo: "vendedor −10%" no cabía)
+  if source == "vendor" then return L["vendedor"] end
   return ORANGE .. L["sin precio"] .. "|r"
 end
 
@@ -612,10 +608,10 @@ function ES:RenderCalculator()
   page.profitLine.label:SetText(L["Beneficio"])
   page.profitLine.value:SetText(Signed(-res.profit))
 
+  -- Notas cortas: si no, no caben bajo la hoja (lo del depósito va en el tooltip de 2 h/8 h/24 h)
   local notes = {}
   if res.deposit > 0 then
-    notes[#notes + 1] = string.format(L["Depósito de %d h: el %d%% del precio de vendedor, mínimo %s por subasta (%d subastas). Se devuelve si se vende (no resta del beneficio); lo pierdes si caduca."],
-      res.hours, res.depositPct, ES.Money(Calc.MIN_DEPOSIT), res.listings or 0)
+    notes[#notes + 1] = string.format(L["El depósito (%d subastas) se devuelve si se vende: no resta del beneficio."], res.listings or 0)
   end
   if #res.made > 0 then
     local parts = {}

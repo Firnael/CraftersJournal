@@ -438,6 +438,115 @@ local function StopReason(plan)
   return L["no hay más recetas de instructor para ese nivel"]
 end
 
+---------------------------------------------------------------------------
+-- Alternativas de cada paso: la segunda mejor receta y por qué es peor
+---------------------------------------------------------------------------
+local ALT_BUDGET = 8   -- ms por fotograma calculándolas (se reparten: no traban el juego)
+local ALT_BATCH = 10   -- sin debugprofilestop: pasadas por fotograma
+local ALT_SHOWN = 3    -- en el tooltip, las mejores
+
+-- Motivo en el idioma del addon (al pintar: si se cambia de idioma, cambia)
+local function AltReason(st, alt)
+  local k = ES.Planner.AlternativeReason(st, alt)
+  if k == "materials" then return L["materiales más caros"] end
+  if k == "sale" then return L["se recupera menos vendiéndolo"] end
+  if k == "fee" then return L["hay que aprenderla"] end
+  if k == "crafts" then return L["hacen falta más fabricaciones"] end
+  return L["encarece otros pasos de la ruta"]
+end
+
+-- Calcula, poco a poco, las alternativas de cada paso de la ruta y repinta al acabar
+-- (plan.alts[i] = lista de la más barata a la más cara; vacía si no hay otra receta)
+function ES:ComputeAlternatives(page, plan)
+  if plan.alts or plan.altsRunning or not plan.choice or not (plan.ctx and plan.ctx.opts) then return end
+  plan.altsRunning = true
+  local P, data = self.Planner, page.data
+  local jobs, results = {}, {}
+  for i, st in ipairs(plan.steps) do
+    results[i] = {}
+    for _, id in ipairs(P.AlternativeCandidates(data, plan, st)) do jobs[#jobs + 1] = { i, id } end
+  end
+  local k = 1
+  local function Work()
+    if page.plan ~= plan then plan.altsRunning = nil return end -- ruta nueva: se deja
+    local started = debugprofilestop and debugprofilestop()
+    local n = 0
+    while k <= #jobs do
+      local i, id = jobs[k][1], jobs[k][2]
+      local alt = P.EvaluateAlternative(data, plan, plan.steps[i], id)
+      if alt then table.insert(results[i], alt) end
+      k, n = k + 1, n + 1
+      if started then
+        if debugprofilestop() - started > ALT_BUDGET then break end
+      elseif n >= ALT_BATCH then break end
+    end
+    if k <= #jobs then C_Timer.After(0, Work) return end
+    for _, list in pairs(results) do table.sort(list, function(a, b) return a.delta < b.delta end) end
+    plan.alts, plan.altsRunning = results, nil
+    if page:IsVisible() and page.plan == plan then ES:RenderPlan(page) end
+  end
+  Work()
+end
+
+-- "2ª: White Bandit Mask, +57s (se recupera menos vendiéndolo)" para la fila del paso
+local function AltSummary(plan, i, data)
+  local list = plan.alts and plan.alts[i]
+  if not list then return nil end
+  local alt = list[1]
+  if not alt then return GREY .. L["única receta que da puntos aquí"] .. "|r" end
+  local r = data.recipes[alt.id]
+  if alt.delta <= -0.5 then
+    local extra = math.floor((alt.step.expected or 0) - (plan.steps[i].expected or 0) + 0.5)
+    if extra > 0 then
+      -- La ruta paga un poco más a cambio de fabricar menos veces (a propósito)
+      return GREY .. string.format(L["2ª: %s, %s más barata pero con %d fabricaciones más"], r and r.name or "?",
+        ES.Money(-alt.delta), extra) .. "|r"
+    end
+    -- Más barata y sin más fabricaciones: el planificador no la encontró; que se vea
+    return GREEN .. string.format(L["%s sale %s más barata"], r and r.name or "?", ES.Money(-alt.delta)) .. "|r"
+  end
+  if alt.delta < 0.5 then return GREY .. string.format(L["2ª: %s, igual de cara"], r and r.name or "?") .. "|r" end
+  return GREY .. string.format(L["2ª: %s, %s (%s)"], r and r.name or "?", "+" .. ES.Money(alt.delta),
+    AltReason(plan.steps[i], alt)) .. "|r"
+end
+
+-- Las mejores alternativas del paso, con sus cifras frente a la de la ruta
+local function AddAltTooltip(plan, i, data)
+  local list = plan.alts and plan.alts[i]
+  GameTooltip:AddLine(" ")
+  if not list then
+    GameTooltip:AddLine(L["Comparando con otras recetas…"], 0.6, 0.6, 0.6)
+    return
+  end
+  if #list == 0 then
+    GameTooltip:AddLine(L["Es la única receta que puedes usar en este tramo."], 0.8, 0.8, 0.8, true)
+    return
+  end
+  local st = plan.steps[i]
+  GameTooltip:AddLine(L["Por qué esta y no otra:"], 1, 0.82, 0)
+  for n = 1, math.min(ALT_SHOWN, #list) do
+    local alt = list[n]
+    local a, r = alt.step, data.recipes[alt.id]
+    GameTooltip:AddDoubleLine(string.format("%d. %s", n + 1, r and r.name or "?"),
+      alt.delta >= 0.5 and (RED .. "+" .. ES.Money(alt.delta) .. "|r")
+      or alt.delta <= -0.5 and (GREEN .. "-" .. ES.Money(-alt.delta) .. "|r") or L["igual"], 1, 1, 1, 1, 1, 1)
+    GameTooltip:AddLine("   " .. string.format(L["%d fabricaciones (aquí %d) · %s/u (aquí %s) · recuperas %s/u (aquí %s)"],
+      a.crafts, st.crafts, ES.Money(a.unitCost), ES.Money(st.unitCost), ES.Money(a.unitValue), ES.Money(st.unitValue))
+      .. ((a.fee or 0) > 0 and (" · " .. L["aprender"] .. " " .. ES.Money(a.fee)) or ""), 0.75, 0.75, 0.75, true)
+    if alt.delta > -0.5 then
+      GameTooltip:AddLine("   " .. L["Peor porque: "] .. AltReason(st, alt), 0.75, 0.75, 0.75, true)
+    elseif (a.expected or 0) > (st.expected or 0) + 0.5 then
+      GameTooltip:AddLine("   " .. L["La ruta prefiere pagar un poco más a cambio de fabricar menos veces."], 0.75, 0.75, 0.75, true)
+    else
+      GameTooltip:AddLine("   " .. L["Sale mejor que la de la ruta: quita la de la ruta con su ✕ para usar esta."], 0.4, 1, 0.4, true)
+    end
+    if alt.ahGain > alt.delta + 0.5 then
+      GameTooltip:AddLine("   " .. string.format(L["Vendiendo lo fabricado en la AH saldría %s mejor que la ruta, si se vende (la ruta cuenta el vendedor, que es lo seguro)."],
+        ES.Money(alt.ahGain - alt.delta)), 1, 0.82, 0, true)
+    end
+  end
+end
+
 local function RecipeTooltip(step, plan)
   return function(row)
     local r = step.recipe
@@ -1751,11 +1860,14 @@ local function RouteLines(plan, page)
         or current and string.format(L["%d/%d puntos · ~%s%d|r fabricaciones más · %s/u"], level - st.from, st.to - st.from,
           GOLD, left, ES.Money(st.unitCost))
         or string.format(L["%s%d fabricaciones|r · %s/u"], perPoint > LOW_CHANCE_CRAFTS and ORANGE or "",
-        st.crafts, ES.Money(st.unitCost)),
+        st.crafts, ES.Money(st.unitCost))
+        -- La segunda mejor receta y por qué es peor (si ya está calculada)
+        .. (AltSummary(plan, i, page.data) and ("  " .. AltSummary(plan, i, page.data)) or ""),
       value = Signed(st.total - st.fee), item = r.out and r.out[1], -- lo de aprender va en su fila
       onSkip = not done and Skip(st.id) or nil,
       tooltip = function(row)
         tooltip(row)
+        AddAltTooltip(plan, i, page.data)
         GameTooltip:AddLine(" ")
         GameTooltip:AddLine(craftNow and string.format(L["Clic: abrir la receta y fabricar %d (como mucho, las que te dan los materiales que llevas)."], left)
           or L["Clic: abrir la receta en tu profesión."], 0.5, 0.8, 1, true)
@@ -2124,4 +2236,6 @@ function ES:RenderPlan(page)
   page.empty:SetText(#lines == 0 and (plan and #plan.steps > 0 and L["Nada que mostrar en esta vista."] or "") or "")
 
   ES.UI.RenderLines(page, lines)
+  -- Segunda mejor receta de cada paso: se calcula después, sin trabar (y se repinta)
+  if plan and #plan.steps > 0 and not page.calculating then self:ComputeAlternatives(page, plan) end
 end

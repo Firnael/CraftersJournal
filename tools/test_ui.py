@@ -1574,6 +1574,59 @@ step("interruptor de desarrollo: vista de jugador", function()
   panel.devCheck._scripts.OnClick(panel.devCheck)
   assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 7, "no volvió al modo desarrollo")
 end)
+step("ruta: la segunda mejor receta de cada paso y por qué es peor", function()
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Leatherworking" then page = p end end
+  ES:SelectPage("Leatherworking")
+  page._shown = true
+  page.toBox._text = "225"
+  ES:CalculatePlan(page)
+  local plan = page.plan
+  assert(plan and #plan.steps > 0, "sin ruta de peletería")
+  -- Se calculan repartidas en fotogramas: se ejecutan todos
+  local savedAfter, queue = C_Timer.After, {}
+  C_Timer.After = function(_, fn) queue[#queue + 1] = fn end
+  plan.alts, plan.altsRunning = nil, nil
+  ES:ComputeAlternatives(page, plan)
+  local ticks = 0
+  while #queue > 0 and ticks < 100000 do table.remove(queue, 1)() ticks = ticks + 1 end
+  C_Timer.After = savedAfter
+  assert(plan.alts, "no calculó las alternativas")
+  local withAlt, cheaper = 0, 0
+  for i = 1, #plan.steps do
+    local list = plan.alts[i]
+    assert(list, "paso " .. i .. " sin lista de alternativas")
+    if list[1] then withAlt = withAlt + 1 end
+    if list[1] and list[1].delta < -0.5 then
+      cheaper = cheaper + 1
+      local st, a = plan.steps[i], list[1]
+      log[#log+1] = string.format("       más barata en %d-%d: %s %+.0fc, %s fabricaciones frente a %s (ruta: %s)", st.from, st.to,
+        ES.Data.Leatherworking.recipes[a.id].name, a.delta, ES.Num(a.step.expected), ES.Num(st.expected), st.recipe.name)
+    end
+    for k = 2, #list do assert(list[k].delta >= list[k - 1].delta, "alternativas sin ordenar") end
+  end
+  log[#log+1] = string.format("     %d pasos: %d con segunda opción, %d con una más barata que la ruta (%d fotogramas)", #plan.steps, withAlt, cheaper, ticks)
+  assert(withAlt > 0, "ningún paso con segunda opción")
+  -- La fila del paso lo dice; el tooltip, las cifras y el motivo
+  ES:RenderPlan(page)
+  local line
+  for _, l in ipairs(page.lines) do
+    local s = tostring(l.sub or "")
+    if s:find("2ª") or s:find("más barata") or s:find("única") then line = l break end
+  end
+  assert(line, "ninguna fila dice cuál es la segunda opción")
+  log[#log+1] = "     fila: " .. tostring(line.sub):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""):gsub("|T[^|]+|t", "")
+  local tip, savedAdd, savedDouble = {}, GameTooltip.AddLine, GameTooltip.AddDoubleLine
+  GameTooltip.AddLine = function(_, t) tip[#tip + 1] = tostring(t) end
+  GameTooltip.AddDoubleLine = function(_, a, b) tip[#tip + 1] = tostring(a) .. " | " .. tostring(b) end
+  line.tooltip(CreateFrame("Frame"))
+  GameTooltip.AddLine, GameTooltip.AddDoubleLine = savedAdd, savedDouble
+  local why = false
+  for _, t in ipairs(tip) do if t:find("Por qué esta y no otra") or t:find("única receta") then why = true end end
+  assert(why, "el tooltip no explica por qué esta y no otra")
+  for _, t in ipairs(tip) do if t:find("Peor porque") then log[#log+1] = "     tooltip: " .. t:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") break end end
+  ES:SelectPage("home")
+end)
 step("calculadora: desglose en crudo, precios a mano y cálculos guardados", function()
   local Calc = ES.Calc
   -- Dinero escrito como en una hoja de cálculo

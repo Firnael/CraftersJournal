@@ -1993,3 +1993,70 @@ function ES:GetProfessionSkill(skillLine)
   end
   return nil
 end
+
+
+---------------------------------------------------------------------------
+-- Alternativas de un paso: por qué la ruta usa esta receta y no otra
+---------------------------------------------------------------------------
+-- La misma ruta, pero con otra receta en el tramo del paso (lo demás igual): la
+-- diferencia de coste neto ya cuenta materiales, venta, aprender y lo que se reutiliza
+-- después. Cada una es una pasada forzada (~2 ms)
+
+-- Recetas que podrían hacer el tramo de `st`: se pueden aprender a ese nivel y aún dan
+-- puntos al empezarlo (ni conversiones, ni materiales intermedios, ni las quitadas)
+function Planner.AlternativeCandidates(data, plan, st)
+  local opts = plan.ctx and plan.ctx.opts
+  if not opts or not plan.choice then return {} end
+  local out = {}
+  for id, r in pairs(data.recipes) do
+    if id ~= st.id and not r.conversion and not r.intermediate and r.t[4] > st.from
+      and not (opts.excluded and opts.excluded[id]) then
+      local learn = Planner.LearnSkill(r, opts)
+      if learn and learn <= st.from then out[#out + 1] = id end
+    end
+  end
+  table.sort(out)
+  return out
+end
+
+-- La ruta con `id` en el tramo de `st`. Devuelve { id, delta (coste neto de más de toda
+-- la ruta), step (su paso en ese tramo), ahGain (lo que ganaría vendiendo lo fabricado
+-- en la AH en vez de al vendedor) }, o nil si así no se llega igual de lejos
+function Planner.EvaluateAlternative(data, plan, st, id)
+  local o = Copy(plan.ctx.opts)
+  o.forced = {}
+  for s, c in pairs(plan.choice) do o.forced[s] = c end
+  for s = st.from, st.to - 1 do o.forced[s] = id end
+  local ok, p = pcall(Planner.Plan, Planner, data, o)
+  if not ok or not p or (p.reached or 0) < (plan.reached or 0) then return nil end
+  local step
+  for _, s in ipairs(p.steps or {}) do
+    if s.id == id and s.from <= st.from and s.to > st.from then step = s break end
+  end
+  if not step then return nil end
+  local sale, ahGain = step.sale, 0
+  if sale and sale.ahNet and sale.vendor and sale.ahNet > sale.vendor then
+    ahGain = step.crafts * (sale.qty or 1) * (sale.ahNet - sale.vendor)
+  end
+  return { id = id, delta = p.net - plan.net, step = step, ahGain = ahGain }
+end
+
+-- Motivo principal por el que `alt` sale peor que el paso `st` de la ruta:
+-- "materials" (materiales más caros), "sale" (se recupera menos vendiéndolo), "fee"
+-- (hay que aprenderla), "crafts" (hacen falta más fabricaciones) o "route" (afecta a
+-- otros pasos: lo que se reutiliza después)
+function Planner.AlternativeReason(st, alt)
+  local a = alt.step
+  local parts = {
+    materials = (a.costSum or 0) - (st.costSum or 0),
+    sale = (st.valueSum or 0) - (a.valueSum or 0),
+    fee = (a.fee or 0) - (st.fee or 0),
+  }
+  local best, bestV = nil, 0
+  for k, v in pairs(parts) do if v > bestV then best, bestV = k, v end end
+  if not best then
+    -- Nada de este paso sale peor: más fabricaciones o el resto de la ruta
+    return (a.expected or 0) > (st.expected or 0) + 0.5 and "crafts" or "route"
+  end
+  return best
+end
