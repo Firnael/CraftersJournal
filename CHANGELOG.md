@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Every route step shows its second-best recipe and why it's worse.** Under each step: "2nd: White Bandit Mask, +57s (sells back for less)". The tooltip compares the best alternatives with the route's recipe (crafts, cost and sale per craft, learning cost) and says when selling on the AH would make one better. If an alternative is cheaper, it says so: either the route pays a little more for fewer crafts, or it shows in green so you can switch with the ✕. It's worked out in the background without freezing the game.
+- **Calculator: no more cut-off text.** The vendor discount moved to the note below ("vendor −10%" overlapped the total), and the notes under the sheet are shorter.
 - **Inventory tells you that clicking a row sells it.** The line under the totals now says what a click does right now: sell it to the open vendor, list it on the open AH, or that you need to open one of them. No more looking for the item in your bags.
 
 ## 0.37.1
