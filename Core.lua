@@ -86,8 +86,8 @@ function ES:ScanLog(text)
   while #log > 40 do table.remove(log, 1) end
 end
 
--- Nivel máximo de las profesiones en la beta actual: los planes llegan hasta aquí
-ES.MAX_SKILL = 225
+-- Nivel máximo de las profesiones (Artesano): los planes llegan hasta aquí
+ES.MAX_SKILL = 300
 
 -- Profesiones de fabricación (tarjetas de la portada). `key` es el nombre de su
 -- tabla en ES.Data; `icon`, su imagen en el juego.
@@ -449,6 +449,14 @@ local function LoadCharacterData()
   local c = db.characters[key] or {}
   db.characters[key] = c
   c.prof = c.prof or {}
+  -- El máximo pasó de 225 a 300: el objetivo guardado en 225 era el máximo de
+  -- antes, no uno elegido; pasa al nuevo (una vez; una ruta empezada no se toca)
+  if not c.max300 then
+    for _, settings in pairs(c.prof) do
+      if type(settings) == "table" and settings.target == 225 and not settings.lock then settings.target = nil end
+    end
+    c.max300 = true
+  end
   db.prof, db.lastProf = c.prof, c.lastProf
   ES.charData, ES.charDataKey = c, key
 end

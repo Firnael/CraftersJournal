@@ -286,8 +286,9 @@ Ledger.MerchantInfo = MerchantInfo
 -- Lo que paga de verdad el vendedor: en Forever no siempre coincide con los datos
 -- del cliente (Hillman's Shoulders: 6s 59c, no 11s 99c). Al vender algo con el
 -- vendedor abierto (con el addon o a mano) se apunta qué y cuántos, y cuando sube
--- tu dinero, a cuánto salió cada uno: ES.db.sellSeen[itemID] = { price, time }.
--- ES:VendorSellPrice lo usa antes que los datos
+-- tu dinero, a cuánto salió cada uno: ES.db.sellSeen[itemID] = { price, time, ok }.
+-- ES:VendorSellPrice lo usa antes que los datos solo si ok (coincide con lo conocido
+-- o se ha visto dos veces seguidas)
 ---------------------------------------------------------------------------
 local sellPending = {} -- ventas enviadas aún sin cobrar: { itemID, count, t }
 local SELL_WINDOW = 3  -- s entre vender y que suba tu dinero
@@ -303,8 +304,10 @@ local function NoteSale(bag, slot)
   if not itemID or not count or count <= 0 or (info and info.hasNoValue) then return end
   local getDur = C_Container and C_Container.GetContainerItemDurability or GetContainerItemDurability
   local cur, max = getDur and getDur(bag, slot)
-  if cur and max and max > 0 and cur < max then return end
-  sellPending[#sellPending + 1] = { itemID = itemID, count = count, t = GetTime and GetTime() or 0 }
+  -- Lo dañado también cobra: ocupa su turno en la cola (sin apuntarse) para que su
+  -- dinero no se tome por el de la venta siguiente
+  local damaged = cur and max and max > 0 and cur < max
+  sellPending[#sellPending + 1] = { itemID = itemID, count = count, t = GetTime and GetTime() or 0, skip = damaged or nil }
 end
 if hooksecurefunc then
   if C_Container and C_Container.UseContainerItem then
@@ -320,20 +323,28 @@ local function ChargeSale(delta)
   local now = GetTime and GetTime() or 0
   while sellPending[1] and now - sellPending[1].t > SELL_WINDOW do table.remove(sellPending, 1) end
   local p = table.remove(sellPending, 1)
-  if not p then return end
+  if not p or p.skip then return end
   local itemID = p.itemID
   local unit = math.floor(delta / p.count + 0.5)
   -- Solo si cuadra con el precio que se conocía (entre un 20% y el doble de los
   -- datos o del cliente): otro dinero que llegue a la vez (botín, misión, correo)
   -- no se apunta como precio de venta
-  local known = ES.Data.SellPrices[itemID] or (GetItemInfo and select(11, GetItemInfo(itemID)))
+  local data = ES.Data.SellPrices[itemID]
+  local live = GetItemInfo and select(11, GetItemInfo(itemID))
+  local known = data or live
   if not known or known <= 0 or unit < 0.2 * known or unit > 2 * known then return end
   ES.db.sellSeen = ES.db.sellSeen or {}
   local old = ES.db.sellSeen[itemID]
-  ES.db.sellSeen[itemID] = { price = unit, time = time() }
-  if not old or old.price ~= unit then
+  -- Un cobro suelto puede ser de otra cosa (una venta que no pasó por aquí, una
+  -- pieza dañada, dinero que llegó a la vez): un precio distinto del conocido solo
+  -- vale cuando se repite (Greater Magic Wand quedó en 1s 68c pagando 2s)
+  local ok = unit == data or unit == live or (old ~= nil and old.price == unit)
+  ES.db.sellSeen[itemID] = { price = unit, time = time(), ok = ok or nil }
+  if ok and not (old and old.ok and old.price == unit) then
     Log(string.format("vendedor: %d paga %d cada uno", itemID, unit))
     if ES.ClearHomeCache then ES:ClearHomeCache() end -- (lo que se recupera vendiendo cambia)
+  elseif old and old.ok and not ok then
+    if ES.ClearHomeCache then ES:ClearHomeCache() end -- (el anterior deja de valer)
   end
 end
 Ledger.NoteSale, Ledger.ChargeSale = NoteSale, ChargeSale -- para pruebas

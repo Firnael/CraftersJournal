@@ -27,6 +27,10 @@ function Planner.AuctionCosts(vendorPrice, opts)
   local rate = opts.neutral and DEPOSIT_RATE_NEUTRAL or DEPOSIT_RATE
   return (vendorPrice or 0) * rate * hours / 2, opts.neutral and AH_CUT_NEUTRAL or AH_CUT
 end
+-- Sin AH (icono "Sin AH", opts.noAH): ningún precio de subasta. La ruta solo compra
+-- al vendedor (o usa lo tuyo) y lo fabricado se vende al vendedor. Siempre la misma
+-- tabla: las variantes del GPS comparten lo preparado con ella (ver opts.shared)
+local NO_PRICES = {}
 local APPRENTICE_CAP = 75
 local BASIC_MAX_YELLOW = 50 -- recetas sin instructor ni pergamino por debajo de esto: básicas
 -- Coste simbólico por fabricación y cuánto más puede costar la ruta que lo tiene
@@ -177,7 +181,7 @@ function Planner.LearnSkill(recipe, opts)
   -- Solo con su icono activado (opts.useFavor; por defecto no): entonces cuesta 0 oro
   if recipe.favor then return opts.useFavor and (recipe.train or 1) or nil end
   if Sourced(recipe, opts) then
-    local src = ES.Waypoints.RecipeSource(recipe, opts.prices or ScanPrices(), opts.noQuests)
+    local src = ES.Waypoints.RecipeSource(recipe, opts.noAH and NO_PRICES or opts.prices or ScanPrices(), opts.noQuests)
     return src and src.best and (recipe.train or 1) or nil
   end
   if fee or recipe.intermediate then return train end
@@ -273,7 +277,7 @@ local function NewContext(data, opts)
     data = data,
     opts = opts,
     -- opts.prices: los de la ruta fijada (guardados al empezarla); si no, el último escaneo
-    prices = opts.prices or (scan and scan.items) or {},
+    prices = opts.noAH and NO_PRICES or opts.prices or (scan and scan.items) or {},
     scanTime = opts.prices and opts.pricesTime or (scan and scan.time),
     ladders = {},
     supply = {},     -- unidades a la venta de cada objeto (suma de su escalera)
@@ -553,7 +557,8 @@ function Planner.SaleInfo(ctx, recipe)
   sale.duration = ctx.opts.hours or 24 -- duración de la subasta (h)
   -- Precio realista (si el mínimo de ahora está inflado frente al histórico, el de referencia)
   -- Lo que se liga al recogerlo no se puede vender en la AH: solo al vendedor
-  sale.fair = not recipe.bop and ES.Market:FairPrice(itemID, sale.ahMin) or nil
+  -- (y sin AH, tampoco: icono "Sin AH")
+  sale.fair = not recipe.bop and not ctx.opts.noAH and ES.Market:FairPrice(itemID, sale.ahMin) or nil
   if sale.fair then
     sale.ahPrice = sale.fair.price
     local net = sale.ahPrice * (1 - sale.cut) - sale.deposit
@@ -642,7 +647,16 @@ local GPS_NEAR_MIN = 500       -- (o 5s) de la mejor
 -- bolsas cuenta por lo que te darían vendiéndolo, con un margen de BAGS_TIE_PCT a
 -- favor de usarlo (como Planner.BagsWorth): no se gastan 34 Medium Hide de 15g
 -- para ahorrar 1g
+-- Peso de cada fabricación: CRAFT_COST, o el de opts.craftWeight (icono "Menos
+-- fabricaciones": la ruta paga más a cambio de fabricar menos veces)
+Planner.FEWER_CRAFTS_WEIGHT = 100 -- 1s por fabricación con el icono activado
+local function CraftWeight(opts)
+  return opts and opts.craftWeight or CRAFT_COST
+end
+Planner.CraftWeight = CraftWeight
+
 function Planner.RouteScore(plan)
+  local CW = CraftWeight(plan.ctx and plan.ctx.opts)
   local score, crafts = plan.fees + (plan.toolsCost or 0), 0
   for _, st in ipairs(plan.steps) do
     local gain = st.crafts * (st.unitValue - st.unitCost)
@@ -651,7 +665,7 @@ function Planner.RouteScore(plan)
     crafts = crafts + st.crafts
   end
   for _, c in ipairs(plan.crafted or {}) do crafts = crafts + c.quantity end
-  score = score + CRAFT_COST * crafts + GPS_STEP_COST * math.max(0, #plan.steps - 1)
+  score = score + CW * crafts + GPS_STEP_COST * math.max(0, #plan.steps - 1)
   local have = plan.ctx and plan.ctx.opts.owned
   if have and plan.owned then
     for _, o in ipairs(plan.owned) do
@@ -841,6 +855,7 @@ function Planner.PlanGPS(data, opts)
   -- Lo que no cambia en todo el cálculo (escaleras de precios, quién fabrica qué),
   -- preparado una vez para los cientos de recorridos (ver NewContext)
   opts = Copy(opts)
+  local CW = CraftWeight(opts)
   local tpl = NewContext(data, opts)
   opts.shared = { prices = tpl.prices, to = opts.to, ladders = tpl.ladders, supply = tpl.supply,
     medians = tpl.medians, producers = tpl.producers }
@@ -916,7 +931,7 @@ function Planner.PlanGPS(data, opts)
   if opts.hint and opts.hint.choice then Try(opts.hint.choice, opts.hint.via) end
   do -- (y la voraz con peso por fabricación: de ella sale a menudo la de siempre)
     local t = Copy(opts)
-    t.forced, t.craftCost = {}, CRAFT_COST
+    t.forced, t.craftCost = {}, CW
     Try(Planner:Plan(data, t).choice, nil)
   end
   local owned = opts.owned and next(opts.owned)
@@ -964,7 +979,7 @@ function Planner.PlanGPS(data, opts)
     for _, st in ipairs(best and best.steps or {}) do skips[#skips + 1] = { [st.id] = true } end
     for _, ctx in ipairs(ctxs) do
       for i, skip in ipairs(skips) do
-        for _, weight in ipairs(i == 1 and { CRAFT_COST, 0 } or { CRAFT_COST }) do
+        for _, weight in ipairs(i == 1 and { CW, 0 } or { CW }) do
           local choice = ShortestRoute(data, opts, ctx, weight, skip)
           if choice and TryDP(choice, ctx) then improved = true end
         end
@@ -1015,7 +1030,7 @@ function Planner.PlanGPS(data, opts)
           local fixed = {}
           for s = alt.from, span - 1 do fixed[s] = alt.id end
           for _, ctx in ipairs(ctxs) do
-            local choice = ShortestRoute(data, opts, ctx, CRAFT_COST, {}, fixed)
+            local choice = ShortestRoute(data, opts, ctx, CW, {}, fixed)
             if choice then TryDP(choice, ctx) end
           end
         end
@@ -1057,7 +1072,7 @@ function Planner.PlanGPS(data, opts)
           end
         end
         for _, ctx in ipairs(ctxs) do
-          local choice = ShortestRoute(data, opts, ctx, CRAFT_COST, {}, fixed, paid)
+          local choice = ShortestRoute(data, opts, ctx, CW, {}, fixed, paid)
           if choice and TryDP(choice, ctx, best.ctx.via) then improved = true end
         end
       end
@@ -1090,7 +1105,7 @@ function Planner.PlanGPS(data, opts)
               for s = from, st.to - 1 do
                 local pc = PointCost(ctx, rc, s)
                 if not pc then sum = nil break end
-                sum = sum + pc[1] + CRAFT_COST * pc[2]
+                sum = sum + pc[1] + CW * pc[2]
               end
               -- (por punto: los tramos cortos no salen baratos solo por ser cortos)
               if sum then cands[#cands + 1] = { id = rc.id, from = from, cost = sum / (st.to - from) } end
@@ -1773,6 +1788,7 @@ end
 local OWNED_AH_FEW = 5
 local function OwnedSaleTotal(ctx, itemID, qty)
   local vendor = ES:VendorSellPrice(itemID) or (ES.Data.SellPrices and ES.Data.SellPrices[itemID]) or 0
+  if ctx.opts.noAH then return vendor * qty end -- sin AH: lo tuyo vale lo que da el vendedor
   local entry = ScanPrices()[itemID] or ctx.prices[itemID]
   local fair = entry and entry.minUnit and ES.Market:FairPrice(itemID, entry.minUnit)
   if not fair then return vendor * qty end

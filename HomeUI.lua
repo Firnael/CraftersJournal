@@ -451,7 +451,7 @@ local function ProfessionEntries()
   ES.SortProfessionCards(list)
   -- Rutas: de la caché, o repartidas entre fotogramas (la tarjeta pone
   -- "Calculando…" y se repinta al acabar). Solo las profesiones que tienes: las
-  -- demás (de 1 a 225, las más caras de calcular) se calculan al abrirlas, y la
+  -- demás (de 1 a 300, las más caras de calcular) se calculan al abrirlas, y la
   -- tarjeta enseña esa ruta si sigue valiendo
   for _, e in ipairs(list) do
     if not e.guide and e.from < e.target then
@@ -500,7 +500,7 @@ local function ProfessionTooltip(e)
       GameTooltip:AddLine(" ")
       GameTooltip:AddLine(L["Calculando la ruta…"], 0.6, 0.6, 0.6)
     elseif e.from >= e.target then
-      GameTooltip:AddLine(e.from >= ES.MAX_SKILL and L["Ya está al máximo de la beta."] or L["Ya has llegado a tu objetivo."], 0.4, 1, 0.4)
+      GameTooltip:AddLine(e.from >= ES.MAX_SKILL and L["Ya está al máximo."] or L["Ya has llegado a tu objetivo."], 0.4, 1, 0.4)
     elseif not e.learned and not e.guide then
       -- (las que no tienes no se calculan solas: ver ProfessionEntries)
       GameTooltip:AddLine(" ")

@@ -216,7 +216,7 @@ local GetItemInfoCompat = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 -- vale el de los datos (puede ser de una versión anterior de Forever)
 function ES:VendorSellPrice(itemID)
   local seen = ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID]
-  if seen then return seen.price end
+  if seen and seen.ok then return seen.price end -- (sin ok: un cobro suelto, sin confirmar)
   local live = select(11, GetItemInfoCompat(itemID))
   if live then return live end
   if C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, itemID) end
@@ -226,7 +226,8 @@ end
 -- ¿El precio de venta es el de ahora (visto al vender o dado por el juego)? Si no, es
 -- el de los datos y la ruta se recalcula cuando el juego cargue el objeto
 function ES:SellPriceIsLive(itemID)
-  if ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID] then return true end
+  local seen = ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID]
+  if seen and seen.ok then return true end
   return select(11, GetItemInfoCompat(itemID)) ~= nil
 end
 

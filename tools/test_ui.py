@@ -1286,14 +1286,92 @@ step("precio real del vendedor, aprendido al vender", function()
   ES.Ledger.NoteSale(0, 1)
   ES.Ledger.ChargeSale(6590)
   assert(ES:VendorSellPrice(4251) == 659, "no aprendió el precio real: " .. tostring(ES:VendorSellPrice(4251)))
-  -- Dos pilas vendidas seguidas: cada cobro con su venta
+  -- Dos pilas vendidas seguidas: cada cobro con su venta (y al repetirse, vale)
   C_Container.GetContainerItemInfo = function(_, slot) return { itemID = 2318, stackCount = slot } end
   ES.Ledger.NoteSale(0, 20)
   ES.Ledger.NoteSale(0, 5)
   ES.Ledger.ChargeSale(200)
   ES.Ledger.ChargeSale(50)
   assert(ES:VendorSellPrice(2318) == 10, "dos pilas: " .. tostring(ES:VendorSellPrice(2318)))
+  -- Greater Magic Wand (paga 2s): un cobro que no es suyo no cambia su precio, y
+  -- lo guardado sin confirmar por versiones anteriores no cuenta
+  C_Container.GetContainerItemInfo = function() return { itemID = 11288, stackCount = 1 } end
+  ES.db.sellSeen[11288] = { price = 168, time = 0 }
+  assert(ES:VendorSellPrice(11288) ~= 168, "lo guardado sin confirmar no debería valer")
+  ES.Ledger.NoteSale(0, 1)
+  ES.Ledger.ChargeSale(150)
+  assert(ES:VendorSellPrice(11288) ~= 150, "un cobro ajeno no debería cambiar el precio")
+  ES.Ledger.NoteSale(0, 1)
+  ES.Ledger.ChargeSale(200)
+  assert(ES:VendorSellPrice(11288) == 200, "lo que coincide con lo conocido vale ya: " .. tostring(ES:VendorSellPrice(11288)))
+  -- Una pieza dañada cobra sin apuntarse: su dinero no es de la venta siguiente
+  local savedDur = C_Container.GetContainerItemDurability
+  C_Container.GetContainerItemDurability = function(_, slot) if slot == 1 then return 5, 10 end end
+  ES.Ledger.NoteSale(0, 1)
+  C_Container.GetContainerItemDurability = savedDur
+  ES.Ledger.NoteSale(0, 2)
+  ES.Ledger.ChargeSale(150)
+  ES.Ledger.ChargeSale(200)
+  assert(ES:VendorSellPrice(11288) == 200, "lo dañado se tomó por otra venta: " .. tostring(ES:VendorSellPrice(11288)))
   MerchantFrame, C_Container, ES.db.sellSeen = savedMF, savedCC, savedSeen
+end)
+step("icono menos fabricaciones: pesa cada fabricación al elegir", function()
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Enchanting" then page = p end end
+  assert(page.fewerButton, "falta el icono de menos fabricaciones")
+  ES.db.prof.Enchanting = ES.db.prof.Enchanting or {}
+  local settings = ES.db.prof.Enchanting
+  local saved = settings.fewerCrafts
+  settings.fewerCrafts = nil
+  assert(ES:PlanOptions("Enchanting", 79, 150).craftWeight == nil, "por defecto, la ruta más barata")
+  local k1 = ES:PlanKey("Enchanting", 79, 150)
+  page.fewerButton:GetScript("OnClick")(page.fewerButton)
+  assert(settings.fewerCrafts, "el clic no lo activó")
+  assert(ES:PlanOptions("Enchanting", 79, 150).craftWeight == ES.Planner.FEWER_CRAFTS_WEIGHT, "no pasa el peso al plan")
+  assert(ES:PlanKey("Enchanting", 79, 150) ~= k1, "la caché no distingue el icono")
+  -- La puntuación de una ruta cuenta cada fabricación con ese peso
+  local plan = { fees = 0, steps = { { crafts = 10, unitValue = 0, unitCost = 0, from = 1, to = 5 } }, ctx = { opts = {} } }
+  local base = ES.Planner.RouteScore(plan)
+  plan.ctx.opts.craftWeight = 100
+  assert(ES.Planner.RouteScore(plan) - base == 10 * (100 - 5), "el peso no cuenta en la puntuación")
+  page.fewerButton:GetScript("OnClick")(page.fewerButton)
+  settings.fewerCrafts = saved
+end)
+step("máximo 300: el objetivo llega hasta 300", function()
+  assert(ES.MAX_SKILL == 300, "el máximo debería ser 300")
+  ES.db.prof.Tailoring = ES.db.prof.Tailoring or {}
+  local t = ES.db.prof.Tailoring
+  local savedT, savedLock = t.target, t.lock
+  t.target, t.lock = 260, nil
+  assert(ES:ProfessionTarget("Tailoring") == 260, "un objetivo entre 225 y 300 no debería recortarse")
+  t.target = nil
+  assert(ES:ProfessionTarget("Tailoring") == 300, "sin objetivo, el máximo")
+  t.target, t.lock = savedT, savedLock
+end)
+step("icono Casa de Subastas desactivado: ruta sin AH", function()
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Enchanting" then page = p end end
+  assert(page.ahButton, "falta el icono de la Casa de Subastas")
+  local settings = ES.db.prof.Enchanting
+  local saved = settings.useAH
+  settings.useAH = nil
+  assert(ES:PlanOptions("Enchanting", 1, 50).noAH == nil, "por defecto se usa la AH")
+  page.ahButton:GetScript("OnClick")(page.ahButton)
+  assert(settings.useAH == false, "el clic no la desactivó")
+  local opts = ES:PlanOptions("Enchanting", 1, 50)
+  assert(opts.noAH, "no pasa el sin AH al plan")
+  -- Sin AH no se compra nada en la subasta ni se aconseja anunciar lo fabricado
+  local plan = ES.Planner:Plan(ES.Data.Enchanting, opts)
+  for _, it in ipairs(plan.shopping or {}) do
+    assert(it.source ~= "ah", "sin AH no debería comprar en la subasta: " .. tostring(it.itemID))
+  end
+  for _, st in ipairs(plan.steps) do
+    local sale = st.sale or (st.recipe and st.recipe.out and ES.Planner.SaleInfo(plan.ctx, st.recipe))
+    assert(not (sale and sale.ahNet), "sin AH no debería valorar la venta en la subasta")
+  end
+  page.ahButton:GetScript("OnClick")(page.ahButton)
+  assert(settings.useAH == true and not ES:PlanOptions("Enchanting", 1, 50).noAH, "al volver a pulsarlo, con AH")
+  settings.useAH = saved
 end)
 step("conversión de esencias: dice cuáles, cuántas veces y que se compran antes", function()
   local page

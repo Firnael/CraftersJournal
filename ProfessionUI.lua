@@ -225,6 +225,10 @@ function ES:PlanOptions(profKey, from, to, cap)
     noQuests = settings.useQuests == false or nil, -- icono de misión desactivado
     excluded = settings.excluded and next(settings.excluded) and settings.excluded or nil, -- quitadas con la ✕
     useFavor = settings.useFavor or nil, -- recetas de Merchant's Favor (icono; por defecto no)
+    -- Icono "Menos fabricaciones": cada fabricación pesa más al elegir (por defecto no)
+    craftWeight = settings.fewerCrafts and self.Planner.FEWER_CRAFTS_WEIGHT or nil,
+    -- Icono de la AH desactivado: comprar solo al vendedor y vender al vendedor
+    noAH = settings.useAH == false or nil,
   }
 end
 
@@ -383,7 +387,8 @@ function ES:PlanKey(profKey, from, to, cap)
   local settings = self.db.prof and self.db.prof[profKey] or {}
   local scan = self.db.scans and self.db.scans[self:RealmKey()]
   return table.concat({ profKey, self.planGen .. "." .. (self.planGens[profKey] or 0), scan and scan.time or 0, from, to, tostring(cap), tostring(settings.useBags),
-    tostring(settings.useQuests), self:RealmKey(), ExcludedKey(settings), tostring(settings.useFavor) }, ":")
+    tostring(settings.useQuests), self:RealmKey(), ExcludedKey(settings), tostring(settings.useFavor),
+    tostring(settings.fewerCrafts), tostring(settings.useAH) }, ":")
 end
 
 -- La ruta ya calculada (fijada, o en la caché y aún válida), sin calcular nada
@@ -430,6 +435,10 @@ local function StopReason(plan)
     if #short >= 3 then break end
   end
   for _ in pairs(plan.missingPrice) do missing = missing + 1 end
+  if missing > 0 and plan.ctx and plan.ctx.opts.noAH then
+    -- Sin AH: no es que falte escanear, es que ningún vendedor los vende
+    return string.format(L["%d materiales que ningún vendedor vende (sin AH; los tuyos sí cuentan con el icono de bolsas)"], missing)
+  end
   if #short > 0 then
     return L["no quedan suficientes en la AH de: "] .. table.concat(short, ", ")
   elseif missing > 0 then
@@ -1025,8 +1034,6 @@ function ES:CreateProfessionPage(page, profKey)
     self:SetText(page.lastTarget or MAX_SKILL)
     self:ClearFocus()
   end)
-  local toHint = Label(head, L["(máx. "] .. MAX_SKILL .. ")", "GameFontDisableSmall")
-  toHint:SetPoint("LEFT", page.toBox, "RIGHT", 6, 0)
 
   -- Empezar ruta (la fija) / Recalcular ruta (la libera y la rehace con lo que llevas)
   -- (a la derecha de la línea de estado, bajo la franja de resumen: se coloca allí abajo)
@@ -1113,8 +1120,9 @@ function ES:CreateProfessionPage(page, profKey)
   -- isOn() lee el ajuste; toggle() lo cambia; lines() da el texto del tooltip
   local function FilterIcon(anchor, texture, title, isOn, toggle, lines)
     local b = CreateFrame("Button", nil, head, "BackdropTemplate")
-    b:SetSize(30, 30)
-    b:SetPoint("RIGHT", anchor, "LEFT", anchor == prev and -12 or -6, 0)
+    -- (26 px y 4 de separación: caben los cinco iconos donde antes cabían cuatro de 30)
+    b:SetSize(26, 26)
+    b:SetPoint("RIGHT", anchor, "LEFT", anchor == prev and -10 or -4, 0)
     b:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10 })
     b.icon = b:CreateTexture(nil, "ARTWORK")
     b.icon:SetPoint("TOPLEFT", 3, -3)
@@ -1188,6 +1196,29 @@ function ES:CreateProfessionPage(page, profKey)
       return { settings.useFavor and L["Activado: la ruta puede usar recetas que se compran con Merchant's Favor en el campamento de tu bando (cuestan fichas, no oro)."]
         or L["Desactivado: la ruta no usa recetas de Merchant's Favor."],
         L["Hace falta la reputación del campamento que pide cada una: el addon no puede comprobarla."] }
+    end)
+
+  -- Menos fabricaciones: pagar algo más por no fabricar decenas de veces una receta en verde
+  page.fewerButton = FilterIcon(page.favorButton, "Interface\\Icons\\INV_Misc_PocketWatch_01",
+    L["Menos fabricaciones"],
+    function() return settings.fewerCrafts and true or false end,
+    function() settings.fewerCrafts = not settings.fewerCrafts or nil end,
+    function()
+      local w = ES.Money(ES.Planner.FEWER_CRAFTS_WEIGHT)
+      return { settings.fewerCrafts and string.format(L["Activado: cada fabricación cuenta como %s al elegir la ruta. Paga más a cambio de fabricar menos veces (evita recetas en verde que piden varias fabricaciones por punto)."], w)
+        or L["Desactivado: la ruta más barata, aunque pida más fabricaciones."],
+        string.format(L["Ese %s no se cobra: solo pesa al comparar rutas. El total sigue siendo lo que te cuesta de verdad."], w) }
+    end)
+
+  -- Casa de Subastas: desactivada, la ruta sin AH (comprar al vendedor, vender al vendedor)
+  page.ahButton = FilterIcon(page.fewerButton, "Interface\\Icons\\INV_Misc_Coin_01",
+    L["Casa de Subastas"],
+    function() return settings.useAH ~= false end,
+    function() settings.useAH = settings.useAH == false or false end,
+    function()
+      return { settings.useAH ~= false and L["Activado: la ruta compra materiales en la Casa de Subastas si salen más baratos."]
+        or L["Desactivado (sin AH): la ruta solo compra materiales a vendedores o usa los tuyos, y todo lo fabricado se vende al vendedor."],
+        L["Lo que solo se consigue en la AH no se usa: la ruta puede salir más cara o pararse antes."] }
     end)
 
   -- Franja de resumen: materiales, profit, instructor y herramientas, total

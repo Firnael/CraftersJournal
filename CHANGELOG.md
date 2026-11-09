@@ -1,5 +1,13 @@
 # Crafter's Journal
 
+## 0.39.0
+
+- **Routes now go up to 300 (Artisan).** The maximum target is 300 in every profession. If your saved target was 225 (the old maximum), it moves to 300 once; a route you've already started keeps its target.
+- **New "Auction House" icon: routes without the AH.** Turn it off and the route only buys materials from vendors or uses what's in your bags, and everything you craft is sold to the vendor. Anything only available on the AH isn't used, so the route may cost more or stop earlier; when it stops, it tells you which materials no vendor sells.
+- **New "Fewer crafts" icon.** Turned on, each craft counts as 1s when choosing the route, so it pays a bit more to avoid dozens of crafts of a green recipe. The total still shows what it really costs you. Off by default.
+- **Vendor sell prices are no longer learned from a single sale.** One stray payment (a damaged item, money arriving at the same time) could save a wrong price: Greater Magic Wand showed 1s 68c while the vendor pays 2s. A price that differs from the known one now needs to be seen twice in a row, and unconfirmed prices saved by older versions are ignored.
+- **The "(max ...)" label next to the target is gone.** The target still can't go above 300, and the filter icons are a bit smaller so all five fit in the header.
+
 ## 0.38.0
 
 - **AH scans no longer fail because of other addons.** The server allows one full scan every 15 minutes per account, and other addons spend it too (ForeverForge_Auction scans on its own 3 seconds after you open the AH). Your scan then got nothing and gave up after 2 minutes. Now, when another addon asks for a full scan, Crafter's Journal reads that same data instead of waiting for nothing, and its countdown includes that scan.
