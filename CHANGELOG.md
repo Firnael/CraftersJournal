@@ -1,6 +1,6 @@
 # Crafter's Journal
 
-## Unreleased
+## 0.37.2
 
 - **The vendor window no longer buys more than you need.** After buying, it checked your bags after 1 second and, if the server hadn't delivered yet, bought again. Now it waits until the items stop arriving before asking for anything missing. It also no longer asks for the materials of intermediates you've already crafted (the salt for cured hides, for example). When a vendor sells in lots (5 at a time), the row says so.
 - **The vendor window shows up more reliably.** It looks again when the game finishes loading the vendor's items, and it still uses the last profession you looked at after you open Make money.
