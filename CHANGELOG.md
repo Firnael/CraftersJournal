@@ -1,5 +1,9 @@
 # Crafter's Journal
 
+## Unreleased
+
+- **Calculator: the source no longer overlaps the total.** With a typed price, "typed" ran into totals with gold ("1g 48s 80c"). The total column now always has its own space.
+
 ## 0.37.2
 
 - **The vendor window no longer buys more than you need.** After buying, it checked your bags after 1 second and, if the server hadn't delivered yet, bought again. Now it waits until the items stop arriving before asking for anything missing. It also no longer asks for the materials of intermediates you've already crafted (the salt for cured hides, for example). When a vendor sells in lots (5 at a time), the row says so.

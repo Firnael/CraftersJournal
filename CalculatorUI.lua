@@ -38,8 +38,8 @@ end
 -- del juego). Al pulsar Intro o salir de una casilla, `commit(cobre)`; con las tres
 -- vacías, commit(nil): vuelve al precio automático. Tab pasa a la siguiente.
 local COIN_ICONS = { "Interface\\MoneyFrame\\UI-GoldIcon", "Interface\\MoneyFrame\\UI-SilverIcon", "Interface\\MoneyFrame\\UI-CopperIcon" }
-local BOX_W = { 40, 28, 28 }  -- oro (hasta 5 cifras), plata y cobre (2)
-local ICON_GAP, COIN_GAP = 4, 9 -- casilla → icono, icono → siguiente casilla
+local BOX_W = { 34, 24, 24 }  -- oro (hasta 5 cifras), plata y cobre (2)
+local ICON_GAP, COIN_GAP = 4, 7 -- casilla → icono, icono → siguiente casilla
 -- Ancho de las tres casillas con sus iconos (el marco de la plantilla sobresale ~6 px a la izquierda)
 local MONEY_W = 6 + BOX_W[1] + BOX_W[2] + BOX_W[3] + 3 * (ICON_GAP + 12) + 2 * COIN_GAP
 local function MoneyInput(parent, commit)
@@ -279,10 +279,12 @@ end
 -- Columnas (x desde la izquierda del panel; el total, pegado a la derecha). La hoja
 -- mide ~610 px con la ventana de 840: nombre 130, cantidad 36 (14 de aire), precio
 -- ~170, 12 de aire, de dónde 78 y el total, ~100 a la derecha
-local COL_NAME, COL_QTY_RIGHT = 36, 208
+local COL_NAME, COL_QTY_RIGHT = 36, 196
 local COL_PRICE = COL_QTY_RIGHT + 14
-local COL_SOURCE = COL_PRICE + MONEY_W + 12
-local SOURCE_W = 78
+local COL_SOURCE = COL_PRICE + MONEY_W + 10
+-- El total va pegado a la derecha y crece con el oro ("1g 48s 80c" ~90 px): la columna
+-- "De dónde" acaba siempre TOTAL_W antes del borde, así nunca se pisan
+local TOTAL_W = 104
 
 local function SheetRow(page, i)
   local row = page.sheetRows[i]
@@ -312,7 +314,7 @@ local function SheetRow(page, i)
   row.box:SetPoint("LEFT", COL_PRICE, 0)
   row.source = ES.UI.Label(row, "", "GameFontDisableSmall")
   row.source:SetPoint("LEFT", COL_SOURCE, 0)
-  row.source:SetWidth(SOURCE_W)
+  row.source:SetPoint("RIGHT", -TOTAL_W, 0)
   row.source:SetJustifyH("LEFT")
   row.source:SetWordWrap(false)
   row.total = ES.UI.Label(row, "", "GameFontHighlightSmall")
@@ -391,7 +393,7 @@ local function CreateSheet(page)
   page.saleBox:SetPoint("LEFT", COL_PRICE, 0)
   page.saleSource = ES.UI.Label(page.saleLine, "", "GameFontDisableSmall")
   page.saleSource:SetPoint("LEFT", COL_SOURCE, 0)
-  page.saleSource:SetWidth(SOURCE_W)
+  page.saleSource:SetPoint("RIGHT", -TOTAL_W, 0)
   page.saleSource:SetJustifyH("LEFT")
   page.saleSource:SetWordWrap(false)
   page.cutLine = SummaryLine(p)
