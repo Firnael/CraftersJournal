@@ -214,12 +214,18 @@ local GetItemInfoCompat = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 -- dice el juego ahora (siempre al día: Forever cambia precios, Bronze Dory pasó de
 -- 32s 53c a 4s 88c); si el juego aún no ha cargado el objeto, se le pide y mientras
 -- vale el de los datos (puede ser de una versión anterior de Forever)
+-- Objetos ya pedidos al juego en esta sesión: el cálculo de una ruta pregunta miles
+-- de veces por los mismos (14.000 en Peletería de 88 a 300); basta con pedirlo una vez
+local requested = {}
 function ES:VendorSellPrice(itemID)
   local seen = ES.db and ES.db.sellSeen and ES.db.sellSeen[itemID]
   if seen and seen.ok then return seen.price end -- (sin ok: un cobro suelto, sin confirmar)
   local live = select(11, GetItemInfoCompat(itemID))
   if live then return live end
-  if C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, itemID) end
+  if not requested[itemID] and C_Item and C_Item.RequestLoadItemDataByID then
+    requested[itemID] = true
+    pcall(C_Item.RequestLoadItemDataByID, itemID)
+  end
   return ES.Data.SellPrices[itemID]
 end
 

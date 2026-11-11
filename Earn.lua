@@ -26,6 +26,27 @@ local OLD_SCAN = 12 * 3600   -- más viejo que esto: avisar
 
 Earn.OLD_SCAN = OLD_SCAN
 
+-- Beneficio mínimo de una línea (lo que dejan todas sus fabricaciones juntas, no
+-- cada una): por debajo no compensa el viaje a la AH. Lo elige el jugador en la
+-- cabecera (ES.db.earnMinProfit); por defecto, 10 platas
+Earn.MIN_LINE_STEPS = { 0, 1000, 5000, 10000, 50000, 200000 } -- 0, 10s, 50s, 1g, 5g, 20g
+Earn.DEFAULT_MIN_LINE = 1000
+function Earn.MinLineProfit()
+  local v = ES.db and ES.db.earnMinProfit
+  return type(v) == "number" and v >= 0 and v or Earn.DEFAULT_MIN_LINE
+end
+
+-- Siguiente (o anterior, dir = -1) escalón del mínimo
+function Earn.StepMinLineProfit(dir)
+  local steps, cur = Earn.MIN_LINE_STEPS, Earn.MinLineProfit()
+  local i = 1
+  for k, v in ipairs(steps) do if v <= cur then i = k end end
+  i = ((i - 1 + (dir or 1)) % #steps) + 1
+  ES.db.earnMinProfit = steps[i]
+  Earn:Clear()
+  return steps[i]
+end
+
 -- Profesiones del personaje con datos
 function Earn.MyProfessions()
   local list = {}
@@ -68,17 +89,27 @@ function Earn.CostIdea(idea)
     idea.crafts, idea.invest, idea.profit, idea.reagents, idea.extra = 0, 0, 0, {}, {}
     return
   end
-  local cost, reagents, extra = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
+  local cost, reagents, extra, actions = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
   local start = n
   while n > 1 and (not cost or idea.sale * n - cost < math.max(MIN_PROFIT, MIN_MARGIN * cost) * n) do
     n = math.max(1, math.floor(n / 2))
-    cost, reagents, extra = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
+    cost, reagents, extra, actions = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
   end
   idea.fewer = n < start
   idea.crafts = n
   idea.invest = cost or e.cost * n
   idea.profit = idea.sale * n - idea.invest
   idea.reagents, idea.extra = reagents or e.reagents, extra or {}
+  -- Lo que de verdad se compra: también los materiales de lo que fabricas tú por el
+  -- camino (Bolt of Mageweave -> su Mageweave Cloth), no solo los de la receta
+  idea.actions = actions
+end
+
+-- Lo que deja una línea del lote: el beneficio de sus fabricaciones; si ya las
+-- tienes hechas (no hay que fabricar), lo que dejan las que llevas
+function Earn.LineValue(idea)
+  if idea.crafts and idea.crafts > 0 then return idea.profit or 0 end
+  return (idea.e.profit or 0) * math.floor((idea.have or 0) / math.max(1, idea.e.qty))
 end
 
 -- Todas las ideas, ordenadas por puntuación. Caché por escaneo, reputación,
@@ -94,9 +125,11 @@ end
 
 function Earn:Ideas()
   local scan = ES.db.scans and ES.db.scans[ES:RealmKey()]
-  local stamp = table.concat({ scan and scan.time or 0, ES:RealmKey(), ES.repStamp or "" }, ":")
+  local minLine = Earn.MinLineProfit()
+  local stamp = table.concat({ scan and scan.time or 0, ES:RealmKey(), ES.repStamp or "", minLine }, ":")
   if cache and cache.stamp == stamp then return cache end
-  local res = { stamp = stamp, ideas = {}, avoided = {}, scanTime = scan and scan.time, profs = Earn.MyProfessions(), known = 0 }
+  local res = { stamp = stamp, ideas = {}, avoided = {}, scanTime = scan and scan.time, profs = Earn.MyProfessions(), known = 0,
+    minLine = minLine, hidden = 0 }
   for _, profKey in ipairs(res.profs) do
     local data = ES.Data[profKey]
     local entries, ctx = ES.Planner:RecipeMarket(data, {
@@ -114,14 +147,23 @@ function Earn:Ideas()
             idea.price = ES.Market.ListPrice(e.fair) or 1
           end
           if idea.verdict == "avoid" then
-            res.avoided[#res.avoided + 1] = idea
+            -- (sin costear: con lo más que se fabricaría, ¿llegaría al mínimo?)
+            if e.profit * MAX_BATCH >= minLine then
+              res.avoided[#res.avoided + 1] = idea
+            else
+              res.hidden = res.hidden + 1
+            end
           else
             idea.ctx = ctx
             idea.wanted, idea.why = Batch(idea, e)
             idea.sale = (idea.sellWhere == "ah" and e.ahNet or e.vendor) * e.qty -- por fabricación
             Earn.CostIdea(idea)
-            idea.score = idea.profit * ((idea.verdict == "watch" or idea.verdict == "unknown") and WATCH_WEIGHT or 1)
-            res.ideas[#res.ideas + 1] = idea
+            if Earn.LineValue(idea) >= minLine then
+              idea.score = idea.profit * ((idea.verdict == "watch" or idea.verdict == "unknown") and WATCH_WEIGHT or 1)
+              res.ideas[#res.ideas + 1] = idea
+            else
+              res.hidden = res.hidden + 1
+            end
           end
         end
       end
@@ -141,7 +183,8 @@ function Earn:Ideas()
   for _, idea in ipairs(res.ideas) do
     if #res.batch >= BATCH_SIZE then break end
     Earn.CostIdea(idea)
-    if idea.crafts == 0 or idea.profit > 0 then
+    -- (con los materiales que ya compran las anteriores puede quedarse por debajo del mínimo)
+    if (idea.crafts == 0 or idea.profit > 0) and Earn.LineValue(idea) >= minLine then
       res.batch[#res.batch + 1] = idea
       idea.inBatch = true
       res.invest = res.invest + idea.invest
@@ -154,17 +197,27 @@ function Earn:Ideas()
       end
     end
   end
+  local function Need(itemID, source, qty, cost)
+    local n = need[itemID]
+    if not n then
+      n = { itemID = itemID, quantity = 0, total = 0, source = source }
+      need[itemID] = n
+    end
+    n.quantity = n.quantity + qty
+    n.total = n.total + cost
+  end
   for _, idea in ipairs(res.batch) do
-    -- idea.reagents ya va para todas sus fabricaciones
-    for _, rg in ipairs(idea.reagents or {}) do
-      local n = need[rg.item]
-      if not n then
-        n = { itemID = rg.item, quantity = 0, total = 0,
-          source = rg.kinds.ah and "ah" or rg.kinds.vendor and "vendor" or "craft" }
-        need[rg.item] = n
+    if idea.actions then
+      -- Las compras (AH y vendedor) de todas sus fabricaciones, también las de los
+      -- materiales que fabricas tú (un Bolt of Mageweave se compra como Mageweave Cloth)
+      for _, a in ipairs(idea.actions) do
+        if a.kind == "ah" or a.kind == "vendor" then Need(a.item, a.kind, a.qty, a.cost or 0) end
       end
-      n.quantity = n.quantity + rg.qty
-      n.total = n.total + rg.cost
+    else
+      -- idea.reagents ya va para todas sus fabricaciones
+      for _, rg in ipairs(idea.reagents or {}) do
+        Need(rg.item, rg.kinds.ah and "ah" or rg.kinds.vendor and "vendor" or "craft", rg.qty, rg.cost)
+      end
     end
   end
   res.shopping = {}
@@ -231,7 +284,8 @@ function Earn:Leftovers()
     end
   end
   local scan = ES.db.scans and ES.db.scans[ES:RealmKey()]
-  local list = {}
+  local list, hidden = {}, 0
+  local minLine = Earn.MinLineProfit()
   for id in pairs(BagItems()) do
     if not used[id] and ES.History:IsTracked(id) then
       local count = ES:ItemCount(id)
@@ -241,11 +295,13 @@ function Earn:Leftovers()
       local fair = ah and ES.Market:FairPrice(id, ah.minUnit)
       local ahPrice = fair and ES.Market.ListPrice(fair)
       local best = math.max(vendor, ahPrice and ahPrice * 0.95 or 0) -- 5% de comisión
-      if best > 0 then
+      if best > 0 and best * count >= minLine then
         list[#list + 1] = { itemID = id, count = count, ahPrice = ahPrice, fair = fair, vendor = vendor, value = best * count }
+      elseif best > 0 then
+        hidden = hidden + 1
       end
     end
   end
   table.sort(list, function(a, b) return a.value > b.value end)
-  return list
+  return list, hidden
 end

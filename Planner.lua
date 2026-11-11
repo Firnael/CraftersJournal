@@ -548,7 +548,12 @@ function Planner.SaleInfo(ctx, recipe)
   local vendor = ES:VendorSellPrice(itemID)
   -- El juego aún no ha cargado el objeto (precio de los datos, quizá antiguo): al
   -- llegar se recalcula la ruta con el precio de ahora
-  if not vendor or (ES.SellPriceIsLive and not ES:SellPriceIsLive(itemID)) then ctx.pendingInfo = true end
+  -- (cuáles: la página recalcula solo cuando llega uno de estos, no con cualquier objeto)
+  if not vendor or (ES.SellPriceIsLive and not ES:SellPriceIsLive(itemID)) then
+    ctx.pendingInfo = true
+    ctx.pendingItems = ctx.pendingItems or {}
+    ctx.pendingItems[itemID] = true
+  end
   local sale = { itemID = itemID, qty = recipe.out[2], vendor = vendor or 0 }
   local ah = ctx.prices[itemID]
   sale.ahMin = ah and ah.minUnit
@@ -1764,6 +1769,7 @@ function Planner:Plan(data, opts)
   end
 
   plan.pendingInfo = ctx.pendingInfo
+  plan.pendingItems = ctx.pendingItems -- [itemID] = true: objetos cuyo precio de vendedor aún no da el juego
   plan.ctx = ctx
   plan.net = plan.reagentCost - plan.resale + plan.fees + plan.toolsCost
   plan.reached = reached

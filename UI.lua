@@ -270,6 +270,7 @@ local function CreateMainFrame()
   ES:CreateEarnPage(AddPage("money", ""))
   ES:CreateInventoryPage(AddPage("inventory", ""))
   ES:CreateCalculatorPage(AddPage("calc", ""))
+  ES:CreateShoppingPage(AddPage("shopping", ""))
   ES:CreateFlippingPage(AddPage("flipping", ""))
   ES:CreatePatternsPage(AddPage("patterns", L["Colección de recetas"]))
   for _, prof in ipairs(ES.PROFESSIONS) do
@@ -435,6 +436,8 @@ local TABS = ES.Localize({
     desc = "Qué vender de tus bolsas, dónde y cuánto sacas; y lo que ha subido de precio." },
   { key = "calc",     label = "Calculadora",          icon = "Interface\\Icons\\INV_Misc_Note_02",
     desc = "Cuánto ganas con una receta, como en una hoja de cálculo: guarda varios cálculos y escribe tus precios." },
+  { key = "shopping", label = "Lista de compra",      icon = "Interface\\Icons\\INV_Misc_Note_01",
+    desc = "Los materiales que has añadido desde una ruta, Ganar dinero o la calculadora; con la AH abierta, se compran desde aquí." },
   { key = "flipping", label = "Flipping",             icon = "flip", dev = true,
     desc = "Objetos de la AH que han bajado de precio: cómpralos barato y revéndelos." },
   { key = "patterns", label = "Colección de recetas", icon = "Interface\\Icons\\INV_Scroll_03",
@@ -574,6 +577,7 @@ function ES:RebuildMainFrame()
   main = nil
   self.professionPages, self.patternPages = nil, nil
   self.homePage, self.earnPage, self.patternsPage, self.fishingPage = nil, nil, nil, nil
+  self.shoppingPage = nil
   if wasShown then self:ShowMainFrame(page) end
 end
 
@@ -586,6 +590,11 @@ function ES:ShowMainFrame(page)
     f.openPage = page
     f:Show()
   end
+end
+
+-- Esconde la ventana si está abierta (sin crearla si aún no existe)
+function ES:HideMainFrame()
+  if main and main:IsShown() then main:Hide() end
 end
 
 function ES:ToggleMainFrame()

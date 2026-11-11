@@ -254,7 +254,7 @@ local function ItemLine(page, o, alt)
     icon = texture or 134400, cells = cells, alt = alt, tooltip = Tooltip(o, mins),
     onClick = function()
       if not ES:IsAuctionHouseOpen() then return end
-      if ES.OpenAuctionBuy then ES:OpenAuctionBuy(o.itemID, o.units) else ES:SearchAuction(o.itemID) end
+      if ES.OpenAuctionBuy then ES:OpenAuctionBuy(o.itemID, o.units, o.unitSell - 1) else ES:SearchAuction(o.itemID) end
     end,
   }
 end

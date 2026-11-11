@@ -4,7 +4,7 @@ local L = ES.L
 -- Detalle de una profesión, al estilo del diario de mazmorras:
 --   cabecera: icono, nombre, nivel actual (el del personaje) y objetivo editable;
 --             a la derecha, usar bolsas (icono) y las vistas Ruta / Profit /
---             Lista de compra / Recetas
+--             Materiales / Recetas
 --   franja:   materiales, profit, instructor y herramientas, total
 --   lista:    filas de dos líneas según la vista
 
@@ -16,7 +16,7 @@ local LIST_WIDTH = 762
 local QUOTE_SIZE, QUOTE_TEXT_SIZE, QUOTE_PAD, QUOTE_TEXT_X = 34, 11, 12, 52
 local QUOTE_COIN_Y = -2 -- píxeles que se bajan los iconos de monedas en la cita (quedan altos)
 local LEVEL_W = 70 -- columna de nivel de la vista Ruta (cabe "225–300")
-local VIEW_BUTTON_H = 32 -- botones Ruta / Profit / Lista de compra (como los del diario de mazmorras)
+local VIEW_BUTTON_H = 32 -- botones Ruta / Profit / Materiales (como los del diario de mazmorras)
 local STATUS_BUTTON_H = 26 -- Empezar / Recalcular ruta y Actualizar precios (barra de estado)
 local LIST_TOP = 80        -- de la cabecera a la lista (sin la fila "Real")
 -- Marrones del diario de mazmorras: el fondo que agrupa la página, la tarjeta de la
@@ -40,7 +40,7 @@ local GOLD, GREEN, GREY, RED, ORANGE = "|cffffd100", "|cff40ff40", "|cff999999",
 
 local VIEWS = ES.Localize({
   { key = "route",  label = "Ruta",            width = 96,  icon = "Interface\\Icons\\INV_Misc_Map_01" },
-  { key = "shop",   label = "Lista de compra", width = 136, icon = "Interface\\Icons\\INV_Misc_Note_01" },
+  { key = "shop",   label = "Materiales", width = 136, icon = "Interface\\Icons\\INV_Misc_Note_01" },
   { key = "profit", label = "Profit",          width = 96,  icon = "Interface\\Icons\\INV_Misc_Coin_02" },
 }, "label")
 local VIEW_KEYS = { route = true, profit = true, shop = true }
@@ -335,22 +335,12 @@ function ES:StartRoute(page)
   plan.lockStarted, plan.lockPrices = lock.started, lock.scanTime
   self.lockedPlans[page.profKey] = plan
   self:RenderPlan(page)
-  self:RefreshAuctionAfterRoute()
 end
 
 function ES:StopRoute(profKey)
   local settings = self.db.prof and self.db.prof[profKey]
   if settings then settings.lock = nil end
   self.lockedPlans[profKey] = nil
-  self:RefreshAuctionAfterRoute()
-end
-
--- La lista de la compra junto a la AH solo enseña las rutas empezadas: con la AH
--- abierta, se actualiza al empezar o soltar una
-function ES:RefreshAuctionAfterRoute()
-  if self.RefreshAuctionPlan and self.IsAuctionHouseOpen and self:IsAuctionHouseOpen() then
-    self:RefreshAuctionPlan(true)
-  end
 end
 
 -- Plan de una profesión con su nivel actual y su objetivo, sin necesidad de abrir
@@ -823,7 +813,7 @@ local function CreateRow(parent)
   skip:SetScript("OnClick", function() if row.onSkip then row.onSkip() end end)
   skip:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:AddLine(L["Quitar de la ruta"])
+    GameTooltip:AddLine(row.skipTitle or L["Quitar de la ruta"])
     GameTooltip:AddLine(row.skipTip or L["La ruta busca otra receta en su lugar (por ejemplo, si no quieres ir a por este pergamino)."], 0.8, 0.8, 0.8, true)
     GameTooltip:Show()
   end)
@@ -930,7 +920,7 @@ local function StyleRow(row, line)
   row.go = line.go
   row.ahItem = line.ahItem
   row.onClick = line.onClick
-  row.onSkip, row.skipTip = line.onSkip, line.skipTip
+  row.onSkip, row.skipTip, row.skipTitle = line.onSkip, line.skipTip, line.skipTitle
   row.skip:SetShown(line.onSkip ~= nil)
   row.value:ClearAllPoints()
   row.value:SetPoint("RIGHT", line.onSkip and -30 or -12, 0)
@@ -1271,23 +1261,30 @@ function ES:CreateProfessionPage(page, profKey)
   page.empty:SetWidth(600)
 
   ES.SafeRegister(page, "GET_ITEM_INFO_RECEIVED")
-  page:SetScript("OnEvent", function(self)
-    if not self.plan or self.refreshQueued then return end
-    -- Faltaban nombres (repintar) o precios de vendedor (recalcular)
-    local needsRecalc = self.plan.pendingInfo
-    if self.pendingItems or needsRecalc then
-      self.refreshQueued = true
-      C_Timer.After(0.5, function()
-        self.refreshQueued = false
-        if not self:IsVisible() then return end
-        if needsRecalc and not ES:RouteLock(self.profKey) then
-          ES:ClearHomeCache() -- si no, la caché devolvería la misma ruta con el precio antiguo
-          ES:CalculatePlan(self)
-        else
-          ES:RenderPlan(self)
-        end
-      end)
-    end
+  page:SetScript("OnEvent", function(self, _, itemID, success)
+    if not self.plan then return end
+    -- Faltaban nombres (repintar) o precios de vendedor (recalcular). Solo recalcula
+    -- si llega un objeto cuyo precio esperaba esta ruta: con cualquier objeto (los
+    -- que pide el propio cálculo, bolsas, chat) la ruta de 88 a 300 se rehacía sin
+    -- parar y tardaba 10 minutos en salir
+    local waiting = self.plan.pendingItems
+    if success ~= false and itemID and waiting and waiting[itemID] then self.recalcQueued = true end
+    if self.refreshQueued or not (self.pendingItems or self.recalcQueued) then return end
+    self.refreshQueued = true
+    C_Timer.After(0.5, function()
+      self.refreshQueued = false
+      if not self:IsVisible() then return end
+      if self.recalcQueued and not ES:RouteLock(self.profKey) then
+        -- Calculando: no se tira lo hecho; se recalcula una vez al acabar (CalculatePlan)
+        if self.calculating then return end
+        self.recalcQueued = nil
+        ES:InvalidatePlan(self.profKey) -- solo esta profesión (si no, la caché daría el precio antiguo)
+        ES:CalculatePlan(self)
+      else
+        self.recalcQueued = nil
+        ES:RenderPlan(self)
+      end
+    end)
   end)
 
   -- Al mostrarse: nivel actual del personaje (puede haber subido) y recalcular
@@ -1421,6 +1418,14 @@ function ES:CalculatePlan(page)
       if page.planKey ~= key then return end -- se pidió otra ruta después
       page.calculating = nil
       page.plan = result
+      -- Llegaron precios de vendedor que esperaba mientras calculaba: una vez más,
+      -- con ellos (sin haber tirado lo calculado)
+      if page.recalcQueued and not self:RouteLock(page.profKey) and page:IsVisible() then
+        page.recalcQueued = nil
+        self:InvalidatePlan(page.profKey)
+        self:CalculatePlan(page)
+        return
+      end
       self:RenderPlan(page)
     end, page)
     if plan then page.plan = plan else page.calculating = true end
@@ -2062,7 +2067,7 @@ local function ProfitLines(plan, page)
   return lines
 end
 
--- Líneas de la vista Lista de compra
+-- Líneas de la vista Materiales
 local function ShopLines(plan, page)
   local lines = {}
   local total = 0
@@ -2070,6 +2075,15 @@ local function ShopLines(plan, page)
     if #items == 0 then return end
     lines[#lines + 1] = { section = title }
     for _, it in ipairs(items) do lines[#lines + 1] = build(it) end
+  end
+  -- Primera línea: llevar lo que hay que comprar a la pestaña Lista de compra
+  local function AddLine(items)
+    if #items == 0 then return end
+    local title = string.format(L["Ruta de %s (%d → %d)"], page.profName or ES:ProfLabel(page.profKey),
+      math.max(plan.from, page.from or plan.from), plan.to or page.to or 0)
+    table.insert(lines, 1, { total = true, icon = "Interface\\Icons\\INV_Misc_Note_01", title = L["Añadir a la lista de compra"],
+      sub = L["Lleva lo que hay que comprar a la pestaña Lista de compra: desde allí lo compras con la AH abierta."],
+      onClick = function() ES:AddToShopping("route", title, items, { key = page.profKey }) end })
   end
   local ah, vendor = {}, {}
   -- Lo que la ruta gasta de cada material desde tu nivel actual (compras + lo que
@@ -2106,7 +2120,7 @@ local function ShopLines(plan, page)
       local missing = math.ceil((need[it.itemID] or it.quantity) - 0.001) - ES:ItemCount(it.itemID)
       if missing > 0 then
         action = string.format(L["abrir la compra de %d en la AH"], missing)
-        onClick = function() ES:OpenAuctionBuy(it.itemID, missing) end
+        onClick = function() ES:OpenAuctionBuy(it.itemID, missing, it.unit) end
       else
         action, onClick = L["buscarlo en la AH"], function() ES:SearchAuction(it.itemID) end
       end
@@ -2168,9 +2182,14 @@ local function ShopLines(plan, page)
     end)
     lines[#lines + 1] = { total = true, title = L["Te falta por comprar"],
       sub = L["Lo que te falta para lo que queda de ruta, con lo que llevas ahora"], value = Signed(left) }
+    local missing = {}
+    for _, it in ipairs(buyAH) do missing[#missing + 1] = it end
+    for _, it in ipairs(buyVendor) do missing[#missing + 1] = it end
+    AddLine(missing)
     return lines
   end
 
+  AddLine(plan.shopping)
   Section(L["Comprar en la Casa de Subastas"], ah, Buy)
   Section(L["Comprar al vendedor"], vendor, Buy)
   -- Lo que también se compra ya dice arriba cuántos tienes y cuántos faltan: aquí

@@ -93,8 +93,49 @@ function ES:CreateEarnPage(page)
   name:SetTextColor(0.96, 0.79, 0.25)
   page.subtitle = Label(head, "", "GameFontHighlightSmall")
   page.subtitle:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", 12, 2)
-  page.subtitle:SetPoint("RIGHT", -16, 0)
+  page.subtitle:SetPoint("RIGHT", -370, 0)
   page.subtitle:SetJustifyH("LEFT")
+
+  -- Beneficio mínimo de cada línea: clic, el siguiente; clic derecho, el anterior
+  local minButton = CreateFrame("Button", nil, head, "UIPanelButtonTemplate")
+  minButton:SetSize(170, 24)
+  minButton:SetPoint("RIGHT", -12, 0)
+  minButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  minButton:SetScript("OnClick", function(_, button)
+    ES.Earn.StepMinLineProfit(button == "RightButton" and -1 or 1)
+    ES:RenderEarn()
+  end)
+  minButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+    GameTooltip:AddLine(L["Beneficio mínimo"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["No se proponen recetas que, con todas las fabricaciones que tocan, dejen menos que esto (tampoco materiales para vender que valgan menos)."], 1, 1, 1, true)
+    GameTooltip:AddLine(L["Clic: subir · Clic derecho: bajar"], 0.6, 0.6, 0.6)
+    GameTooltip:Show()
+  end)
+  minButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  page.minButton = minButton
+
+  -- Los materiales del lote de hoy a la Lista de compra (ShoppingUI.lua)
+  local addButton = CreateFrame("Button", nil, head, "UIPanelButtonTemplate")
+  addButton:SetSize(170, 24)
+  addButton:SetPoint("RIGHT", minButton, "LEFT", -6, 0)
+  addButton:SetText(L["Añadir a la lista de compra"])
+  addButton:SetScript("OnClick", function()
+    local res = ES.Earn:Ideas()
+    -- (una por día: volver a añadirla el mismo día la sustituye)
+    local day = date and date("%d/%m") or ""
+    ES:AddToShopping("money", string.format(L["Ganar dinero: lote del %s"], day), res.shopping,
+      { key = day, minusBags = true })
+  end)
+  addButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
+    GameTooltip:AddLine(L["Añadir a la lista de compra"], 1, 0.82, 0)
+    GameTooltip:AddLine(L["Los materiales del lote de hoy que te faltan (descontando lo que llevas) pasan a la pestaña Lista de compra, desde donde los compras con la AH abierta."], 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  addButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+  page.addButton = addButton
+
 
   local strip = CreateFrame("Frame", nil, page)
   strip:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 4, -6)
@@ -159,6 +200,10 @@ function ES:RenderEarn()
   page.stats.invest:SetText(#res.batch > 0 and Signed(res.invest) or (GREY .. "—|r"))
   page.stats.profit:SetText(#res.batch > 0 and Signed(-res.profit) or (GREY .. "—|r"))
   page.stats.count:SetText(tostring(#res.batch))
+  page.addButton:SetEnabled(#res.shopping > 0)
+  page.minButton:SetText(res.minLine > 0 and string.format(L["Mínimo: %s"], ES.Money(res.minLine)) or L["Sin mínimo"])
+  local left, leftHidden = ES.Earn:Leftovers()
+  local hidden = res.hidden + leftHidden
 
   local profs = {}
   for _, k in ipairs(res.profs) do profs[#profs + 1] = ES:ProfLabel(k) end
@@ -174,6 +219,9 @@ function ES:RenderEarn()
     status = GREY .. string.format(L["Precios de la AH de hace %d min · beneficio igualando a la más barata (comisión y depósito descontados)|r"],
       math.floor((time() - res.scanTime) / 60))
   end
+  if hidden > 0 then
+    status = status .. GREY .. string.format(L[" · %d por debajo del mínimo de %s|r"], hidden, ES.Money(res.minLine))
+  end
   page.status:SetText(status)
 
   local lines = {}
@@ -181,12 +229,18 @@ function ES:RenderEarn()
     lines[#lines + 1] = { section = L["Lote de hoy"] }
     for _, idea in ipairs(res.batch) do lines[#lines + 1] = IdeaLine(idea) end
     lines[#lines + 1] = { total = true, title = L["Total del lote"],
-      sub = L["En la Casa de Subastas, el panel Crafter's Journal busca estos materiales (modo Ganar dinero)."],
+      sub = L["Para comprar sus materiales: Añadir a la lista de compra (arriba)."],
       value = Signed(-res.profit) }
   end
-  if #res.ideas > #res.batch then
+  -- Las que no entraron en el lote (no siempre las siguientes: una puede quedarse fuera
+  -- porque las anteriores ya compran sus materiales, y entonces quizá ya no llegue al mínimo)
+  local more = {}
+  for _, idea in ipairs(res.ideas) do
+    if not idea.inBatch and #more < MORE_IDEAS and ES.Earn.LineValue(idea) >= res.minLine then more[#more + 1] = idea end
+  end
+  if #more > 0 then
     lines[#lines + 1] = { section = L["Más opciones con beneficio"] }
-    for i = #res.batch + 1, math.min(#res.ideas, #res.batch + MORE_IDEAS) do lines[#lines + 1] = IdeaLine(res.ideas[i]) end
+    for _, idea in ipairs(more) do lines[#lines + 1] = IdeaLine(idea) end
   end
   -- Enfriamientos (transmutaciones...) que sabes
   local cds = ES.Earn:Cooldowns()
@@ -206,7 +260,6 @@ function ES:RenderEarn()
     for i = 1, math.min(#res.avoided, MAX_AVOIDED) do lines[#lines + 1] = IdeaLine(res.avoided[i], true) end
   end
   -- Materiales que llevas y no usa ninguna receta que sabes: para vender
-  local left = ES.Earn:Leftovers()
   if #left > 0 then
     lines[#lines + 1] = { section = L["Materiales que llevas y no usas (para vender)"] }
     for i = 1, math.min(#left, 10) do

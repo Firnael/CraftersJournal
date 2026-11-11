@@ -292,7 +292,6 @@ Ledger.MerchantInfo = MerchantInfo
 ---------------------------------------------------------------------------
 local sellPending = {} -- ventas enviadas aún sin cobrar: { itemID, count, t }
 local SELL_WINDOW = 3  -- s entre vender y que suba tu dinero
-local lastMoney
 
 local function NoteSale(bag, slot)
   if not (MerchantFrame and MerchantFrame:IsShown()) then return end
@@ -318,12 +317,22 @@ if hooksecurefunc then
 end
 
 -- Sube tu dinero: es el cobro de la venta pendiente más antigua (cada venta sube
--- el dinero por separado; vendiendo varias pilas seguidas, una tras otra)
+-- el dinero por separado; vendiendo varias pilas seguidas, una tras otra). Lo llama
+-- Books.OnMoney (la contabilidad) con el vendedor abierto; devuelve la venta cobrada
+local LearnPrice
 local function ChargeSale(delta)
   local now = GetTime and GetTime() or 0
   while sellPending[1] and now - sellPending[1].t > SELL_WINDOW do table.remove(sellPending, 1) end
   local p = table.remove(sellPending, 1)
-  if not p or p.skip then return end
+  if not p then return nil end
+  if not p.skip then LearnPrice(p, delta) end
+  return p
+end
+
+local function HasPendingSale() return sellPending[1] ~= nil end
+
+-- El precio real del vendedor, de lo que cobró una venta
+function LearnPrice(p, delta)
   local itemID = p.itemID
   local unit = math.floor(delta / p.count + 0.5)
   -- Solo si cuadra con el precio que se conocía (entre un 20% y el doble de los
@@ -347,11 +356,11 @@ local function ChargeSale(delta)
     if ES.ClearHomeCache then ES:ClearHomeCache() end -- (el anterior deja de valer)
   end
 end
-Ledger.NoteSale, Ledger.ChargeSale = NoteSale, ChargeSale -- para pruebas
+Ledger.NoteSale, Ledger.ChargeSale, Ledger.HasPendingSale = NoteSale, ChargeSale, HasPendingSale
 
 do
   local f = CreateFrame("Frame")
-  for _, e in ipairs({ "TRAINER_SHOW", "TRAINER_UPDATE", "PLAYER_ENTERING_WORLD", "PLAYER_MONEY",
+  for _, e in ipairs({ "TRAINER_SHOW", "TRAINER_UPDATE", "PLAYER_ENTERING_WORLD",
     "MERCHANT_SHOW", "MERCHANT_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do
     ES.SafeRegister(f, e)
   end
@@ -365,12 +374,8 @@ do
       if not ok then Log("instructor: error leyendo precios: " .. tostring(err)) end
     elseif event == "PLAYER_ENTERING_WORLD" then
       ES.db.mailBought = nil -- compras de la AH "en el correo" (ya no se cuentan)
-      lastMoney = GetMoney and GetMoney() or 0
-    elseif event == "PLAYER_MONEY" then
-      local money = GetMoney and GetMoney() or 0
-      if lastMoney and money > lastMoney and sellPending[1] then ChargeSale(money - lastMoney) end
-      lastMoney = money
     end
+    -- (los cambios de dinero los sigue Books.lua, que cobra aquí las ventas al vendedor)
   end)
 end
 
@@ -434,15 +439,21 @@ function Ledger:PostOnAH(itemID, n, unit)
   end
   local price = Ledger.PostPrice(unit)
   local ok, err
+  if ES.Books then -- (la contabilidad apunta la subasta y espera su depósito)
+    ES.Books.posting = itemID
+    ES.Books.postingDeposit = ES.Books.CalcDeposit(commodity, location, itemID, 2, qty)
+  end
   if commodity and AH.PostCommodity then
     ok, err = pcall(AH.PostCommodity, location, 2, qty, price)
   else
     ok, err = pcall(AH.PostItem, location, 2, qty, nil, price)
     if not ok and qty > 1 then -- no acepta varios de una vez: uno (el resto, con otro clic)
       qty = 1
+      if ES.Books then ES.Books.postingDeposit = ES.Books.CalcDeposit(false, location, itemID, 2, 1) end
       ok, err = pcall(AH.PostItem, location, 2, 1, nil, price)
     end
   end
+  if ES.Books then ES.Books.posting, ES.Books.postingDeposit = nil, nil end
   if not ok then
     ES:Print(L["No se pudo anunciar: "] .. tostring(err))
     return 0

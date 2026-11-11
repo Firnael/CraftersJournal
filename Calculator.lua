@@ -116,16 +116,26 @@ function Calc.CityDiscount()
   return best, bestID and ES:FactionName(bestID)
 end
 
+-- Precio de la AH más reciente de un objeto: el del último escaneo, o el que vio
+-- Auctionator al buscarlo desde la calculadora si es posterior. Devuelve precio y
+-- fuente ("ah" o "auctionator"), o nil
+function Calc.AHPrice(itemID, scan)
+  local entry = scan and scan.items and scan.items[itemID]
+  local atr = ES.Auctionator and ES.Auctionator.Price(itemID)
+  if atr and (not (entry and entry.minUnit) or atr.time > (scan.time or 0)) then return atr.price, "auctionator" end
+  if entry and entry.minUnit then return entry.minUnit, "ah" end
+  return nil
+end
+
 -- Precio automático de un material: lo más barato entre el vendedor (con el descuento
--- de ciudad) y la subasta más barata del último escaneo. Devuelve precio y fuente
--- ("vendor" o "ah"), o nil si no hay ninguno
+-- de ciudad) y la subasta más barata (Calc.AHPrice). Devuelve precio y fuente
+-- ("vendor", "ah" o "auctionator"), o nil si no hay ninguno
 function Calc.AutoPrice(itemID, scan, discount)
   local vendor = ES.Data.VendorPrices and ES.Data.VendorPrices[itemID]
   if vendor then vendor = math.floor(vendor * (1 - (discount or 0)) + 0.5) end
-  local entry = scan and scan.items and scan.items[itemID]
-  local ah = entry and entry.minUnit
+  local ah, source = Calc.AHPrice(itemID, scan)
   if vendor and (not ah or vendor <= ah) then return vendor, "vendor" end
-  if ah then return ah, "ah" end
+  if ah then return ah, source end
   return nil
 end
 
@@ -200,6 +210,24 @@ function Calc:Compute(c)
   Expand(data, recipe, c.qty or 1, need, order, made, 0)
 
   local res = { recipe = recipe, rows = {}, made = made, cost = 0, missing = false, discount = discount, city = city }
+  -- Un precio escrito a mano vale hasta que llega un escaneo posterior con ese objeto:
+  -- entonces manda el escaneo (al escanear se ponen bien los precios de todos los
+  -- cálculos guardados). Lo que el escaneo no trae se queda con el tuyo
+  local scanTime = scan and scan.time or 0
+  local function Stale(id, when)
+    local entry = scan and scan.items and scan.items[id]
+    return entry and entry.minUnit and scanTime > (when or 0)
+  end
+  -- (los escritos antes de guardar la hora cuentan como de ahora: los quita el próximo escaneo)
+  c.priceTimes = c.priceTimes or {}
+  for id in pairs(c.prices) do
+    c.priceTimes[id] = c.priceTimes[id] or time()
+    if Stale(id, c.priceTimes[id]) then c.prices[id], c.priceTimes[id] = nil, nil end
+  end
+  if c.sale then
+    c.saleTime = c.saleTime or time()
+    if recipe.out and Stale(recipe.out[1], c.saleTime) then c.sale, c.saleTime = nil, nil end
+  end
   for _, id in ipairs(order) do
     local price, source = c.prices[id], "manual"
     if not price then price, source = Calc.AutoPrice(id, scan, discount) end
@@ -220,9 +248,9 @@ function Calc:Compute(c)
     if c.sale then
       res.sale, res.saleSource = c.sale, "manual"
     else
-      local entry = scan and scan.items and scan.items[res.outID]
-      if entry and entry.minUnit then
-        res.sale, res.saleSource = ES.Market.ListPrice(ES.Market:FairPrice(res.outID, entry.minUnit)), "ah"
+      local ahMin, ahSource = Calc.AHPrice(res.outID, scan)
+      if ahMin then
+        res.sale, res.saleSource = ES.Market.ListPrice(ES.Market:FairPrice(res.outID, ahMin)), ahSource
       else
         res.sale, res.saleSource = ES:VendorSellPrice(res.outID), "vendor"
       end

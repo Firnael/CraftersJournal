@@ -277,7 +277,7 @@ step("precio inflado (caso Westfall Stew)", function()
   assert(none.noHistory and none.price == 1000, "sin historial")
   ES.db.history, ES.db.track = saved[1], saved[2]
 end)
-step("lista de compra en la AH", function()
+step("lista de compra", function()
   local searched
   AuctionFrame = CreateFrame("Frame")
   BrowseName = CreateFrame("EditBox")
@@ -285,36 +285,88 @@ step("lista de compra en la AH", function()
   CanSendAuctionQuery = function() return true, true end
   local realData = ES.GetItemData
   ES.GetItemData = function(self, id) return "Item" .. id, 1, 134400 end
-  -- Solo salen las profesiones con una ruta empezada: sin ninguna, Peletería no está
-  ES:SetupAuctionPanel(AuctionFrame)
-  local st = ES.AuctionPanelState
-  assert(st.profKey ~= "Leatherworking", "sin ruta empezada no debería salir Peletería")
-  -- Con la de Peletería empezada (la ruta de siempre, sin fijar de verdad), sale ella
-  local realLock, realLocked = ES.RouteLock, ES.LockedPlan
-  ES.RouteLock = function(self, key) if key == "Leatherworking" then return {} end return realLock(self, key) end
-  ES.LockedPlan = function(self, key) if key == "Leatherworking" then return nil end return realLocked(self, key) end
-  ES.db.lastProf = "Leatherworking"
-  st.profKey = nil -- como al volver a abrir la AH
-  ES:RefreshAuctionPlan(true)
-  ES.RouteLock, ES.LockedPlan = realLock, realLocked
-  assert(st.profKey == "Leatherworking", "profesión: " .. tostring(st.profKey))
-  local buys = 0
-  for _, l in ipairs(st.lines) do if l.buy then buys = buys + 1 end end
-  assert(buys > 0, "sin materiales que comprar")
-  local first
-  for _, l in ipairs(st.lines) do if l.buy then first = l.itemID break end end
-  ES:SearchAuction(first)
-  assert(searched == "Item" .. first, "no buscó: " .. tostring(searched))
-  -- "Comprar" el primero: deja de salir como pendiente y Buscar siguiente pasa al segundo
+  ES:SearchAuction(2318)
+  assert(searched == "Item2318", "no buscó: " .. tostring(searched))
+  local SH = ES.Shopping
+  local savedChar, savedOpenAH = ES.charData, ES.IsAuctionHouseOpen
+  ES.charData = { books = { moves = {}, posts = {}, days = {}, partners = {} } }
   local real = ES.ItemCount
-  ES.ItemCount = function(self, id) if id == first then return 999 end return real(self, id) end
-  ES:RenderAuctionPanel()
-  log[#log+1] = string.format("     %d materiales a comprar; buscado %s", buys, searched)
-  for _, l in ipairs(st.lines) do
-    if l.sell then log[#log+1] = "     vender: " .. l.itemID .. " x" .. l.s.advice.ah .. " a " .. l.s.advice.price end
-  end
-  ES.ItemCount = real
-  ES.GetItemData = realData
+  ES.ItemCount = function(self, id) if id == 2320 then return 4 end return 0 end
+  -- Dos listas: una ruta y un lote (que descuenta lo que llevas: 4 de 2320)
+  local route = SH.Add("route", "Ruta", { { itemID = 2318, quantity = 20, unit = 100, source = "ah" },
+    { itemID = 2319, quantity = 5, unit = 300, source = "ah" }, { itemID = 159, quantity = 3, unit = 25, source = "vendor" },
+    { itemID = 2318, quantity = 2, unit = 100, source = "ah" } }, { key = "Leatherworking" })
+  assert(route and #route.items == 3 and route.items[1].need == 22, "ruta añadida (juntando repetidos)")
+  local money = SH.Add("money", "Lote", { { itemID = 2318, quantity = 10, unit = 100, source = "ah" },
+    { itemID = 2320, quantity = 4, unit = 50, source = "ah" }, { itemID = 1, quantity = 1, source = "craft" } }, { minusBags = true })
+  assert(money and #money.items == 1, "el lote no debería pedir lo que llevas ni lo que se fabrica")
+  assert(SH.Add("calc", "Nada", { { itemID = 2320, quantity = 2, source = "ah" } }, { minusBags = true }) == nil, "nada que comprar")
+  -- Compras (contabilidad): 25 de 2318 llenan primero la ruta (22) y 3 del lote
+  local moves = ES.charData.books.moves
+  route.t, money.t = time() - 20, time() - 10
+  moves[#moves + 1] = { t = time() - 30, k = "ahBuy", m = -500, i = 2318, q = 5 } -- antes de añadirlas: no cuenta
+  moves[#moves + 1] = { t = time(), k = "ahBuy", m = -2500, i = 2318, q = 25 }
+  moves[#moves + 1] = { t = time(), k = "buy", m = -60, g = { { i = 159, q = 3 } } } -- trade: también cuenta
+  local st = SH.Status()
+  local r1, r2 = st.lists[1].items, st.lists[2].items
+  assert(r1[1].bought == 22 and r1[1].left == 0 and r2[1].bought == 3 and r2[1].left == 7,
+    string.format("reparto de compras: %d %d %d", r1[1].bought, r2[1].bought, r2[1].left))
+  assert(r1[3].left == 0, "compra en un trade")
+  assert(st.done == 2 and st.total == 4, string.format("progreso %d/%d", st.done, st.total))
+  -- Comprar siguiente: el primero que falta (2319); el abierto, si aún falta
+  local id, left = SH.NextToBuy(st)
+  assert(id == 2319 and left == 5, "siguiente: " .. tostring(id))
+  id, left = SH.NextToBuy(st, 2318)
+  assert(id == 2318 and left == 7, "sigue con el abierto: " .. tostring(id) .. " " .. tostring(left))
+  -- Volver a añadir la misma ruta la sustituye
+  SH.Add("route", "Ruta 2", { { itemID = 2319, quantity = 1, source = "ah" } }, { key = "Leatherworking" })
+  assert(#SH.Lists() == 2 and SH.Lists()[2].title == "Ruta 2", "la ruta se duplicó")
+  -- Pestaña: abierta desde la AH, con Comprar siguiente
+  ES.IsAuctionHouseOpen = function() return true end
+  -- Al abrir la AH: la ventana grande se esconde y sale el panel pequeño con la misma lista
+  ES:ShowMainFrame("home")
+  ES.db.shopMiniHidden = nil
+  ES:SetupAuctionPanel(AuctionFrame)
+  -- (en estas pruebas IsShown siempre dice que sí: se mira _shown)
+  local mini = ES.ShoppingMini()
+  assert(mini and mini._shown, "al abrir la AH: falta el panel pequeño")
+  assert(ES:GetMainFrame()._shown == false, "al abrir la AH, la ventana grande debería esconderse")
+  assert(mini.progress > 0 and mini.progress < 1 and mini.rows[1] and mini.rows[1]._shown, "panel pequeño sin la lista")
+  -- "Ver completa": la pestaña grande en su lugar del pequeño
+  ES:OpenShoppingAtAuction(AuctionFrame)
+  assert(mini._shown == false and ES.db.lastPage == "shopping", "Ver completa: la grande en lugar del pequeño")
+  -- El botón de la AH lo oculta (y se recuerda al volver a abrir la AH)
+  ES:ToggleShoppingMini(AuctionFrame)
+  assert(mini._shown == false and ES.db.shopMiniHidden, "ocultar el panel pequeño")
+  ES:SetupAuctionPanel(AuctionFrame)
+  assert(mini._shown == false, "cerrado, no vuelve a salir al abrir la AH")
+  ES.db.shopMiniHidden = nil
+  local page = ES.shoppingPage
+  assert(page and page:IsVisible(), "la pestaña no se abrió")
+  local opened
+  local savedOpen = ES.OpenAuctionBuy
+  ES.OpenAuctionBuy = function(_, oid) opened = oid end
+  ES:ShoppingBuyNext()
+  ES.OpenAuctionBuy = savedOpen
+  -- (sin la primera ruta, las 25 compradas completan el lote: falta 2319 de la ruta nueva)
+  assert(opened == 2319, "Comprar siguiente: " .. tostring(opened))
+  assert(page.progress > 0 and page.progress < 1, "barra: " .. tostring(page.progress))
+  -- Quitar un material; si la lista se queda vacía, se quita entera
+  local last = SH.Lists()[2]
+  SH.RemoveItem(last, 2319)
+  assert(#SH.Lists() == 1, "la lista vacía debería quitarse")
+  SH.Lists()[2] = last
+  last.items[1] = { itemID = 2319, need = 1, unit = 0, source = "ah" }
+  last.items[2] = { itemID = 2321, need = 2, unit = 0, source = "ah" }
+  SH.RemoveItem(last, 2321)
+  assert(#last.items == 1 and last.items[1].itemID == 2319, "quitar un material")
+  -- Quitar una lista
+  assert(SH.Remove(SH.Lists()[1]) and #SH.Lists() == 1, "quitar lista")
+  ES:RenderShopping()
+  mini:Hide()
+  log[#log+1] = string.format("     %d de %d materiales; siguiente %s", st.done, st.total, tostring(opened))
+  ES:ShowMainFrame("home")
+  ES.ItemCount, ES.GetItemData, ES.charData, ES.IsAuctionHouseOpen = real, realData, savedChar, savedOpenAH
 end)
 step("ganar dinero (sin correo)", function()
   -- Peletería al 150 sabiendo todas sus recetas de instructor
@@ -323,6 +375,26 @@ step("ganar dinero (sin correo)", function()
   ES.IsRecipeKnown = function(self, id) local r = ES.Data.Leatherworking.recipes[id] return r ~= nil and r.fee ~= nil end
   -- El buzón no se lee ni se guarda (ni el módulo existe)
   assert(ES.Mail == nil, "el addon no debería leer el correo")
+  -- Beneficio mínimo por línea: escalones y filtro
+  ES.db.earnMinProfit = 0
+  assert(ES.Earn.StepMinLineProfit(1) == 1000 and ES.Earn.StepMinLineProfit(-1) == 0
+    and ES.Earn.StepMinLineProfit(-1) == 200000, "escalones del mínimo")
+  ES.db.earnMinProfit = 0
+  ES.Earn:Clear()
+  local all = ES.Earn:Ideas()
+  ES.db.earnMinProfit = 50000
+  ES.Earn:Clear()
+  local few = ES.Earn:Ideas()
+  for _, idea in ipairs(few.ideas) do
+    assert(ES.Earn.LineValue(idea) >= 50000, "idea por debajo del mínimo: " .. idea.e.recipe.name)
+  end
+  for _, idea in ipairs(few.batch) do assert(ES.Earn.LineValue(idea) >= 50000, "lote por debajo del mínimo") end
+  assert(#few.ideas <= #all.ideas and (few.hidden > 0 or #few.ideas == #all.ideas), "el mínimo no ocultó nada")
+  log[#log+1] = string.format("     mínimo 5g: %d de %d ideas (%d ocultas)", #few.ideas, #all.ideas, few.hidden)
+  ES:SelectPage("money")
+  ES:RenderEarn()
+  ES:SelectPage("home")
+  ES.db.earnMinProfit = 0
   ES.Earn:Clear()
   local res = ES.Earn:Ideas()
   assert(res.known > 0, "no detecta recetas conocidas")
@@ -332,6 +404,21 @@ step("ganar dinero (sin correo)", function()
     local idea = res.batch[i]
     log[#log+1] = string.format("       %dx %s +%s (%s, %s)", idea.crafts, idea.e.recipe.name, ES.Money(idea.profit), tostring(idea.verdict or idea.sellWhere), idea.why)
   end
+  -- La lista de compra del lote lleva lo que se compra de verdad: también los materiales
+  -- de lo intermedio que fabricas tú (Bolt of Mageweave -> Mageweave Cloth), nunca "craft"
+  local inShop = {}
+  for _, it in ipairs(res.shopping) do
+    assert(it.source ~= "craft", "en la lista de compra hay algo que se fabrica: " .. it.itemID)
+    inShop[it.itemID] = true
+  end
+  local crafted = 0
+  for _, idea in ipairs(res.batch) do
+    for _, a in ipairs(idea.actions or {}) do
+      if a.kind == "ah" or a.kind == "vendor" then assert(inShop[a.item], "falta en la lista de compra: " .. a.item) end
+      if a.kind == "craft" and a.item ~= idea.itemID then crafted = crafted + 1 end
+    end
+  end
+  log[#log+1] = string.format("     lista del lote: %d materiales (%d intermedios fabricados por el camino)", #res.shopping, crafted)
   -- Lo que ya llevas fabricado: no se vuelve a fabricar
   if res.batch[1] then
     local item = res.batch[1].itemID
@@ -348,14 +435,146 @@ step("ganar dinero (sin correo)", function()
   -- Página y portada
   ES:SelectPage("money")
   ES:RenderEarn()
+  -- Añadir el lote a la lista de compra (una lista por día)
+  local savedChar = ES.charData
+  ES.charData = { books = { moves = {}, posts = {}, days = {}, partners = {} } }
+  ES.earnPage.addButton._scripts.OnClick(ES.earnPage.addButton)
+  ES.earnPage.addButton._scripts.OnClick(ES.earnPage.addButton)
+  local lists = ES.Shopping.Lists()
+  local needed = 0
+  for _, it in ipairs(res.shopping) do if it.source ~= "craft" and it.quantity > ES:ItemCount(it.itemID) then needed = needed + 1 end end
+  assert((needed == 0 and #lists == 0) or (#lists == 1 and lists[1].kind == "money"), "lote a la lista: " .. #lists)
+  ES.charData = savedChar
   ES:SelectPage("home")
-  -- Panel de la AH en modo Ganar dinero
-  ES.AuctionPanelState.profKey = "money"
-  ES:RefreshAuctionPlan(true)
-  assert(ES.AuctionPanelState.earn ~= nil, "panel sin modo ganar dinero")
   ES.GetProfessionSkill, ES.IsRecipeKnown = realSkill, realKnown
+  ES.db.earnMinProfit = nil
   ES.Earn:Clear()
-  ES.AuctionPanelState.profKey = nil
+end)
+step("contabilidad: cada cambio de dinero, una vez y cuadrando", function()
+  local B = ES.Books
+  local saved = { charData = ES.charData, GetMoney = GetMoney, MerchantFrame = MerchantFrame, C_Container = C_Container,
+    sellSeen = ES.db.sellSeen, Ask = B.Ask }
+  -- Lo último guardado eran 99300: al entrar con 100000, ajuste "fuera de sesión", y
+  -- la sesión y el día empiezan antes de él (para que cuadren)
+  ES.charData = { books = { lastMoney = 99300 } }
+  local money = 100000
+  GetMoney = function() return money end
+  MerchantFrame = nil
+  for k in pairs(B.pending) do B.pending[k] = nil end
+  for k in pairs(B.recent) do B.recent[k] = nil end
+  for k in pairs(B.seenMail) do B.seenMail[k] = nil end
+  B.session = nil
+  B.Start()
+  assert(B.Data().moves[1] and B.Data().moves[1].m == 700 and B.session.start == 99300, "ajuste fuera de sesión")
+  local function Change(d) money = money + d return B.OnMoney() end
+  -- Botín: sin causa, "otros"
+  assert(Change(500).k == "other", "botín")
+  -- Compra de un material en la AH moderna (pagó algo menos de lo anunciado)
+  B.hooks.StartCommoditiesPurchase(2318, 20)
+  B.hooks.CommodityPrice(100, 2000)
+  B.hooks.ConfirmCommoditiesPurchase(2318, 20)
+  local m = Change(-1980)
+  assert(m.k == "ahBuy" and m.i == 2318 and m.q == 20, "compra en la AH: " .. tostring(m.k))
+  -- Anunciar: el depósito (el calculado antes de anunciar, con margen), y la subasta queda abierta
+  B.posting, B.postingDeposit = 4251, 150
+  B.hooks.PostItem(nil, 2, 5, nil, 9000)
+  assert(Change(-20).k == "other", "una bajada que no es el depósito no se la queda")
+  m = Change(-151)
+  assert(m.k == "ahDeposit" and m.i == 4251, "depósito: " .. tostring(m.k))
+  local posts = B.Data().posts
+  local post = posts[#posts]
+  assert(post.i == 4251 and post.q == 5 and post.u == 9000 and not post.s, "subasta apuntada")
+  post.name = "Hillman's Shoulders"
+  -- Otra del mismo objeto, anunciada después (sin depósito conocido)
+  B.posting = 4251
+  B.hooks.PostItem(nil, 2, 5, nil, 9000)
+  local second = posts[#posts]
+  second.name = "Hillman's Shoulders"
+  m = Change(-150)
+  assert(m.k == "ahDeposit", "segundo depósito")
+  -- Vendida (mensaje del juego) y cobrada por correo con su factura: el correo es
+  -- de la que cerró el mensaje, no cierra la otra
+  local savedSold = ERR_AUCTION_SOLD_S
+  ERR_AUCTION_SOLD_S = "A buyer has been found for your auction of %s."
+  assert(B.OnSystemMessage("A buyer has been found for your auction of Hillman's Shoulders.") == "sold", "mensaje de vendida")
+  assert(post.s == "sold" and not second.s, "la subasta no se cerró")
+  ERR_AUCTION_SOLD_S = savedSold
+  GetInboxHeaderInfo = function() return nil, nil, "Auction House", "Auction successful", 42750, 0, 30, false, true, false, false, false end
+  GetInboxInvoiceInfo = function() return "seller", "Hillman's Shoulders", "Buyer", 0, 45000, 150, 2250, 0, 0, 5 end
+  B.hooks.TakeInboxMoney(1)
+  assert(not second.s and not post.mail, "el correo de la vendida cerró otra subasta")
+  -- El mismo correo otra vez (otro addon de correo) no cuenta dos veces
+  B.hooks.AutoLootMailItem(1)
+  m = Change(42750)
+  assert(m.k == "ahSale" and m.i == 4251 and m.q == 5, "venta en la AH: " .. tostring(m.k))
+  local waiting = 0
+  for _, e in ipairs(B.pending) do if e.kind == "ahSale" then waiting = waiting + 1 end end
+  assert(waiting == 0, "el correo repetido dejó otra venta esperando")
+  -- Caducada estando desconectado: el correo con el objeto devuelto la cierra
+  for k in pairs(B.seenMail) do B.seenMail[k] = nil end -- (MAIL_INBOX_UPDATE)
+  local savedExp = AUCTION_EXPIRED_MAIL_SUBJECT
+  AUCTION_EXPIRED_MAIL_SUBJECT = "Auction expired: %s"
+  GetInboxHeaderInfo = function() return nil, nil, "Auction House", "Auction expired: Hillman's Shoulders", 0, 0, 30, true, false, false, false, false end
+  GetInboxInvoiceInfo = function() return nil end
+  B.hooks.TakeInboxItem(1)
+  assert(second.s == "expired", "caducada sin mensaje: " .. tostring(second.s))
+  AUCTION_EXPIRED_MAIL_SUBJECT = savedExp
+  -- Sin noticias pasada su duración: "unknown"
+  posts[#posts + 1] = { t = time() - 51 * 3600, i = 2454, q = 1, u = 100, name = "Elixir" }
+  B.Prune()
+  assert(posts[#posts].s == "unknown" or B.Data().posts[#B.Data().posts].s == "unknown", "subasta vieja sin cerrar")
+  -- Correo de un jugador: se pregunta
+  local asked
+  B.Ask = function(mv) asked = mv end
+  GetInboxHeaderInfo = function() return nil, nil, "Amigo", "Pago", 2000, 0, 30, false, true, false, false, true end
+  GetInboxInvoiceInfo = function() return nil end
+  B.hooks.TakeInboxMoney(2)
+  m = Change(2000)
+  assert(m.k == "mail" and asked == m and m.w == "Amigo", "correo de un jugador")
+  GetInboxHeaderInfo, GetInboxInvoiceInfo = nil, nil
+  -- Trade: el dinero llega antes que el mensaje de completado
+  asked = nil
+  GetPlayerTradeMoney = function() return 0 end
+  GetTargetTradeMoney = function() return 30000 end
+  GetTradePlayerItemInfo = function(i) if i == 1 then return "Elixir", nil, 5 end end
+  GetTradePlayerItemLink = function(i) if i == 1 then return "|Hitem:2454::|h[Elixir]|h" end end
+  GetTradeTargetItemInfo = function() end
+  B.hooks.TradeSnapshot()
+  m = Change(30000)
+  assert(m.k == "other", "aún sin saber que era un trade")
+  B.hooks.TradeComplete()
+  assert(m.k == "trade" and asked == m and m.g and m.g[1].i == 2454 and m.g[1].q == 5, string.format("trade reclasificado: %s %s %s",
+    tostring(m.k), tostring(asked == m), tostring(m.g and m.g[1] and (m.g[1].i .. "x" .. tostring(m.g[1].q)))))
+  B.Resolve(m, "sale", true)
+  assert(m.k == "sale", "contado como venta")
+  -- Con ese jugador ya no se pregunta
+  B.Ask = saved.Ask
+  B.hooks.TradeSnapshot()
+  B.hooks.TradeComplete()
+  m = Change(30000)
+  assert(m.k == "sale", "siempre venta con este jugador: " .. tostring(m.k))
+  GetPlayerTradeMoney, GetTargetTradeMoney, GetTradePlayerItemInfo, GetTradePlayerItemLink, GetTradeTargetItemInfo = nil, nil, nil, nil, nil
+  -- Venta al vendedor (Ledger la detecta y aprende el precio)
+  MerchantFrame = CreateFrame("Frame")
+  C_Container = { GetContainerItemInfo = function() return { itemID = 4251, stackCount = 1 } end }
+  ES.Ledger.NoteSale(0, 1)
+  m = Change(659)
+  assert(m.k == "vendorSale" and m.i == 4251 and m.q == 1, "venta al vendedor: " .. tostring(m.k))
+  -- Con el vendedor abierto pero sin causa: "otros", con nota
+  m = Change(-25)
+  assert(m.k == "other" and m.n, "sin causa con el vendedor")
+  -- Cuadre: los movimientos suman lo que cambió el dinero
+  local s, today = B.Session(), B.Today()
+  assert(s.total == s.net and s.net == money - 99300, string.format("sesión no cuadra: %d / %d", s.total, s.net))
+  assert(today.total == today.net, string.format("hoy no cuadra: %d / %d", today.total, today.net))
+  assert(s.totals.ahSale == 42750 and s.totals.sale == 60000 and s.totals.ahBuy == -1980, "totales por categoría")
+  B.Report()
+  B.Report("log")
+  -- Patrón de los mensajes del juego (con caracteres especiales)
+  assert(("Your auction of Elixir (x5) has expired."):match(B.Pattern("Your auction of %s has expired.")) == "Elixir (x5)", "patrón")
+  log[#log+1] = string.format("     %d movimientos, neto %s", #B.Data().moves, ES.Money(s.net))
+  ES.charData, GetMoney, MerchantFrame, C_Container, ES.db.sellSeen = saved.charData, saved.GetMoney, saved.MerchantFrame, saved.C_Container, saved.sellSeen
+  B.session = nil
 end)
 step("colección de recetas", function()
   local realSkill, realKnown = ES.GetProfessionSkill, ES.IsRecipeKnown
@@ -683,7 +902,7 @@ step("portada: tarjetas de profesiones", function()
   assert(tostring(lw.level._text):find("%d+|r / %d+"), "nivel no mostrado: " .. tostring(lw.level._text))
   -- Pestañas laterales: cada una abre su página y queda marcada
   local mf = ES:GetMainFrame()
-  assert(#mf.tabs == 7, "pestañas: " .. #mf.tabs)
+  assert(#mf.tabs == 8, "pestañas: " .. #mf.tabs)
   for _, tab in ipairs(mf.tabs) do
     tab._scripts.OnClick(tab)
     assert(ES.db.lastPage == tab.key, "la pestaña " .. tab.key .. " no abre su página")
@@ -804,6 +1023,18 @@ step("portada: tarjetas de profesiones", function()
   C_AuctionHouse = { MakeItemKey = function(id) return { itemID = id } end }
   ES:OpenAuctionBuy(ahLine.item, 7)
   assert(selected and selected.itemID == ahLine.item and qtySet == 7, "no abrió la compra con la cantidad puesta")
+  -- Solo 5 baratas (4s) y luego a 31s: pone 5, no 7; con un plan que acepta 31s, las 7
+  local rows = { { unitPrice = 400, quantity = 3 }, { unitPrice = 450, quantity = 2 },
+    { unitPrice = 3100, quantity = 50 } }
+  C_AuctionHouse.GetNumCommoditySearchResults = function() return #rows end
+  C_AuctionHouse.GetCommoditySearchResultInfo = function(_, i) return rows[i] end
+  ES:OpenAuctionBuy(ahLine.item, 7)
+  assert(qtySet == 5, "debería poner solo las baratas, puso " .. tostring(qtySet))
+  ES:OpenAuctionBuy(ahLine.item, 7, 3100)
+  assert(qtySet == 7, "con el precio del plan por encima debería poner todas, puso " .. tostring(qtySet))
+  rows[1].numOwnerItems = 3 -- las tuyas no cuentan
+  ES:OpenAuctionBuy(ahLine.item, 7)
+  assert(qtySet == 2, "las propias no deberían contar como baratas, puso " .. tostring(qtySet))
   AuctionHouseFrame, C_AuctionHouse = savedAHF, savedCAH
   -- Empezar ruta: comprar (cambian las bolsas) no cambia la ruta ni su coste
   page.view = "route"
@@ -1373,6 +1604,36 @@ step("icono Casa de Subastas desactivado: ruta sin AH", function()
   assert(settings.useAH == true and not ES:PlanOptions("Enchanting", 1, 50).noAH, "al volver a pulsarlo, con AH")
   settings.useAH = saved
 end)
+step("objetos que llegan: solo recalcula por los que esperaba, y nunca a mitad de cálculo", function()
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Enchanting" then page = p end end
+  local savedAfter, savedCalc, savedPlan, savedVisible = C_Timer.After, ES.CalculatePlan, page.plan, page.IsVisible
+  local timers, calcs = {}, 0
+  C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+  ES.CalculatePlan = function() calcs = calcs + 1 end
+  page.IsVisible = function() return true end
+  local function Flush() local t = timers timers = {} for _, fn in ipairs(t) do fn() end end
+  page.plan = { pendingInfo = true, pendingItems = { [11288] = true }, steps = {} }
+  page.pendingItems, page.refreshQueued, page.recalcQueued, page.calculating = nil, nil, nil, nil
+  local onEvent = page:GetScript("OnEvent")
+  -- Un objeto cualquiera (bolsas, chat, los que pide el propio cálculo): nada
+  onEvent(page, "GET_ITEM_INFO_RECEIVED", 2589, true)
+  Flush()
+  assert(calcs == 0, "recalculó por un objeto que la ruta no esperaba")
+  -- Uno que esperaba, a mitad de cálculo: no tira lo calculado
+  page.calculating = true
+  onEvent(page, "GET_ITEM_INFO_RECEIVED", 11288, true)
+  Flush()
+  assert(calcs == 0, "recalculó a mitad de cálculo (tira lo hecho)")
+  assert(page.recalcQueued, "debería recalcular al acabar")
+  -- Sin calcular: una vez
+  page.calculating = nil
+  onEvent(page, "GET_ITEM_INFO_RECEIVED", 11288, true)
+  Flush()
+  assert(calcs == 1, "no recalculó con el precio que esperaba: " .. calcs)
+  C_Timer.After, ES.CalculatePlan, page.plan, page.IsVisible = savedAfter, savedCalc, savedPlan, savedVisible
+  page.recalcQueued, page.refreshQueued = nil, nil
+end)
 step("conversión de esencias: dice cuáles, cuántas veces y que se compran antes", function()
   local page
   for _, p in ipairs(ES.professionPages) do if p.profKey == "Enchanting" then page = p end end
@@ -1670,7 +1931,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Vista de jugador: ventana nueva sin las pestañas, el buscador ni la Pesca
   local g = ES:GetMainFrame()
   assert(ES.DEV == false and ES.db.userPreview == true, "no pasó a vista de jugador")
-  assert(#g.tabs == 5, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario, calculadora y colección
+  assert(#g.tabs == 6, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario, calculadora, lista de compra y colección
   ES:SelectPage("home")
   for _, c in ipairs(ES.homePage.cards) do
     if c._shown ~= false then assert(c.key ~= "Fishing", "la Pesca no debería verse") end
@@ -1680,7 +1941,7 @@ step("interruptor de desarrollo: vista de jugador", function()
   -- Y vuelta al modo desarrollo
   panel.devCheck:SetChecked(false)
   panel.devCheck._scripts.OnClick(panel.devCheck)
-  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 7, "no volvió al modo desarrollo")
+  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 8, "no volvió al modo desarrollo")
 end)
 step("ruta: la segunda mejor receta de cada paso y por qué es peor", function()
   local page
@@ -1859,6 +2120,95 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   page.channel.buttons[1]._scripts.OnClick(page.channel.buttons[1])
   assert(c.channel == "ah", "vuelve a la AH")
   log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
+  -- Auctionator: sin él, no hay botón
+  assert(not page.auctionator._shown, "sin Auctionator no debería verse el botón")
+  -- Con él (API v1 simulada): la lista con el nombre del juego, exacta y con la cantidad
+  local calls = {}
+  local savedGII, savedCItem, savedAHF = GetItemInfo, C_Item, AuctionHouseFrame
+  GetItemInfo = function(id)
+    if id == SILK then return "Paño de seda" end
+    if id == outID then return "Lo fabricado" end
+  end
+  C_Item = nil
+  local dbUpdate, atrDB = nil, {}
+  Auctionator = { API = { v1 = {
+    ConvertToSearchString = function(caller, term)
+      return '"' .. term.searchString .. '"' .. (term.quantity and (";;;;;;;;;;;;;" .. term.quantity) or "")
+    end,
+    CreateShoppingList = function(caller, name, strings) calls[#calls + 1] = { "list", caller, name, strings } end,
+    MultiSearchAdvanced = function(caller, terms) calls[#calls + 1] = { "search", caller, terms } end,
+    RegisterForDBUpdate = function(caller, fn) dbUpdate = fn end,
+    GetAuctionPriceByItemID = function(caller, id) return atrDB[id] and atrDB[id].price end,
+    GetAuctionAgeByItemID = function(caller, id) return atrDB[id] and atrDB[id].age end,
+  } } }
+  local savedAtr = ES.db.atrPrices
+  ES.db.atrPrices = nil
+  ES:RenderCalculator()
+  assert(page.auctionator._shown, "con Auctionator debería verse el botón")
+  local silkQty
+  for _, row in ipairs(Calc:Compute(c).rows) do if row.itemID == SILK then silkQty = math.ceil(row.qty - 0.001) end end
+  -- AH cerrada: solo la lista guardada
+  local savedAF = AuctionFrame
+  AuctionHouseFrame, AuctionFrame = nil, nil
+  page.auctionator._scripts.OnClick(page.auctionator)
+  assert(#calls == 1 and calls[1][1] == "list" and calls[1][3] == "Crafter's Journal", "AH cerrada: debería crear la lista")
+  local found
+  for _, s in ipairs(calls[1][4]) do if s:find('"Paño de seda"', 1, true) then found = s end end
+  assert(found and found:find(tostring(silkQty), 1, true), "la seda, por su nombre del juego y con la cantidad: " .. tostring(found))
+  for _, s in ipairs(calls[1][4]) do
+    assert(not s:find("Hilo", 1, true), "lo del vendedor no se manda")
+  end
+  -- AH abierta: además busca ya
+  AuctionHouseFrame = CreateFrame("Frame")
+  AuctionHouseFrame:Show()
+  calls = {}
+  page.auctionator._scripts.OnClick(page.auctionator)
+  assert(#calls == 2 and calls[2][1] == "search", "AH abierta: debería buscar en Shopping")
+  local term = calls[2][3][1]
+  assert(term.isExact and term.searchString == "Paño de seda" and term.quantity == silkQty, "búsqueda exacta con cantidad")
+  -- Lo fabricado también se busca (sin cantidad: es para ver a cuánto se vende)
+  local outTerm
+  for _, t in ipairs(calls[2][3]) do if t.searchString == "Lo fabricado" then outTerm = t end end
+  assert(outTerm and outTerm.quantity == nil, "lo fabricado debería buscarse, sin cantidad")
+  -- Auctionator procesa los precios: los vistos hoy pasan a la calculadora; uno de
+  -- otro día, no
+  assert(dbUpdate, "debería escuchar los precios de Auctionator")
+  atrDB[SILK] = { price = 150, age = 0 }
+  atrDB[outID] = { price = 60000, age = 0 }
+  atrDB[4234] = { price = 1, age = 3 }
+  dbUpdate()
+  local ra = Calc:Compute(c)
+  local silkRowA, otherRowA
+  for _, row in ipairs(ra.rows) do
+    if row.itemID == SILK then silkRowA = row end
+    if row.itemID == 4234 then otherRowA = row end
+  end
+  assert(silkRowA.source == "auctionator" and silkRowA.price == 150, "la seda, con el precio de Auctionator: " .. tostring(silkRowA.source))
+  assert(not otherRowA or otherRowA.source ~= "auctionator", "un precio de otro día no debería usarse")
+  assert(ra.saleSource == "auctionator" and ra.sale == 59999, "la venta, con el de Auctionator a 1c menos: " .. tostring(ra.sale))
+  -- Un escaneo posterior vuelve a mandar
+  ES.db.scans[ES:RealmKey()].time = time() + 60
+  assert(Calc:Compute(c).saleSource == "ah", "un escaneo más reciente debería mandar")
+  ES.db.scans[ES:RealmKey()].time = time() - 600
+  Auctionator, GetItemInfo, C_Item, AuctionHouseFrame, AuctionFrame = nil, savedGII, savedCItem, savedAHF, savedAF
+  ES.db.atrPrices = savedAtr
+  -- Escaneo nuevo: los precios a mano de lo que trae dejan paso al escaneo (en todos
+  -- los cálculos guardados); lo que no trae se queda con el tuyo
+  local NOT_SCANNED = 2589
+  c.prices[SILK], c.prices[NOT_SCANNED] = 999, 777
+  c.sale = 123456
+  Calc:Compute(c) -- (sin hora guardada: cuentan como de ahora)
+  assert(c.prices[SILK] == 999 and c.sale == 123456, "sin escaneo nuevo, el precio a mano se queda")
+  ES.db.scans[ES:RealmKey()].time = time() + 60
+  local rs = Calc:Compute(c)
+  for _, row in ipairs(rs.rows) do
+    if row.itemID == SILK then assert(row.source == "ah" and row.price == 200, "tras escanear, la seda del escaneo: " .. tostring(row.source)) end
+  end
+  assert(c.prices[SILK] == nil and c.prices[NOT_SCANNED] == 777, "solo se quita el precio a mano de lo escaneado")
+  assert(c.sale == nil and rs.saleSource == "ah", "la venta a mano deja paso al escaneo")
+  c.prices[NOT_SCANNED] = nil
+  ES.db.scans[ES:RealmKey()].time = time() - 600
+  ES:RenderCalculator()
   -- Buscar y añadir; borrar con la ✕
   page.search:SetText("silk")
   page.search._scripts.OnTextChanged(page.search)

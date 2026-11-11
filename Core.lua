@@ -408,9 +408,8 @@ function ES:RefreshAllViews()
   if self.RenderInventory then self:RenderInventory() end      -- Inventario
   if self.RenderFlipping then self:RenderFlipping() end        -- Flipping
   if self.RefreshPatternPages then self:RefreshPatternPages() end -- Colección de recetas
-  if self.ahOpen and self.RefreshAuctionPlan and self.AuctionPanelShown and self:AuctionPanelShown() then
-    self:RefreshAuctionPlan()                                   -- lista de compra de la AH
-  end
+  if self.RenderCalculator then self:RenderCalculator() end    -- Calculadora (sus precios salen del escaneo)
+  if self.RenderShopping then self:RenderShopping() end        -- Lista de compra
 end
 
 -- Menú de addons del minimapa (compartment)
@@ -773,6 +772,9 @@ SlashCmdList.CRAFTERSJOURNAL = function(msg)
       for _, line in ipairs(rows) do print(line) end
       ES:Print(L["Haz /reload y cópialos de CraftersJournalDB.trainerFeesCSV en SavedVariables."])
     end
+  elseif msg == "cuentas" or msg == "books" or msg == "cuentas log" or msg == "books log" then
+    -- Contabilidad (Books.lua): hoy y la sesión por categoría, o los últimos movimientos
+    ES.Books.Report(msg:find(" log$") and "log" or nil)
   elseif msg == "pestaña" or msg == "pestana" or msg == "tab" then
     ES:Print(L["Pon el ratón sobre el icono: en 3 segundos lo leo."])
     C_Timer.After(3, function() ES:DumpFrameUnderMouse() end)

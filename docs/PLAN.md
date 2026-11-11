@@ -63,7 +63,7 @@ Archivos: `Earn.lua` (ideas y lote), `EarnUI.lua` (página "Ganar dinero", con t
 
 ## C. Tanda anterior: hecho en 0.27
 
-- [x] **Lista de la compra en la AH:** panel junto a la AH, "Buscar siguiente", sección "Vender".
+- [x] **Lista de la compra en la AH:** ~~panel junto a la AH~~ → pestaña Lista de compra (ver G4).
 - [x] **Consejo de venta de lo fabricado** (`Planner.SaleAdvice`).
 - [x] **Escaneo:** getAll y procesado por tiempo por fotograma.
 - [x] ~~**Filtro "Lo que recolectas tú".**~~ Quitado en 0.32.0 a petición del jugador (botón, opción y su código en el planificador). Los datos de qué se recolecta (`ES.Data.GatheredBy`) se siguen generando para la vía "Vender en bruto".
@@ -234,11 +234,11 @@ Reglas que se mantienen: no se estiman ventas, el addon no compra ni vende solo,
 - El jugador puede **cambiar la cantidad** de cada fila.
 
 ### G4. Flujo de hoy: comprar → fabricar → (desencantar) → anunciar → balance
-- [ ] **Comprar:** la lista que ya busca el panel de la AH, con progreso ("3 de 5 materiales").
+- [x] **Comprar (Shopping.lua, ShoppingUI.lua):** pestaña Lista de compra, una sola para todo. Se añade con "Añadir a la lista de compra" desde Ganar dinero, la calculadora y la vista Materiales de cada ruta (antes "Lista de compra"); nada entra solo. Cada lista guarda sus cantidades al añadirla y lo comprado sale de la contabilidad (AH, vendedor, trades) desde ese momento. Con la AH abierta, clic o "Comprar siguiente" abre la compra de Blizzard con la cantidad puesta (solo las baratas); confirmas tú. Al abrir la AH, la ventana grande se esconde y sale un panel pequeño con la misma lista (ShoppingUI.lua: mismas filas, barra, Comprar siguiente, ✕; "Ver completa" abre la pestaña). Sustituye al panel antiguo con modos ruta / Ganar dinero (2026-11-11).
 - [ ] **Fabricar:** botón que abre la receta en el libro de profesiones con la cantidad puesta. Fabricas tú.
 - [ ] **Desencantar:** lista de lo que llevas encima que conviene desencantar.
 - [ ] **Anunciar:** al abrir la pestaña de vender de la AH con un objeto del lote, se rellenan precio y cantidad. El clic de anunciar es tuyo.
-- [ ] **Balance del lote:** invertido (−, rojo) frente a cobrado del buzón (+, verde), por lote y por vía. Es lo que da confianza para repetir y lo que alimenta G3.
+- [ ] ~~Balance del lote~~ **descartado (2026-11-11):** "seguir un lote" era un concepto más que entender y cerrar. Para medir está `/cj books` (dinero real por categoría, hoy y sesión).
 
 ### Orden propuesto
 1. **G1 sin vías nuevas:** quitar ruido (secciones secundarias plegadas o fuera) y G3.

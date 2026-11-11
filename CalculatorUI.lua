@@ -29,6 +29,7 @@ end
 local function SourceText(res, source)
   if source == "manual" then return GOLD .. L["a mano"] .. "|r" end
   if source == "ah" then return L["AH"] end
+  if source == "auctionator" then return "Auctionator" end -- (buscado desde la calculadora: más reciente que el escaneo)
   -- (el descuento de ciudad va en la nota de abajo: "vendedor −10%" no cabía)
   if source == "vendor" then return L["vendedor"] end
   return ORANGE .. L["sin precio"] .. "|r"
@@ -309,6 +310,9 @@ local function SheetRow(page, i)
     local c = Calc:Selected()
     if not c or not row.itemID then return end
     c.prices[row.itemID] = copper -- nil: vuelve al automático
+    -- (cuándo: vale hasta que un escaneo posterior traiga ese objeto; ver Calc:Compute)
+    c.priceTimes = c.priceTimes or {}
+    c.priceTimes[row.itemID] = copper and time() or nil
     ES:RenderCalculator()
   end)
   row.box:SetPoint("LEFT", COL_PRICE, 0)
@@ -427,6 +431,7 @@ local function CreateSheet(page)
     local c = Calc:Selected()
     if not c then return end
     c.sale = copper -- nil: vuelve al automático
+    c.saleTime = copper and time() or nil
     ES:RenderCalculator()
   end)
   page.saleBox:SetPoint("LEFT", COL_PRICE, 0)
@@ -471,7 +476,7 @@ local function CreateSheet(page)
   page.reset:SetText(L["Precios automáticos"])
   page.reset:SetScript("OnClick", function()
     local c = Calc:Selected()
-    if c then c.prices, c.sale = {}, nil end
+    if c then c.prices, c.sale, c.priceTimes, c.saleTime = {}, nil, nil, nil end
     ES:RenderCalculator()
   end)
   page.reset:SetScript("OnEnter", function(self)
@@ -480,6 +485,74 @@ local function CreateSheet(page)
     GameTooltip:Show()
   end)
   page.reset:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  -- Los materiales de este cálculo a la Lista de compra (ShoppingUI.lua)
+  page.addShopping = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+  page.addShopping:SetSize(170, 22)
+  page.addShopping:SetPoint("BOTTOMRIGHT", page.reset, "TOPRIGHT", 0, 4)
+  page.addShopping:SetText(L["Añadir a la lista de compra"])
+  page.addShopping:SetScript("OnClick", function()
+    local c = Calc:Selected()
+    local res = c and Calc:Compute(c)
+    if not res then return end
+    local items = {}
+    for _, r in ipairs(res.rows or {}) do
+      items[#items + 1] = { itemID = r.itemID, quantity = r.qty, unit = r.price or 0, source = r.source == "vendor" and "vendor" or "ah" }
+    end
+    ES:AddToShopping("calc", string.format(L["Calculadora: %s ×%d"], (RecipeLabel(c)), c.qty or 1), items,
+      { key = "calc:" .. tostring(c.id), minusBags = true })
+  end)
+  page.addShopping:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine(L["Añadir a la lista de compra"])
+    GameTooltip:AddLine(L["Los materiales de este cálculo que te faltan (descontando lo que llevas) pasan a la pestaña Lista de compra, desde donde los compras con la AH abierta."], 0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+  end)
+  page.addShopping:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  -- Con Auctionator instalado: los materiales de este cálculo a su pestaña Shopping
+  page.auctionator = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
+  page.auctionator:SetSize(170, 22)
+  page.auctionator:SetPoint("RIGHT", page.reset, "LEFT", -8, 0)
+  page.auctionator:SetText(L["Buscar en Auctionator"])
+  page.auctionator:SetScript("OnClick", function()
+    local items = ES.CalculatorShoppingItems()
+    local result, why, missing = ES.Auctionator.Send(items)
+    if result == "search" then
+      ES:Print(string.format(L["Buscando %d objetos en Auctionator (pestaña Shopping): los precios que encuentre pasan a la calculadora."], #items - (missing or 0)))
+    elseif result == "list" then
+      ES:Print(string.format(L["Lista \"%s\" creada en Auctionator: abre la Casa de Subastas y búscala en la pestaña Shopping."], ES.Auctionator.LIST_NAME))
+    elseif why == "empty" then
+      ES:Print(L["No hay materiales que comprar en la AH en este cálculo (o el juego aún no ha cargado sus nombres: vuelve a pulsar en un momento)."])
+    else
+      ES:Print(L["Auctionator no ha aceptado la lista. ¿Está actualizado?"])
+    end
+    if missing and missing > 0 and result then
+      ES:Print(string.format(L["%d materiales aún sin nombre (el juego los está cargando): vuelve a pulsar en un momento para añadirlos."], missing))
+    end
+  end)
+  page.auctionator:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine(L["Buscar en Auctionator"])
+    GameTooltip:AddLine(L["Manda los materiales de este cálculo (con la cantidad que necesitas) y lo que fabrica a la pestaña Shopping de Auctionator. Los que se compran al vendedor no se incluyen."], 0.8, 0.8, 0.8, true)
+    GameTooltip:AddLine(L["Con la Casa de Subastas abierta, busca al momento y los precios que encuentre pasan a la calculadora (fuente \"Auctionator\"). Si no, deja creada la lista \"Crafter's Journal\" para cuando la abras."], 0.5, 0.8, 1, true)
+    GameTooltip:Show()
+  end)
+  page.auctionator:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+-- Materiales del cálculo seleccionado que se compran en la AH (o sin precio, o con
+-- precio escrito a mano): no los del vendedor. { { itemID, qty } }. Y lo que fabrica
+-- (sin cantidad: es para ver a cuánto se vende), salvo si se liga al recogerlo
+function ES.CalculatorShoppingItems()
+  local c = Calc:Selected()
+  local res = c and Calc:Compute(c)
+  local items = {}
+  for _, r in ipairs(res and res.rows or {}) do
+    if r.source ~= "vendor" then items[#items + 1] = { itemID = r.itemID, qty = r.qty } end
+  end
+  if res and res.outID and not res.recipe.bop then items[#items + 1] = { itemID = res.outID } end
+  return items
 end
 
 function ES:CreateCalculatorPage(page)
@@ -565,7 +638,9 @@ function ES:RenderCalculator()
   local res = selected and Calc:Compute(selected)
   local showSheet = res ~= nil
   for _, w in ipairs({ page.title, page.titleSub, page.qty, page.colHead, page.matTotal, page.saleLine, page.cutLine,
-    page.depositLine, page.profitLine, page.profitCompare, page.note, page.reset }) do w:SetShown(showSheet) end
+    page.depositLine, page.profitLine, page.profitCompare, page.note, page.reset, page.addShopping }) do w:SetShown(showSheet) end
+  -- Solo con Auctionator instalado y algo que comprar en la AH
+  page.auctionator:SetShown(showSheet and ES.Auctionator.Available() and #ES.CalculatorShoppingItems() > 0)
   if not showSheet then
     for _, row in ipairs(page.sheetRows) do row:Hide() end
     return

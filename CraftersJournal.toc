@@ -3,13 +3,13 @@
 ## Notes: The cheapest way to level every profession and your full recipe collection, with where to get each recipe.
 ## Notes-esES: La forma más barata de subir cada profesión y tu colección de recetas, con dónde conseguir cada una.
 ## Author: Bruno
-## Version: 0.39.0
+## Version: 0.40.0
 ## Category: Professions
 ## SavedVariables: CraftersJournalDB
 ## IconTexture: Interface\Icons\Trade_BlackSmithing
 ## X-Curse-Project-ID: 1752523
 ## AddonCompartmentFunc: CraftersJournal_OnAddonCompartmentClick
-## OptionalDeps: QuestieDB, Questie, TomTom, ShortestPathForever
+## OptionalDeps: QuestieDB, Questie, TomTom, ShortestPathForever, Auctionator
 
 Data\Leatherworking.lua
 Data\Enchanting.lua
@@ -34,7 +34,9 @@ Waypoints.lua
 Scanner.lua
 Planner.lua
 Ledger.lua
+Books.lua
 Earn.lua
+Shopping.lua
 Collection.lua
 UI.lua
 ProfessionUI.lua
@@ -43,9 +45,11 @@ HomeUI.lua
 HeaderUI.lua
 AuctionUI.lua
 EarnUI.lua
+ShoppingUI.lua
 Disenchant.lua
 InventoryUI.lua
 Calculator.lua
+Auctionator.lua
 CalculatorUI.lua
 FlippingUI.lua
 CollectionUI.lua
