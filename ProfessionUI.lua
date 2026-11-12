@@ -2459,10 +2459,16 @@ local function ShopLines(plan, page)
     lines[#lines + 1] = { total = true, title = L["Te falta por comprar"],
       sub = phase and L["Lo que te falta para este tramo, con lo que llevas ahora"]
         or L["Lo que te falta para lo que queda de ruta, con lo que llevas ahora"], value = Signed(left) }
-    local missing = {}
-    for _, it in ipairs(buyAH) do missing[#missing + 1] = it end
-    for _, it in ipairs(buyVendor) do missing[#missing + 1] = it end
-    if not byPhase then AddLine(missing) end
+    -- A la lista de la compra va lo que pide la ruta entera de lo que te falta (no
+    -- solo lo que falta: lo que llevas lo cuenta la lista con tus bolsas)
+    local toList = {}
+    for _, it in ipairs(buyAH) do
+      toList[#toList + 1] = { itemID = it.itemID, quantity = math.ceil(need[it.itemID] - 0.001), unit = it.unit, source = it.source }
+    end
+    for _, it in ipairs(buyVendor) do
+      toList[#toList + 1] = { itemID = it.itemID, quantity = math.ceil(need[it.itemID] - 0.001), unit = it.unit, source = it.source }
+    end
+    if not byPhase then AddLine(toList) end
     -- Arriba: el tramo y el interruptor (por tramos / ruta entera)
     local function Toggle(value)
       return function()
@@ -2487,7 +2493,16 @@ local function ShopLines(plan, page)
     return lines
   end
 
-  AddLine(plan.shopping)
+  -- A la lista: lo que se compra más lo que la ruta usa de tus bolsas (la lista cuenta
+  -- lo que llevas: si no, se descontaría dos veces)
+  local ownedQ = {}
+  for _, o in ipairs(plan.owned or {}) do ownedQ[o.itemID] = o.quantity end
+  local toList = {}
+  for _, it in ipairs(plan.shopping) do
+    toList[#toList + 1] = { itemID = it.itemID, quantity = it.quantity + (ownedQ[it.itemID] or 0), unit = it.unit, source = it.source }
+    ownedQ[it.itemID] = nil -- (AH y vendedor del mismo material: una vez)
+  end
+  AddLine(toList)
   Section(L["Comprar en la Casa de Subastas"], ah, Buy)
   Section(L["Comprar al vendedor"], vendor, Buy)
   -- Lo que también se compra ya dice arriba cuántos tienes y cuántos faltan: aquí

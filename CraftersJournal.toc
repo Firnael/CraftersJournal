@@ -33,7 +33,6 @@ Waypoints.lua
 Scanner.lua
 Planner.lua
 Ledger.lua
-Books.lua
 Earn.lua
 Shopping.lua
 Collection.lua

@@ -4,12 +4,10 @@ local _, ES = ...
 -- (botón "Añadir a la lista de compra"). La enseña la pestaña Lista de compra
 -- (ShoppingUI.lua), desde donde se compra con la AH abierta.
 --
--- Cada lista guarda sus materiales tal cual al añadirla: no cambia con los precios ni
--- con las bolsas. Lo comprado se descuenta con la contabilidad (Books.lua): compras en
--- la AH, al vendedor o en trades de ese material desde que añadiste la lista. Así
--- fabricar (que gasta materiales) no te los vuelve a pedir, y comprar en varios días
--- también cuenta. Si dos listas piden el mismo material, las compras llenan primero
--- la más antigua.
+-- Cada lista guarda sus materiales tal cual al añadirla: no cambia con los precios.
+-- Lo que tienes se cuenta con tus bolsas: lo que llevas de cada material llena
+-- primero la lista del tramo (si la hay) y luego las guardadas, de la más antigua a
+-- la más nueva.
 --
 -- Por personaje: ES.charData.shopping[i] =
 --   { t, kind ("route" | "money" | "calc"), key, title, items = { { itemID, need, unit, source } } }
@@ -19,7 +17,6 @@ ES.Shopping = Shopping
 local L = ES.L
 
 local MAX_LISTS = 20
-local BUY = { ahBuy = true, vendorBuy = true, buy = true }
 
 function Shopping.Lists()
   local c = ES.charData
@@ -51,8 +48,8 @@ function Shopping.Add(kind, title, items, opts)
   end
   local list = { t = time(), kind = kind, key = opts.key, title = title, items = {} }
   for _, m in ipairs(order) do
+    -- (lo que llevas no se resta aquí: se cuenta al enseñarla, ver Status)
     local need = math.ceil(m.quantity - 0.001)
-    if opts.minusBags then need = need - ES:ItemCount(m.itemID) end
     if need > 0 then
       list.items[#list.items + 1] = { itemID = m.itemID, need = need, unit = m.cost / m.quantity, source = m.source }
     end
@@ -136,70 +133,40 @@ function Shopping.PhaseLists()
   return out
 end
 
--- Compras de cada material según la contabilidad: { [itemID] = { { t, q }, ... } }
-local function Purchases()
-  local out = {}
-  local books = ES.Books and ES.Books.Data()
-  for _, m in ipairs(books and books.moves or {}) do
-    if BUY[m.k] then
-      if m.i then
-        out[m.i] = out[m.i] or {}
-        table.insert(out[m.i], { t = m.t, q = m.q or 1 }) -- (una subasta de objeto suelto: 1)
-      else
-        for _, g in ipairs(m.g or {}) do
-          if g.i then
-            out[g.i] = out[g.i] or {}
-            table.insert(out[g.i], { t = m.t, q = g.q or 1 })
-          end
-        end
-      end
-    end
-  end
-  return out
-end
-
 -- Estado de toda la lista:
---   { lists = { { list, items = { { it, bought, left } }, done, total, cost } },
+--   { lists = { { list, items = { { it, bought (lo que llevas para ella), left } }, done, total, cost } },
 --     done, total (materiales), cost (lo que falta, a los precios de cuando se añadió) }
 function Shopping.Status()
-  local lists = Shopping.Lists()
-  local buys = Purchases()
   local res = { lists = {}, done = 0, total = 0, cost = 0 }
+  -- Lo que llevas de cada material, que se va repartiendo entre las listas
+  local left = {}
+  local function Take(itemID, need)
+    if left[itemID] == nil then left[itemID] = ES:ItemCount(itemID) or 0 end
+    local n = math.min(left[itemID], need)
+    left[itemID] = left[itemID] - n
+    return n
+  end
+  local function AddList(list)
+    local s = { list = list, items = {}, done = 0, total = 0, cost = 0 }
+    for _, it in ipairs(list.items) do
+      local have = Take(it.itemID, it.need)
+      local missing = it.need - have
+      s.items[#s.items + 1] = { it = it, bought = have, left = missing }
+      s.total = s.total + 1
+      if missing == 0 then s.done = s.done + 1 else s.cost = s.cost + missing * (it.unit or 0) end
+    end
+    res.lists[#res.lists + 1] = s
+    res.done, res.total, res.cost = res.done + s.done, res.total + s.total, res.cost + s.cost
+  end
   -- Rutas por tramos: su lista viva va primero y la guardada de la ruta entera no sale
   local phased = {}
   for _, list in ipairs(Shopping.PhaseLists()) do
     phased[list.key] = true
-    local s = { list = list, items = {}, done = 0, total = 0, cost = 0 }
-    for _, it in ipairs(list.items) do
-      local bought = math.min(ES:ItemCount(it.itemID) or 0, it.need) -- (lo que llevas)
-      local left = it.need - bought
-      s.items[#s.items + 1] = { it = it, bought = bought, left = left }
-      s.total = s.total + 1
-      if left == 0 then s.done = s.done + 1 else s.cost = s.cost + left * (it.unit or 0) end
-    end
-    res.lists[#res.lists + 1] = s
-    res.done, res.total, res.cost = res.done + s.done, res.total + s.total, res.cost + s.cost
+    AddList(list)
   end
-  -- De la más antigua a la más nueva: cada compra llena la primera lista que la cubre
-  for _, list in ipairs(lists) do
-    if not (list.kind == "route" and phased[list.key]) then
-    local s = { list = list, items = {}, done = 0, total = 0, cost = 0 }
-    for _, it in ipairs(list.items) do
-      local bought = 0
-      for _, p in ipairs(buys[it.itemID] or {}) do
-        if p.t >= list.t and p.q > 0 and bought < it.need then
-          local take = math.min(p.q, it.need - bought)
-          bought, p.q = bought + take, p.q - take
-        end
-      end
-      local left = it.need - bought
-      s.items[#s.items + 1] = { it = it, bought = bought, left = left }
-      s.total = s.total + 1
-      if left == 0 then s.done = s.done + 1 else s.cost = s.cost + left * (it.unit or 0) end
-    end
-    res.lists[#res.lists + 1] = s
-    res.done, res.total, res.cost = res.done + s.done, res.total + s.total, res.cost + s.cost
-    end
+  -- Las guardadas, de la más antigua a la más nueva
+  for _, list in ipairs(Shopping.Lists()) do
+    if not (list.kind == "route" and phased[list.key]) then AddList(list) end
   end
   return res
 end

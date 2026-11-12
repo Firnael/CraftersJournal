@@ -137,7 +137,7 @@ local function BuildLines(st, ahOpen)
         line.skipTitle, line.skipTip = L["Quitar de la lista"], L["Quita este material de la lista: ya no se compra."]
       end
       -- Tramo: lo que cuenta es lo que llevas; en las guardadas, lo comprado desde que la añadiste
-      local progress = list.live and L["tienes %d de %d"] or L["comprados %d de %d"]
+      local progress = L["tienes %d de %d"] -- (todas las listas cuentan lo que llevas)
       if e.left == 0 then
         line.title = GREY .. (name or "") .. "|r"
         line.sub = GREEN .. string.format(progress, e.bought, it.need) .. "|r"
@@ -173,9 +173,9 @@ local function BuildLines(st, ahOpen)
         value = s.cost > 0 and Signed(s.cost) or "" }
     else
     lines[#lines + 1] = { total = true, icon = KIND_ICON[list.kind],
-      title = string.format(L["%d de %d comprados"], s.done, s.total),
-      sub = s.done == s.total and (GREEN .. L["Todo comprado: quítala con la |TInterface/Buttons/UI-GroupLoot-Pass-Up:0|t."] .. "|r")
-        or L["Lo comprado se cuenta desde que la añadiste (AH, vendedor y trades)."],
+      title = string.format(L["%d de %d listos"], s.done, s.total),
+      sub = s.done == s.total and (GREEN .. L["Ya lo tienes todo: quítala con la |TInterface/Buttons/UI-GroupLoot-Pass-Up:0|t."] .. "|r")
+        or L["Cuenta lo que llevas en las bolsas."],
       -- (la ✕ de la fila del total quita la lista entera)
       value = s.cost > 0 and Signed(s.cost) or "",
       onSkip = function() ES.Shopping.Remove(list) ES:RenderShopping() end,

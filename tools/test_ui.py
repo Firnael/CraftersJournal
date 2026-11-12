@@ -272,30 +272,27 @@ step("lista de compra", function()
   assert(searched == "Item2318", "no buscó: " .. tostring(searched))
   local SH = ES.Shopping
   local savedChar, savedOpenAH = ES.charData, ES.IsAuctionHouseOpen
-  ES.charData = { books = { moves = {}, posts = {}, days = {}, partners = {} } }
+  ES.charData = { shopping = {} }
   local real = ES.ItemCount
-  ES.ItemCount = function(self, id) if id == 2320 then return 4 end return 0 end
-  -- Dos listas: una ruta y un lote (que descuenta lo que llevas: 4 de 2320)
+  ES.ItemCount = function() return 0 end
+  -- Dos listas: una ruta y un lote. Guardan la cantidad entera (lo que llevas se
+  -- cuenta al enseñarlas) y lo que se fabrica no entra
   local route = SH.Add("route", "Ruta", { { itemID = 2318, quantity = 20, unit = 100, source = "ah" },
     { itemID = 2319, quantity = 5, unit = 300, source = "ah" }, { itemID = 159, quantity = 3, unit = 25, source = "vendor" },
     { itemID = 2318, quantity = 2, unit = 100, source = "ah" } }, { key = "Leatherworking" })
   assert(route and #route.items == 3 and route.items[1].need == 22, "ruta añadida (juntando repetidos)")
   local money = SH.Add("money", "Lote", { { itemID = 2318, quantity = 10, unit = 100, source = "ah" },
-    { itemID = 2320, quantity = 4, unit = 50, source = "ah" }, { itemID = 1, quantity = 1, source = "craft" } }, { minusBags = true })
-  assert(money and #money.items == 1, "el lote no debería pedir lo que llevas ni lo que se fabrica")
-  assert(SH.Add("calc", "Nada", { { itemID = 2320, quantity = 2, source = "ah" } }, { minusBags = true }) == nil, "nada que comprar")
-  -- Compras (contabilidad): 25 de 2318 llenan primero la ruta (22) y 3 del lote
-  local moves = ES.charData.books.moves
-  route.t, money.t = time() - 20, time() - 10
-  moves[#moves + 1] = { t = time() - 30, k = "ahBuy", m = -500, i = 2318, q = 5 } -- antes de añadirlas: no cuenta
-  moves[#moves + 1] = { t = time(), k = "ahBuy", m = -2500, i = 2318, q = 25 }
-  moves[#moves + 1] = { t = time(), k = "buy", m = -60, g = { { i = 159, q = 3 } } } -- trade: también cuenta
+    { itemID = 2320, quantity = 4, unit = 50, source = "ah" }, { itemID = 1, quantity = 1, source = "craft" } })
+  assert(money and #money.items == 2, "el lote no debería pedir lo que se fabrica")
+  -- Lo que llevas (bolsas): 25 de 2318 llenan primero la ruta (22) y 3 del lote
+  local BAGS = { [2318] = 25, [2320] = 4, [159] = 3 }
+  ES.ItemCount = function(self, id) return BAGS[id] or 0 end
   local st = SH.Status()
   local r1, r2 = st.lists[1].items, st.lists[2].items
   assert(r1[1].bought == 22 and r1[1].left == 0 and r2[1].bought == 3 and r2[1].left == 7,
-    string.format("reparto de compras: %d %d %d", r1[1].bought, r2[1].bought, r2[1].left))
-  assert(r1[3].left == 0, "compra en un trade")
-  assert(st.done == 2 and st.total == 4, string.format("progreso %d/%d", st.done, st.total))
+    string.format("reparto de lo que llevas: %d %d %d", r1[1].bought, r2[1].bought, r2[1].left))
+  assert(r1[3].left == 0 and r2[2].left == 0, "lo que llevas cuenta como tenido")
+  assert(st.done == 3 and st.total == 5, string.format("progreso %d/%d", st.done, st.total))
   -- Comprar siguiente: el primero que falta (2319); el abierto, si aún falta
   local id, left = SH.NextToBuy(st)
   assert(id == 2319 and left == 5, "siguiente: " .. tostring(id))
@@ -420,12 +417,12 @@ step("ganar dinero (sin correo)", function()
   ES:RenderEarn()
   -- Añadir el lote a la lista de compra (una lista por día)
   local savedChar = ES.charData
-  ES.charData = { books = { moves = {}, posts = {}, days = {}, partners = {} } }
+  ES.charData = { shopping = {} }
   ES.earnPage.addButton._scripts.OnClick(ES.earnPage.addButton)
   ES.earnPage.addButton._scripts.OnClick(ES.earnPage.addButton)
   local lists = ES.Shopping.Lists()
   local needed = 0
-  for _, it in ipairs(res.shopping) do if it.source ~= "craft" and it.quantity > ES:ItemCount(it.itemID) then needed = needed + 1 end end
+  for _, it in ipairs(res.shopping) do if it.source ~= "craft" and it.quantity > 0 then needed = needed + 1 end end
   assert((needed == 0 and #lists == 0) or (#lists == 1 and lists[1].kind == "money"), "lote a la lista: " .. #lists)
   ES.charData = savedChar
   ES:SelectPage("home")
@@ -433,133 +430,29 @@ step("ganar dinero (sin correo)", function()
   ES.db.earnMinProfit = nil
   ES.Earn:Clear()
 end)
-step("contabilidad: cada cambio de dinero, una vez y cuadrando", function()
-  local B = ES.Books
-  local saved = { charData = ES.charData, GetMoney = GetMoney, MerchantFrame = MerchantFrame, C_Container = C_Container,
-    sellSeen = ES.db.sellSeen, Ask = B.Ask }
-  -- Lo último guardado eran 99300: al entrar con 100000, ajuste "fuera de sesión", y
-  -- la sesión y el día empiezan antes de él (para que cuadren)
-  ES.charData = { books = { lastMoney = 99300 } }
-  local money = 100000
+step("sin contabilidad: el cobro de una venta enseña el precio del vendedor", function()
+  assert(ES.Books == nil, "la contabilidad del dinero debería haberse quitado")
+  local saved = { GetMoney = GetMoney, MerchantFrame = MerchantFrame, seen = ES.db.sellSeen }
+  local money = 1000
   GetMoney = function() return money end
-  MerchantFrame = nil
-  for k in pairs(B.pending) do B.pending[k] = nil end
-  for k in pairs(B.recent) do B.recent[k] = nil end
-  for k in pairs(B.seenMail) do B.seenMail[k] = nil end
-  B.Start()
-  assert(B.Data().moves[1] and B.Data().moves[1].m == 700, "ajuste fuera de sesión")
-  local function Change(d) money = money + d return B.OnMoney() end
-  -- Botín: sin causa, "otros"
-  assert(Change(500).k == "other", "botín")
-  -- Compra de un material en la AH moderna (pagó algo menos de lo anunciado)
-  B.hooks.StartCommoditiesPurchase(2318, 20)
-  B.hooks.CommodityPrice(100, 2000)
-  B.hooks.ConfirmCommoditiesPurchase(2318, 20)
-  local m = Change(-1980)
-  assert(m.k == "ahBuy" and m.i == 2318 and m.q == 20, "compra en la AH: " .. tostring(m.k))
-  -- Anunciar: el depósito (el calculado antes de anunciar, con margen), y la subasta queda abierta
-  B.posting, B.postingDeposit = 4251, 150
-  B.hooks.PostItem(nil, 2, 5, nil, 9000)
-  assert(Change(-20).k == "other", "una bajada que no es el depósito no se la queda")
-  m = Change(-151)
-  assert(m.k == "ahDeposit" and m.i == 4251, "depósito: " .. tostring(m.k))
-  local posts = B.Data().posts
-  local post = posts[#posts]
-  assert(post.i == 4251 and post.q == 5 and post.u == 9000 and not post.s, "subasta apuntada")
-  post.name = "Hillman's Shoulders"
-  -- Otra del mismo objeto, anunciada después (sin depósito conocido)
-  B.posting = 4251
-  B.hooks.PostItem(nil, 2, 5, nil, 9000)
-  local second = posts[#posts]
-  second.name = "Hillman's Shoulders"
-  m = Change(-150)
-  assert(m.k == "ahDeposit", "segundo depósito")
-  -- Vendida (mensaje del juego) y cobrada por correo con su factura: el correo es
-  -- de la que cerró el mensaje, no cierra la otra
-  local savedSold = ERR_AUCTION_SOLD_S
-  ERR_AUCTION_SOLD_S = "A buyer has been found for your auction of %s."
-  assert(B.OnSystemMessage("A buyer has been found for your auction of Hillman's Shoulders.") == "sold", "mensaje de vendida")
-  assert(post.s == "sold" and not second.s, "la subasta no se cerró")
-  ERR_AUCTION_SOLD_S = savedSold
-  GetInboxHeaderInfo = function() return nil, nil, "Auction House", "Auction successful", 42750, 0, 30, false, true, false, false, false end
-  GetInboxInvoiceInfo = function() return "seller", "Hillman's Shoulders", "Buyer", 0, 45000, 150, 2250, 0, 0, 5 end
-  B.hooks.TakeInboxMoney(1)
-  assert(not second.s and not post.mail, "el correo de la vendida cerró otra subasta")
-  -- El mismo correo otra vez (otro addon de correo) no cuenta dos veces
-  B.hooks.AutoLootMailItem(1)
-  m = Change(42750)
-  assert(m.k == "ahSale" and m.i == 4251 and m.q == 5, "venta en la AH: " .. tostring(m.k))
-  local waiting = 0
-  for _, e in ipairs(B.pending) do if e.kind == "ahSale" then waiting = waiting + 1 end end
-  assert(waiting == 0, "el correo repetido dejó otra venta esperando")
-  -- Caducada estando desconectado: el correo con el objeto devuelto la cierra
-  for k in pairs(B.seenMail) do B.seenMail[k] = nil end -- (MAIL_INBOX_UPDATE)
-  local savedExp = AUCTION_EXPIRED_MAIL_SUBJECT
-  AUCTION_EXPIRED_MAIL_SUBJECT = "Auction expired: %s"
-  GetInboxHeaderInfo = function() return nil, nil, "Auction House", "Auction expired: Hillman's Shoulders", 0, 0, 30, true, false, false, false, false end
-  GetInboxInvoiceInfo = function() return nil end
-  B.hooks.TakeInboxItem(1)
-  assert(second.s == "expired", "caducada sin mensaje: " .. tostring(second.s))
-  AUCTION_EXPIRED_MAIL_SUBJECT = savedExp
-  -- Sin noticias pasada su duración: "unknown"
-  posts[#posts + 1] = { t = time() - 51 * 3600, i = 2454, q = 1, u = 100, name = "Elixir" }
-  B.Prune()
-  assert(posts[#posts].s == "unknown" or B.Data().posts[#B.Data().posts].s == "unknown", "subasta vieja sin cerrar")
-  -- Correo de un jugador: se pregunta
-  local asked
-  B.Ask = function(mv) asked = mv end
-  GetInboxHeaderInfo = function() return nil, nil, "Amigo", "Pago", 2000, 0, 30, false, true, false, false, true end
-  GetInboxInvoiceInfo = function() return nil end
-  B.hooks.TakeInboxMoney(2)
-  m = Change(2000)
-  assert(m.k == "mail" and asked == m and m.w == "Amigo", "correo de un jugador")
-  GetInboxHeaderInfo, GetInboxInvoiceInfo = nil, nil
-  -- Trade: el dinero llega antes que el mensaje de completado
-  asked = nil
-  GetPlayerTradeMoney = function() return 0 end
-  GetTargetTradeMoney = function() return 30000 end
-  GetTradePlayerItemInfo = function(i) if i == 1 then return "Elixir", nil, 5 end end
-  GetTradePlayerItemLink = function(i) if i == 1 then return "|Hitem:2454::|h[Elixir]|h" end end
-  GetTradeTargetItemInfo = function() end
-  B.hooks.TradeSnapshot()
-  m = Change(30000)
-  assert(m.k == "other", "aún sin saber que era un trade")
-  B.hooks.TradeComplete()
-  assert(m.k == "trade" and asked == m and m.g and m.g[1].i == 2454 and m.g[1].q == 5, string.format("trade reclasificado: %s %s %s",
-    tostring(m.k), tostring(asked == m), tostring(m.g and m.g[1] and (m.g[1].i .. "x" .. tostring(m.g[1].q)))))
-  B.Resolve(m, "sale", true)
-  assert(m.k == "sale", "contado como venta")
-  -- Con ese jugador ya no se pregunta
-  B.Ask = saved.Ask
-  B.hooks.TradeSnapshot()
-  B.hooks.TradeComplete()
-  m = Change(30000)
-  assert(m.k == "sale", "siempre venta con este jugador: " .. tostring(m.k))
-  GetPlayerTradeMoney, GetTargetTradeMoney, GetTradePlayerItemInfo, GetTradePlayerItemLink, GetTradeTargetItemInfo = nil, nil, nil, nil, nil
-  -- Venta al vendedor (Ledger la detecta y aprende el precio)
   MerchantFrame = CreateFrame("Frame")
-  C_Container = { GetContainerItemInfo = function() return { itemID = 4251, stackCount = 1 } end }
-  ES.Ledger.NoteSale(0, 1)
-  m = Change(659)
-  assert(m.k == "vendorSale" and m.i == 4251 and m.q == 1, "venta al vendedor: " .. tostring(m.k))
-  -- Con el vendedor abierto pero sin causa: "otros", con nota
-  m = Change(-25)
-  assert(m.k == "other" and m.n, "sin causa con el vendedor")
-  -- Cuadre: los movimientos suman lo que cambió el dinero
-  local total, totals = 0, {}
-  for _, mv in ipairs(B.Data().moves) do
-    total = total + mv.m
-    totals[mv.k] = (totals[mv.k] or 0) + mv.m
-  end
-  assert(total == money - 99300, string.format("no cuadra: %d / %d", total, money - 99300))
-  local d
-  for _, day in pairs(B.Data().days) do d = day end -- (un solo día en la prueba)
-  assert(d and d.last - d.first == money - 99300, "el día no cuadra")
-  assert(totals.ahSale == 42750 and totals.sale == 60000 and totals.ahBuy == -1980, "totales por categoría")
-  -- Patrón de los mensajes del juego (con caracteres especiales)
-  assert(("Your auction of Elixir (x5) has expired."):match(B.Pattern("Your auction of %s has expired.")) == "Elixir (x5)", "patrón")
-  log[#log+1] = string.format("     %d movimientos, neto %s", #B.Data().moves, ES.Money(total))
-  ES.charData, GetMoney, MerchantFrame, C_Container, ES.db.sellSeen = saved.charData, saved.GetMoney, saved.MerchantFrame, saved.C_Container, saved.sellSeen
+  MerchantFrame:Show()
+  ES.db.sellSeen = nil
+  local ok, err = pcall(function()
+    ES.Ledger.OnMoney() -- (punto de partida)
+    -- Vender 10 Light Leather (2318): el dinero sube 100 -> 10 cada uno
+    C_Container = C_Container or {}
+    local savedCC = C_Container
+    C_Container = { GetContainerItemInfo = function() return { itemID = 2318, stackCount = 10 } end,
+      GetContainerItemDurability = function() return nil end }
+    ES.Ledger.NoteSale(0, 1)
+    C_Container = savedCC
+    money = money + 100
+    ES.Ledger.OnMoney()
+    assert(ES.db.sellSeen and ES.db.sellSeen[2318] and ES.db.sellSeen[2318].price == 10, "no apuntó el cobro de la venta")
+  end)
+  GetMoney, MerchantFrame, ES.db.sellSeen = saved.GetMoney, saved.MerchantFrame, saved.seen
+  if not ok then error(err, 0) end
 end)
 step("colección de recetas", function()
   local realSkill, realKnown = ES.GetProfessionSkill, ES.IsRecipeKnown

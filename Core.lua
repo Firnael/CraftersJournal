@@ -427,6 +427,7 @@ local function LoadCharacterData()
     end
     c.max300 = true
   end
+  c.books = nil -- (la contabilidad del dinero ya no existe: fuera lo que guardó)
   db.prof, db.lastProf = c.prof, c.lastProf
   ES.charData, ES.charDataKey = c, key
 end

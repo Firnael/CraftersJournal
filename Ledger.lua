@@ -259,7 +259,7 @@ end
 
 -- Sube tu dinero: es el cobro de la venta pendiente más antigua (cada venta sube
 -- el dinero por separado; vendiendo varias pilas seguidas, una tras otra). Lo llama
--- Books.OnMoney (la contabilidad) con el vendedor abierto; devuelve la venta cobrada
+-- PLAYER_MONEY (abajo) con el vendedor abierto; devuelve la venta cobrada
 local LearnPrice
 local function ChargeSale(delta)
   local now = GetTime and GetTime() or 0
@@ -299,15 +299,27 @@ function LearnPrice(p, delta)
 end
 Ledger.NoteSale, Ledger.ChargeSale, Ledger.HasPendingSale = NoteSale, ChargeSale, HasPendingSale
 
+-- Cambia tu dinero: con el vendedor abierto y una venta enviada, es su cobro (de ahí
+-- sale el precio real del vendedor, ver LearnPrice). No se apunta nada más del dinero
+local lastMoney
+function Ledger.OnMoney(money)
+  money = money or (GetMoney and GetMoney()) or 0
+  local delta = lastMoney and money - lastMoney or 0
+  lastMoney = money
+  if delta > 0 and Ledger:MerchantOpen() and HasPendingSale() then ChargeSale(delta) end
+end
+
 do
   local f = CreateFrame("Frame")
-  for _, e in ipairs({ "TRAINER_SHOW", "TRAINER_UPDATE", "PLAYER_ENTERING_WORLD",
+  for _, e in ipairs({ "TRAINER_SHOW", "TRAINER_UPDATE", "PLAYER_ENTERING_WORLD", "PLAYER_MONEY",
     "MERCHANT_SHOW", "MERCHANT_CLOSED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED" }) do
     ES.SafeRegister(f, e)
   end
   f:SetScript("OnEvent", function(_, event)
     if not ES.db then return end
-    if event == "MERCHANT_SHOW" or event == "MERCHANT_CLOSED" or event == "AUCTION_HOUSE_SHOW" or event == "AUCTION_HOUSE_CLOSED" then
+    if event == "PLAYER_MONEY" then
+      Ledger.OnMoney()
+    elseif event == "MERCHANT_SHOW" or event == "MERCHANT_CLOSED" or event == "AUCTION_HOUSE_SHOW" or event == "AUCTION_HOUSE_CLOSED" then
       -- La vista Profit cambia sus clics (vender al vendedor, anunciar en la AH)
       if ES.RefreshAfterBags then ES:RefreshAfterBags() end
     elseif event == "TRAINER_SHOW" or event == "TRAINER_UPDATE" then
@@ -315,8 +327,8 @@ do
       if not ok then Log("instructor: error leyendo precios: " .. tostring(err)) end
     elseif event == "PLAYER_ENTERING_WORLD" then
       ES.db.mailBought = nil -- compras de la AH "en el correo" (ya no se cuentan)
+      Ledger.OnMoney() -- (punto de partida del dinero)
     end
-    -- (los cambios de dinero los sigue Books.lua, que cobra aquí las ventas al vendedor)
   end)
 end
 
@@ -401,21 +413,15 @@ function Ledger:PostOnAH(itemID, n, unit)
   end
   local price = Ledger.PostPrice(unit)
   local ok, err
-  if ES.Books then -- (la contabilidad apunta la subasta y espera su depósito)
-    ES.Books.posting = itemID
-    ES.Books.postingDeposit = ES.Books.CalcDeposit(commodity, location, itemID, 2, qty)
-  end
   if commodity and AH.PostCommodity then
     ok, err = pcall(AH.PostCommodity, location, 2, qty, price)
   else
     ok, err = pcall(AH.PostItem, location, 2, qty, nil, price)
     if not ok and qty > 1 then -- no acepta varios de una vez: uno (el resto, con otro clic)
       qty = 1
-      if ES.Books then ES.Books.postingDeposit = ES.Books.CalcDeposit(false, location, itemID, 2, 1) end
       ok, err = pcall(AH.PostItem, location, 2, 1, nil, price)
     end
   end
-  if ES.Books then ES.Books.posting, ES.Books.postingDeposit = nil, nil end
   if not ok then
     ES:Print(L["No se pudo anunciar: "] .. tostring(err))
     return 0
