@@ -95,6 +95,7 @@ local function Where(e, s, short)
   if not s then return L["Fuente desconocida"] end
   if s.kind == "trainer" then return L["Instructor"] .. (s.cost and s.cost > 0 and (" · " .. ES.Money(s.cost)) or "") end
   if s.kind == "basic" then return L["Se aprende sola al tener la profesión"] end
+  if s.gone then return L["En Forever no la enseña ningún instructor"] end
   if s.kind == "quest" then
     -- En amarillo y con el "!" de misión, para distinguirlas de un vistazo
     return ES.QuestIconMarkup(14) .. " " .. QUEST .. L["Misión: "] .. s.quest.name
@@ -147,7 +148,14 @@ end
 -- Adónde lleva "marcar en el mapa" para una fuente (nil si no hay a quién ir)
 local function GoFor(e, s)
   local WP = ES.Waypoints
-  if s.kind == "trainer" then return WP.Target("trainer", e.profKey, e.level) end
+  if s.kind == "trainer" then
+    -- El instructor donde la viste; si no, los que la enseñan según los datos (Forever
+    -- deja algunas en otro rango: Green Iron Leggings, los de Experto); si no, el del rango
+    local seen = ES.db.trainerFees and ES.db.trainerFees[e.id] and ES.db.trainerFees[e.id].npc
+    if seen then return function() return seen end end
+    if e.recipe.tr then return function() return WP.Nearest(e.recipe.tr) end end
+    return WP.Target("trainer", e.profKey, e.level)
+  end
   if (s.kind == "vendor" or s.kind == "rep" or (s.kind == "favor" and #s.vendors > 0)) and e.recipe.scroll then
     return WP.Target("vendor", e.recipe.scroll)
   end

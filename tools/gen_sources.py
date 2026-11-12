@@ -98,6 +98,36 @@ def main():
                          field("Quest", q, QUEST["requiredLevel"], qr) or 0, starters)
             npcs_needed.update(starters)
 
+    # Vendedores de pergaminos de Forever (tools/forever/recipebook_*.csv, ver
+    # import_recipebook.py): se suman a los de QuestieDB, solo los que tienen sitio en el
+    # mapa. Un pergamino que en Forever no vende nadie (patrones de Spitfire, Ironvine...:
+    # no existen en Forever) se queda sin vendedor
+    book_npcs, book_vendors = {}, {}
+    if (HERE / "forever" / "recipebook_vendors.csv").exists():
+        with open(HERE / "forever" / "recipebook_npcs.csv", encoding="utf-8") as f:
+            for r in csv.DictReader(l for l in f if not l.startswith("#")):
+                book_npcs[int(r["npc"])] = (r["name"], int(r["map"]), float(r["x"]), float(r["y"]))
+        with open(HERE / "forever" / "recipebook_vendors.csv", encoding="utf-8") as f:
+            for r in csv.DictReader(l for l in f if not l.startswith("#")):
+                if int(r["npc"]) in book_npcs:
+                    book_vendors.setdefault(int(r["item"]), set()).add(int(r["npc"]))
+        for item_id in scrolls:
+            book = book_vendors.get(item_id)
+            vendors, qs = items.get(item_id, ([], []))
+            if book:
+                vendors = sorted(set(vendors) | book)
+                npcs_needed.update(book)
+            elif vendors:
+                vendors = []
+            if vendors or qs or item_id in drops:
+                items[item_id] = (vendors, qs)
+            elif item_id in items:
+                del items[item_id]
+        # (y los instructores que solo conoce el libro: la ruta lleva a ellos, ver tr)
+        with open(HERE / "forever" / "recipebook_trainers.csv", encoding="utf-8") as f:
+            npcs_needed.update(int(r["npc"]) for r in csv.DictReader(l for l in f if not l.startswith("#"))
+                               if int(r["npc"]) in book_npcs)
+
     # Subastadores (para "poner en la AH" desde la vista Profit) y posaderos: hay
     # uno en cada pueblo y, como cualquier vendedor, compran lo que fabricas
     auctioneers, innkeepers = [], []
@@ -152,6 +182,14 @@ def main():
                 npcs[npc_id] = [npcs[npc_id][0], loc["side"], int(loc["map"]),
                                 round(float(loc["x"]) / 100, 4), round(float(loc["y"]) / 100, 4)]
                 fixed += 1
+    # PNJ de Forever que QuestieDB no tiene o no sitúa: los del libro (sin bando: los
+    # dos; el libro no lo dice)
+    for npc_id in sorted(npcs_needed):
+        if npc_id in book_npcs and (npc_id not in npcs or len(npcs[npc_id]) <= 2):
+            name, m, x, y = book_npcs[npc_id]
+            side = npcs[npc_id][1] if npc_id in npcs else ""
+            npcs[npc_id] = [npcs[npc_id][0] if npc_id in npcs else name, side, m, round(x, 4), round(y, 4)]
+            fixed += 1
 
     def lua_str(s):
         return '"' + str(s).replace("\\", "\\\\").replace('"', '\\"') + '"'

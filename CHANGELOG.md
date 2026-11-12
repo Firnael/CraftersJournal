@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- **A route's tool row is marked done once you have the tool**, whether you bought it or crafted it yourself (the Arclight Spanner stayed pending after crafting it).
+
+- **Trainer and vendor data now matches WoW Forever.** Learn levels, trainer costs and who teaches each recipe come from Forever's own trainers (Bronze Warhammer at 100, Green Iron Leggings for 50s), so "Train" rows take you to a trainer that really teaches the recipe (Green Iron Leggings is only taught by Expert trainers such as Bengus Deepforge). Recipes no Forever trainer teaches (The Shatterer, Troll's Blood Elixir…) are no longer used, recipe vendors new in Forever are included, and patterns Forever doesn't sell (Spitfire, Ironvine…) no longer send you to a vendor.
+
+- **Routes no longer ask you to learn trainer recipes that Forever's trainers don't teach.** When you open a trainer, Crafter's Journal reads its whole list: if its own rank's trainer doesn't have a recipe, its "Train" row sends you to the next rank's trainer (Forever moved some, like Green Iron Leggings, to the Expert trainer); if a higher trainer you've visited doesn't have it either, it's left out of routes and a started route that needed it is recalculated from your level. Once you've seen a recipe at a trainer, its "Train" row takes you to that trainer.
+
+- **Buying from the AH no longer gets stuck on "Searching...".** When the server drops the search, Crafter's Journal now goes back and opens the material again by itself (what you had to do by hand with Back), and a new click on a stuck material does the same.
+
+- **The vendor window (buy your route's reagents, sell what the route says to sell) now always shows when you open a vendor.** Depending on your other addons it could miss the moment the vendor opened and only appeared after you sold something by hand.
+
+- **Routes never ask for a step you can't make yet.** A step that starts with materials made in the previous step (the powder for Rough Dynamite) no longer runs out halfway with "craft 108 more at 40": whatever the step needs is crafted before it starts, or the route makes the ingredient step longer instead. Materials already made by the route are always used before crafting more of the same.
+- **Ingredient steps make everything later steps need, like the leveling guides do.** "Rough Blasting Powder 6-40 · 86 crafts · +22 for Rough Dynamite": the extra crafts happen in the powder step (the step gets longer with the points they give), so the dynamite step starts with all its powder in your bags. Clicking the step crafts the extra too.
+
 - **The Shopping list tab now sits right under Level professions.**
 - **The Auction House icon is gone.** Routes can always buy on the AH; the "route without AH" mode is removed.
 - **No more options panel.** Clicking a route step always crafts what's left for that step (the "Craft when clicking a route step" option is gone).

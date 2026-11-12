@@ -72,6 +72,11 @@ for _, sc in ipairs(SC) do
   local b, tb = Plan(sc, true)
   t1, t2 = t1 + ta, t2 + tb
   local sa, sb = Score(a), Score(b)
+  -- v1 no alarga el paso con lo que fabrica de más (ver Walk en PlanGPS): esos puntos
+  -- quedan sin contar y la ruta no es la que harías. No vale como referencia
+  local hidden = false
+  for _, st in ipairs(a.steps) do if (st.aheadGain or 0) >= 1 then hidden = true end end
+  if hidden then sa = math.huge end
   local tag
   -- (menos de un 0,05% de diferencia: igual, es redondeo)
   local tol = math.max(1, 0.0005 * math.abs(sa))

@@ -77,6 +77,7 @@ NPC_FLAG_TRAINER = 16
 FOREVER_NPC_IDS = 200000  # los PNJ nuevos de Forever tienen ID altos (p. ej. 251991)
 OVERRIDES = HERE / "forever" / "trainer_overrides.csv"
 FOREVER_FEES = HERE / "forever" / "trainer_fees.csv"
+RECIPEBOOK_TRAINERS = HERE / "forever" / "recipebook_trainers.csv"
 FOREVER_SELL = HERE / "forever" / "sell_prices.csv"
 # Recetas que se compran con Merchant's Favor (tools/forever/fetch_merchants_favor.py)
 MERCHANTS_FAVOR = HERE / "forever" / "merchants_favor.csv"
@@ -199,6 +200,10 @@ def load_common():
 
     # Instructores (CMaNGOS): por receta, el más barato; por línea, los rangos y quién enseña qué
     fees, ranks, trainers = {}, defaultdict(dict), defaultdict(dict)
+    # Quién enseña cada receta: Forever no siempre la deja en el rango que diría su nivel
+    # (Green Iron Leggings, de 130, solo la enseñan los de Experto: Bengus Deepforge...);
+    # la ruta lleva a uno de estos y no al instructor del rango por nivel
+    teachers = defaultdict(set)
     with open(CMANGOS, encoding="utf-8") as f:
         for r in csv.DictReader(f):
             npc, spell, cost, line = int(r["npc"]), int(r["spell"]), int(r["cost"]), int(r["skill"])
@@ -210,10 +215,29 @@ def load_common():
                     ranks[line][cap] = (cap, cost, req, level)
                 trainers[line][npc] = max(trainers[line].get(npc, 0), cap)
             else:
+                teachers[spell].add(npc)
                 if spell not in fees or cost < fees[spell][0]:
                     fees[spell] = (cost, req, False)
+    # Instructores de Forever (tools/forever/recipebook_trainers.csv, ver
+    # import_recipebook.py): quién enseña cada receta, a qué nivel y por cuánto. Mandan
+    # sobre CMaNGOS (Classic): Forever cambió niveles y movió recetas de rango. Su nivel
+    # ya es el de Forever. Precio: el más alto entre sus instructores (el que lo apuntó
+    # tenía descuento de reputación en algunos). Lo que CMaNGOS da de instructor y aquí
+    # no enseña nadie (The Shatterer, Troll's Blood Elixir...): no se aprende de instructor
+    untaught = set()
+    if RECIPEBOOK_TRAINERS.exists():
+        book = defaultdict(list)
+        with open(RECIPEBOOK_TRAINERS, encoding="utf-8") as f:
+            for r in csv.DictReader(line for line in f if not line.startswith("#")):
+                book[int(r["spell"])].append((int(r["npc"]), int(r["skill"]), int(r["cost"])))
+        untaught = {s for s in fees if s not in book}
+        for spell, rows_ in book.items():
+            fees[spell] = (max(c for _, _, c in rows_), min(k for _, k, _ in rows_), True)
+            teachers[spell] = {n for n, _, _ in rows_}
+        for spell in untaught:
+            del fees[spell]
     # Precios y niveles de Forever vistos en el juego o en guías, con su fuente en el
-    # CSV (recetas nuevas o que Forever cobra distinto): mandan sobre CMaNGOS, y su
+    # CSV (recetas nuevas o que Forever cobra distinto): mandan sobre todo lo demás, y su
     # nivel ya es el de Forever (True: sin desplazar, ver forever_train)
     with open(FOREVER_FEES, encoding="utf-8") as f:
         for r in csv.DictReader(f):
@@ -221,7 +245,8 @@ def load_common():
     return dict(sla=sla, era=era, names=names, reagents=reagents, creates=creates, scrolls=scrolls,
                 item_info=item_info, item_rep=item_rep, item_skill=item_skill, item_class=item_class,
                 item_quality=item_quality, item_bop=item_bop,
-                tools=tools, tool_masks=tool_masks, fees=fees, ranks=ranks, trainers=trainers)
+                tools=tools, tool_masks=tool_masks, fees=fees, ranks=ranks, trainers=trainers,
+                teachers=teachers, untaught=untaught)
 
 
 ALLIANCE_RACES = 1 | 4 | 8 | 64     # humano, enano, elfo de la noche, gnomo
@@ -246,8 +271,30 @@ VENDOR_MIN = 10        # vendedores en QuestieDB para tratarlo como de venta ili
 VENDOR_MIN_DRINK = 3   # bebidas y comida (clase 0, subclase 5): bastan menos (cerveceros, posaderos)
 
 
+RECIPEBOOK_VENDORS = HERE / "forever" / "recipebook_vendors.csv"
+RECIPEBOOK_NPCS = HERE / "forever" / "recipebook_npcs.csv"
+_book_sold = None
+
+
+def book_sold():
+    """Pergaminos que vende algún PNJ de Forever con sitio en el mapa (recipebook_*.csv),
+    o None si no están esos datos"""
+    global _book_sold
+    if _book_sold is None and RECIPEBOOK_VENDORS.exists() and RECIPEBOOK_NPCS.exists():
+        with open(RECIPEBOOK_NPCS, encoding="utf-8") as f:
+            placed = {int(r["npc"]) for r in csv.DictReader(l for l in f if not l.startswith("#"))}
+        with open(RECIPEBOOK_VENDORS, encoding="utf-8") as f:
+            _book_sold = {int(r["item"]) for r in csv.DictReader(l for l in f if not l.startswith("#"))
+                          if int(r["npc"]) in placed}
+    return _book_sold
+
+
 def sold_by_vendor(item_id):
-    """¿Algún PNJ vende este objeto? (QuestieDB)"""
+    """¿Algún PNJ vende este objeto? Los de Forever (recipebook_vendors.csv) si están;
+    si no, QuestieDB (que tiene vendedores de Season of Discovery que Forever no tiene)"""
+    sold = book_sold()
+    if sold is not None:
+        return item_id in sold
     questie.load_store()
     r = questie.row("Item", item_id)
     return bool(r and questie.ids(questie.field("Item", item_id, questie.ITEM["vendors"], r)))
@@ -454,7 +501,16 @@ def main():
             # sobre CMaNGOS (Linen Bag era de instructor en Classic y en Forever no)
             parts.append("basic = true")
         elif sid in fees:
-            parts.append(f"fee = {fees[sid][0]}, train = {forever_train(fees[sid][1], fees[sid][2])}")
+            train = forever_train(fees[sid][1], fees[sid][2])
+            parts.append(f"fee = {fees[sid][0]}, train = {train}")
+            # Los instructores del rango que le toca por nivel no la enseñan (Forever la
+            # dejó en otro rango): tr = quién sí, para que la ruta lleve a uno de ellos
+            bit = RANK_BIT[75] if train <= 75 else RANK_BIT[150] if train <= 150 else RANK_BIT[225] if train <= 225 else RANK_BIT[300]
+            by_rank = {npc for npc, mask in trainers if mask & bit}
+            who = c["teachers"].get(sid, set())
+            if who and not (who & by_rank):
+                known = sorted(who & {npc for npc, _ in trainers}) or sorted(who)
+                parts.append("tr = { " + ", ".join(str(n) for n in known) + " }")
         elif sid in scrolls:
             scroll = scrolls[sid]
             # Nivel que pide el pergamino; si no lo dice, amarilla - 10 (el umbral
@@ -474,6 +530,10 @@ def main():
             if scroll in c["item_rep"]:
                 parts.append("rep = { %d, %d }" % c["item_rep"][scroll])
             parts.append(f"sq = {c['item_quality'].get(scroll, 1)}")
+        elif sid in c["untaught"]:
+            # De instructor en Classic, pero en Forever no la enseña ninguno ni tiene
+            # pergamino: la ruta no puede usarla
+            parts.append("gone = true")
         elif acquire == "3":
             # Valor propio de Forever: sin instructor ni pergamino (Basic Campfire), básica
             parts.append("basic = true")

@@ -17,7 +17,7 @@ local QUOTE_SIZE, QUOTE_TEXT_SIZE, QUOTE_PAD, QUOTE_TEXT_X = 34, 11, 12, 52
 local QUOTE_COIN_Y = -2 -- píxeles que se bajan los iconos de monedas en la cita (quedan altos)
 local LEVEL_W = 70 -- columna de nivel de la vista Ruta (cabe "225–300")
 local VIEW_BUTTON_H = 32 -- botones Ruta / Profit / Materiales (como los del diario de mazmorras)
-local STATUS_BUTTON_H = 26 -- Empezar / Recalcular ruta y Actualizar precios (barra de estado)
+local STATUS_BUTTON_H = 26 -- Empezar / Dejar ruta y Actualizar precios (barra de estado)
 local LIST_TOP = 80        -- de la cabecera a la lista (sin la fila "Real")
 -- Marrones del diario de mazmorras: el fondo que agrupa la página, la tarjeta de la
 -- cabecera (la más clara), el panel de la lista y las filas (más oscuras que el panel)
@@ -274,7 +274,7 @@ end
 -- no la cambia ni cambia sus totales. Se guardan las recetas de cada nivel y lo
 -- que llevabas en las bolsas al empezar (solo eso cuenta como gratis: lo que
 -- compras para la ruta ya está contado como gasto). La lista de la compra dice
--- cuánto tienes de lo que falta desde tu nivel. Se libera con "Recalcular ruta",
+-- cuánto tienes de lo que falta desde tu nivel. Se libera con "Dejar ruta",
 -- al cambiar el objetivo u otra opción, con la ✕, o al llegar al objetivo.
 --   settings.lock = { from, to, cap, choice = { [nivel] = receta }, via = { [material] = "craft" | "buy" },
 --                     owned, started, scanTime }
@@ -1214,18 +1214,31 @@ function ES:CreateProfessionPage(page, profKey)
     self:ClearFocus()
   end)
 
-  -- Empezar ruta (la fija) / Recalcular ruta (la libera y la rehace con lo que llevas)
+  -- Empezar ruta (la fija) / Dejar ruta (la suelta: vuelve la ruta sin empezar).
+  -- Con la ruta empezada no hay "recalcular": si hay una mejor desde tu nivel, lo
+  -- dice una fila arriba de la ruta (ver ES:CheckBetterRoute) y decides tú
   -- (a la derecha de la línea de estado, bajo la franja de resumen: se coloca allí abajo)
   local routeButton = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
   page.routeButton = routeButton
   routeButton:SetSize(140, STATUS_BUTTON_H)
   routeButton:SetMotionScriptsWhileDisabled(true)
+  -- Cada vez que abres la página se mira si hay una ruta mejor (una vez)
+  page:HookScript("OnShow", function() page.shownToken = (page.shownToken or 0) + 1 end)
   routeButton:SetScript("OnClick", function()
     local now = GetTime and GetTime() or 0
     if ES:RouteLock(profKey) then
-      -- El botón pasa de Empezar a Recalcular en el mismo sitio: un doble clic
-      -- soltaba la ruta recién fijada sin querer
+      -- El botón pasa de Empezar a Dejar en el mismo sitio: un doble clic soltaba la
+      -- ruta recién fijada sin querer. Y dejarla pide un segundo clic
       if page.routeStartedAt and now - page.routeStartedAt < 1 then return end
+      if not (page.leaveAsked and now - page.leaveAsked < 4) then
+        page.leaveAsked = now
+        ES:RenderPlan(page)
+        C_Timer.After(4, function()
+          if page.leaveAsked == now then page.leaveAsked = nil ES:RenderPlan(page) end
+        end)
+        return
+      end
+      page.leaveAsked = nil
       ES:StopRoute(profKey)
       ES:ClearHomeCache() -- con lo que llevas ahora
       ES:CalculatePlan(page)
@@ -1237,8 +1250,9 @@ function ES:CreateProfessionPage(page, profKey)
   routeButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     if ES:RouteLock(profKey) then
-      GameTooltip:AddLine(L["Recalcular ruta"])
-      GameTooltip:AddLine(L["Vuelve a calcular la ruta con los precios y lo que llevas ahora. Lo que ya has comprado contará como tuyo (gratis)."], 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine(L["Dejar ruta"])
+      GameTooltip:AddLine(L["Suelta tu ruta empezada y vuelve a la ruta calculada con lo que llevas ahora. Pide un segundo clic."], 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine(L["Si hay una ruta mejor desde tu nivel, te lo dice una fila arriba de la ruta."], 0.6, 0.6, 0.6, true)
     else
       GameTooltip:AddLine(L["Empezar ruta"])
       GameTooltip:AddLine(L["Fija esta ruta: mientras compras en la AH, al vendedor o sacas del correo, ni la ruta ni su coste cambian. La lista de la compra va marcando lo que te falta."], 0.8, 0.8, 0.8, true)
@@ -1261,7 +1275,7 @@ function ES:CreateProfessionPage(page, profKey)
     GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
     GameTooltip:AddLine(L["Actualizar precios"])
     GameTooltip:AddLine(L["La misma ruta (mismas recetas en cada nivel) con los precios del último escaneo. Lo que llevas gastado y vendido se mantiene."], 0.8, 0.8, 0.8, true)
-    GameTooltip:AddLine(L["Recalcular ruta, en cambio, busca una ruta nueva."], 0.6, 0.6, 0.6, true)
+    GameTooltip:AddLine(L["Si hay una ruta mejor desde tu nivel, te lo dice una fila arriba de la ruta."], 0.6, 0.6, 0.6, true)
     GameTooltip:Show()
   end)
   pricesButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -1543,9 +1557,14 @@ end
 -- empezada solo se repinta (paso actual, lo que falta, pasos hechos); sin empezar,
 -- la ruta se recalcula desde el nivel nuevo
 function ES:RefreshAfterSkill()
-  -- Avisos de compra por tramos de las rutas empezadas (aunque el addon esté cerrado)
+  -- Avisos de compra por tramos de las rutas empezadas (aunque el addon esté cerrado).
+  -- Protegidos: si uno falla, la página se refresca igual (si no, se quedaba con el
+  -- nivel de antes: "17/18 puntos" estando ya más arriba y fabricando de 2 en 2)
   for _, p in ipairs(self.PROFESSIONS or {}) do
-    if self.Data[p.key] and self:RouteLock(p.key) then self:PhaseNotices(p.key) end
+    if self.Data[p.key] and self:RouteLock(p.key) then
+      local ok, err = pcall(self.PhaseNotices, self, p.key)
+      if not ok and self.RecordError then self:RecordError("avisos de tramo", err) end
+    end
   end
   for _, page in ipairs(self.professionPages or {}) do
     if page.initialized and page:IsVisible() and page.data then
@@ -1605,7 +1624,10 @@ do
   for _, e in ipairs({ "SKILL_LINES_CHANGED", "CHAT_MSG_SKILL" }) do ES.SafeRegister(f, e) end
   f:SetScript("OnEvent", function()
     if not ES.db then return end
-    ES:CheckCraftStop() -- (al momento: cada fabricación de más gasta materiales)
+    -- (al momento: cada fabricación de más gasta materiales; protegido: si falla, la
+    -- página se refresca igual)
+    local ok, err = pcall(ES.CheckCraftStop, ES)
+    if not ok and ES.RecordError then ES:RecordError("parar al llegar al tope", err) end
     stamp = stamp + 1
     local mine = stamp
     C_Timer.After(0.3, function() if mine == stamp then ES:RefreshAfterSkill() end end)
@@ -1904,9 +1926,9 @@ local function BagsLine(alt, locked)
   -- La conclusión, en su propia línea y en un color apagado (es información, no un aviso)
   local verdict
   if worth and diff > 0 then
-    verdict = "|cff8fc98f" .. string.format(L["Hacerla con lo tuyo te sale unos %s mejor que venderlo y seguir la ruta. Pulsa Recalcular ruta para incluirla."], Coins(diff)) .. "|r"
+    verdict = "|cff8fc98f" .. string.format(L["Hacerla con lo tuyo te sale unos %s mejor que venderlo y seguir la ruta. Pulsa Dejar ruta para incluirla."], Coins(diff)) .. "|r"
   elseif worth then
-    verdict = "|cff8fc98f" .. L["Sale casi igual que venderlo, así que es más cómodo usar lo tuyo. Pulsa Recalcular ruta para incluirla."] .. "|r"
+    verdict = "|cff8fc98f" .. L["Sale casi igual que venderlo, así que es más cómodo usar lo tuyo. Pulsa Dejar ruta para incluirla."] .. "|r"
   else
     verdict = "|cffd9a066" .. string.format(L["Vender lo tuyo y seguir la ruta te sale unos %s mejor."], Coins(-diff)) .. "|r"
   end
@@ -2042,13 +2064,22 @@ local function RouteLines(plan, page)
     else
       local tl = e.tool
       local name, texture = ItemLabel(tl.item, L["Herramienta "] .. tl.item)
-      lines[#lines + 1] = {
+      local line = {
         level = tostring(tl.skill),
         icon = texture or 134400, title = L["Herramienta: "] .. name,
         sub = L["Se consigue una vez y no se gasta"],
         value = Signed(tl.cost), item = tl.item,
         tooltip = SimpleTooltip(tl.item, L["Los siguientes pasos la necesitan. Sus materiales están en la lista de compra."]),
       }
+      -- Ya la tienes (comprada o fabricada por ti): hecha, como los pasos acabados
+      if ES:ItemCount(tl.item) > 0 then
+        local function Plain(s) return (tostring(s or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
+        line.title = ES.Market.ICON_OK .. GREY .. Plain(line.title) .. "|r"
+        line.sub = GREY .. L["Ya la tienes"] .. "|r"
+        line.value = line.value and (GREY .. Plain(line.value) .. "|r") or nil
+        line.done = true
+      end
+      lines[#lines + 1] = line
     end
   end
   for i, st in ipairs(plan.steps) do
@@ -2163,7 +2194,22 @@ local function RouteLines(plan, page)
       local learnAt = train or st.from
       -- Al pulsar: el instructor que enseña hasta ese nivel, o quien vende la receta
       local pick, label
-      if trainer then
+      -- Visto en un instructor concreto: a ese (Forever enseña algunas solo en ciertos
+      -- sitios); si no, el más cercano del rango
+      local seenAt = ES.db.trainerFees and ES.db.trainerFees[st.id] and ES.db.trainerFees[st.id].npc
+      -- El instructor de su rango no la tiene (ver Ledger:ReadTrainer): en Forever la
+      -- enseña el del rango siguiente
+      local upRank = trainer and not seenAt and ES.db.trainerMissing and ES.db.trainerMissing[st.id] == "rank"
+      if trainer and seenAt then
+        pick, label = function() return seenAt end, L["Instructor donde la viste"]
+      elseif trainer and r.tr then
+        -- Los datos dicen quién la enseña (no el del rango por nivel: Green Iron
+        -- Leggings, de 130, la enseñan los de Experto)
+        pick, label = function() return WP.Nearest(r.tr) end, L["Instructor más cercano"]
+      elseif upRank then
+        local nextRank = (math.floor(math.max(0, learnAt - 1) / 75) + 1) * 75 + 1
+        pick, label = WP.Target("trainer", page.profKey, nextRank), L["Instructor del rango siguiente"]
+      elseif trainer then
         pick, label = WP.Target("trainer", page.profKey, learnAt + 1), L["Instructor más cercano"]
       elseif r.scroll then
         pick, label = WP.Target("vendor", r.scroll), L["Vendedor más cercano"]
@@ -2173,7 +2219,7 @@ local function RouteLines(plan, page)
         level = tostring(st.from), -- cuándo toca en la ruta (se puede aprender desde learnAt)
         icon = trainer and TRAIN_ICON or RECIPE_ICON,
         title = title,
-        sub = LEARN_WHERE[st.learnSource] or "?",
+        sub = upRank and L["Instructor del rango siguiente (el de su rango no la tiene)"] or LEARN_WHERE[st.learnSource] or "?",
         -- "?": fuente desconocida, o instructor de una receta nueva de Forever (precio sin datos)
         value = (st.learnSource == "unknown" or (r.trainer and not fee)) and (GREY .. "?|r") or Signed(st.fee),
         go = pick, onSkip = Skip(st.id),
@@ -2201,7 +2247,23 @@ local function RouteLines(plan, page)
     local perPoint = st.expected / (st.to - st.from)
     -- Lo que falta de este paso desde tu nivel (con la ruta empezada puedes ir por la mitad)
     local level = math.max(st.from, math.min(st.to, page.from or st.from))
-    local left = math.ceil(st.expected * (st.to - level) / (st.to - st.from) - 0.001)
+    -- Con lo que fabrica de más para pasos siguientes (st.ahead, "60 pólvoras y
+    -- guárdalas"): al acabar el paso tienes que llevar todo lo fabricado, así que lo
+    -- que falta es lo que te falta en las bolsas, si es más que lo de los puntos
+    local outID, outQty = r.out and r.out[1], (r.out and r.out[2]) or 1
+    local function Left(lvl)
+      local n = math.ceil(st.expected * (st.to - lvl) / (st.to - st.from) - 0.001)
+      if (st.aheadCrafts or 0) > 0 and outID then
+        local total = (st.crafts + st.aheadCrafts) * outQty
+        n = math.max(n, math.ceil((total - ES:ItemCount(outID)) / outQty - 0.001))
+      end
+      return n
+    end
+    local left = Left(level)
+    local aheadText = ""
+    for _, a in ipairs(st.ahead or {}) do
+      aheadText = aheadText .. string.format(L[" · +%d para %s"], a.quantity, a.recipe and a.recipe.name or "?")
+    end
     -- El paso en el que estás (si antes hay que aprender la receta, es esa fila)
     local current = inStep and not learnPending and not prepPending
     -- Clic: abre la receta y, con la opción "Fabricar al pulsar" (por defecto), fabrica lo que falta
@@ -2209,7 +2271,14 @@ local function RouteLines(plan, page)
     local tooltip = RecipeTooltip(st, plan)
     lines[#lines + 1] = {
       onClick = function()
-        if craftNow then ES:CraftRecipe(st.id, left) else ES:OpenRecipe(st.id) end
+        if not craftNow then ES:OpenRecipe(st.id) return end
+        -- Lo que falta, con tu nivel de ahora (no el del último pintado: si la página
+        -- se quedó atrás, fabricaba de 2 en 2). Ya pasado el paso: solo abre la receta
+        local now = ES:GetProfessionSkill(page.data.skillLine) or level
+        local lvl = math.max(st.from, math.min(st.to, now))
+        local n = Left(lvl)
+        if n > 0 then ES:CraftRecipe(st.id, n) else ES:OpenRecipe(st.id) end
+        if now ~= page.from then ES:RefreshAfterSkill() end
       end,
       craftCount = craftNow and left or nil, -- (para pruebas)
       level = st.from .. "–" .. st.to, -- columna de nivel: el tramo
@@ -2220,10 +2289,10 @@ local function RouteLines(plan, page)
       sub = done and (GREY .. L["Hecho"] .. "|r")
         -- Lo que llevas se mide en puntos (tu nivel), no en fabricaciones de esta
         -- receta: los puntos que te dé otra (Bolt of Woolen Cloth) también cuentan
-        or current and string.format(L["%d/%d puntos · ~%s%d|r fabricaciones más · %s/u"], level - st.from, st.to - st.from,
-          GOLD, left, ES.Money(st.unitCost))
-        or string.format(L["%s%d fabricaciones|r · %s/u"], perPoint > LOW_CHANCE_CRAFTS and ORANGE or "",
-        st.crafts, ES.Money(st.unitCost))
+        or current and (string.format(L["%d/%d puntos · ~%s%d|r fabricaciones más · %s/u"], level - st.from, st.to - st.from,
+          GOLD, left, ES.Money(st.unitCost)) .. aheadText)
+        or (string.format(L["%s%d fabricaciones|r · %s/u"], perPoint > LOW_CHANCE_CRAFTS and ORANGE or "",
+        st.crafts + (st.aheadCrafts or 0), ES.Money(st.unitCost)) .. aheadText)
         -- La segunda mejor receta y por qué es peor (si ya está calculada)
         .. (AltSummary(plan, i, page.data) and ("  " .. AltSummary(plan, i, page.data)) or ""),
       value = Signed(st.total - st.fee), item = r.out and r.out[1], -- lo de aprender va en su fila
@@ -2582,6 +2651,121 @@ local function ShopLines(plan, page)
   return lines
 end
 
+---------------------------------------------------------------------------
+-- Ruta empezada: ¿hay una mejor desde tu nivel?
+---------------------------------------------------------------------------
+-- Una ruta empezada no cambia sola (lo que compras no la mueve). Al abrir su página
+-- se busca en segundo plano (Jobs: poco tiempo por fotograma, nunca en combate) la
+-- mejor desde tu nivel con lo que llevas, y se compara con seguir la tuya desde ahí.
+-- Si compensa (BETTER_MIN, o BETTER_PCT de lo que te queda), una fila arriba de la
+-- ruta lo dice con los pasos que cambian: clic para cambiar, ✕ para seguir con la tuya
+local BETTER_MIN, BETTER_PCT, BETTER_PCT_MIN = 5000, 0.10, 1000
+ES.betterCache = ES.betterCache or {}
+
+local function ChoiceSig(plan)
+  local keys = {}
+  for _, st in ipairs(plan.steps) do keys[#keys + 1] = st.id .. "@" .. st.from end
+  return table.concat(keys, ",")
+end
+
+-- { plan, saved, crafts, changes = { textos } } o nil si no compensa
+local function CompareRoutes(lock, best, mine)
+  if not best or #best.steps == 0 then return nil end
+  local saved = mine.net - best.net
+  local crafts = ES.Planner.TotalCrafts(mine) - ES.Planner.TotalCrafts(best)
+  local further = best.reached > mine.reached
+  local worth = further or saved >= BETTER_MIN
+    or (saved >= BETTER_PCT_MIN and saved >= BETTER_PCT * math.abs(mine.net))
+  if not worth then return nil end
+  local sig = ChoiceSig(best)
+  if lock.keepMine == sig then return nil end -- ya dijiste que sigues con la tuya
+  local changes = {}
+  for _, st in ipairs(best.steps) do
+    local old = lock.choice and lock.choice[st.from]
+    if old ~= st.id then
+      changes[#changes + 1] = { st = st, old = old }
+    end
+  end
+  return { plan = best, saved = saved, crafts = crafts, further = further, changes = changes, sig = sig }
+end
+
+function ES:CheckBetterRoute(page)
+  local lock = self:RouteLock(page.profKey)
+  if not lock or lock.completed then return end
+  local from = page.from or lock.from
+  if from >= lock.to then return end
+  local cap = page.detected and page.detected.cap or nil
+  local key = table.concat({ "better", self:PlanKey(page.profKey, from, lock.to, cap), tostring(lock.started) }, ":")
+  local cached = self.betterCache[page.profKey]
+  if cached and cached.key == key then return end
+  local profKey = page.profKey
+  self.Jobs.Run("better:" .. profKey, key, function()
+    local data = ES.Data[profKey]
+    local best = self.Planner:Plan(data, self:PlanOptions(profKey, from, lock.to, cap))
+    -- La tuya desde tu nivel, con lo que llevas ahora (misma vara)
+    local opts = self:PlanOptions(profKey, from, lock.to, cap)
+    opts.forced, opts.via = lock.choice, lock.via
+    local mine = self.Planner:Plan(data, opts)
+    return CompareRoutes(lock, best, mine)
+  end, function(result)
+    self.betterCache[profKey] = { key = key, result = result }
+    if page:IsVisible() and self:RouteLock(profKey) == lock then self:RenderPlan(page) end
+  end, "better", true)
+end
+
+-- Fila del aviso (arriba de la ruta) o nil
+local function BetterLine(page)
+  local lock = ES:RouteLock(page.profKey)
+  local c = lock and not lock.completed and ES.betterCache[page.profKey]
+  local b = c and c.result
+  if not b or lock.keepMine == b.sig then return nil end
+  local recipes = ES.Data[page.profKey].recipes
+  local parts = {}
+  for i, ch in ipairs(b.changes) do
+    if i > 2 then parts[#parts + 1] = "…" break end
+    local was = ch.old and recipes[ch.old]
+    parts[#parts + 1] = string.format("%d-%d %s", ch.st.from, ch.st.to, ch.st.recipe.name)
+      .. (was and string.format(L[" (antes %s)"], was.name) or "")
+  end
+  local gains = {}
+  if b.further then gains[#gains + 1] = L["llega más lejos"] end
+  if b.saved >= 1 then gains[#gains + 1] = string.format(L["%s menos"], ES.Money(b.saved)) end
+  if b.crafts > 0 then gains[#gains + 1] = string.format(L["%d fabricaciones menos"], b.crafts) end
+  return {
+    level = tostring(page.from or lock.from),
+    icon = "Interface\\Icons\\INV_Misc_Map_01",
+    title = "|cff66bbff" .. L["Hay una ruta mejor desde tu nivel"] .. "|r · " .. table.concat(gains, " · "),
+    sub = table.concat(parts, " · "),
+    onClick = function()
+      -- Cambiar: la nueva pasa a ser tu ruta empezada (lo que ya compraste cuenta como tuyo)
+      ES:StopRoute(page.profKey)
+      page.plan, page.planKey = b.plan, nil
+      ES:StartRoute(page)
+      ES.betterCache[page.profKey] = nil
+      ES:Print(string.format(L["Ruta de %s cambiada: %s."], page.profName or page.profKey, table.concat(gains, ", ")))
+      ES:CalculatePlan(page)
+    end,
+    onSkip = function()
+      lock.keepMine = b.sig -- (esta alternativa no vuelve a salir; otra mejor, sí)
+      ES:RenderPlan(page)
+    end,
+    skipTip = L["Seguir con mi ruta: esta alternativa no vuelve a salir."],
+    tooltip = function(row)
+      GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
+      GameTooltip:AddLine(L["Hay una ruta mejor desde tu nivel"])
+      GameTooltip:AddLine(L["Con lo que llevas ahora y los precios del último escaneo. Tu ruta empezada no cambia hasta que lo decidas."], 0.8, 0.8, 0.8, true)
+      GameTooltip:AddLine(" ")
+      for _, ch in ipairs(b.changes) do
+        local was = ch.old and recipes[ch.old]
+        GameTooltip:AddDoubleLine(string.format("%d-%d %s", ch.st.from, ch.st.to, ch.st.recipe.name), was and was.name or "", 1, 1, 1, 0.6, 0.6, 0.6)
+      end
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine(L["Clic: cambiar a esta ruta (lo que ya compraste cuenta como tuyo)."], 0.5, 0.8, 1, true)
+      GameTooltip:Show()
+    end,
+  }
+end
+
 function ES:RenderPlan(page)
   local plan = page.plan
 
@@ -2633,7 +2817,7 @@ function ES:RenderPlan(page)
   if lock and plan then
     local scan = self.db.scans and self.db.scans[self:RealmKey()]
     status = GREEN .. (lock.completed
-      and string.format(L["¡Ruta completada! (de %d a %d) · pulsa Recalcular ruta para empezar otra"], lock.from, lock.to)
+      and string.format(L["¡Ruta completada! (de %d a %d) · pulsa Dejar ruta para empezar otra"], lock.from, lock.to)
       or string.format(L["Ruta en curso (de %d a %d): lo que compras no cambia la ruta ni su coste"], lock.from, lock.to)) .. "|r"
     -- Por tramos: la frase larga no deja sitio al aviso del tramo (se cortaba): corta
     local phaseText = not lock.completed and PhaseStatus(page, plan) or ""
@@ -2647,7 +2831,7 @@ function ES:RenderPlan(page)
   elseif plan and #plan.steps > 0 and not page.calculating and self.db.prof[page.profKey].useBags then
     status = status .. GREY .. L[" · pulsa Empezar ruta antes de comprar|r"]
   end
-  page.routeButton:SetText(lock and L["Recalcular ruta"] or L["Empezar ruta"])
+  page.routeButton:SetText(lock and (page.leaveAsked and L["¿Seguro? Pulsa otra vez"] or L["Dejar ruta"]) or L["Empezar ruta"])
   page.pricesButton:SetText(L["Actualizar precios"])
   page.pricesButton:SetShown(newPrices)
   page.status:SetPoint("RIGHT", newPrices and page.pricesButton or page.routeButton, "LEFT", -10, 0)
@@ -2657,11 +2841,23 @@ function ES:RenderPlan(page)
   page.status:SetText(status)
   self:UpdateCalcProgress(page) -- (barra y % mientras calcula; si no, se esconde)
 
+  -- Ruta empezada: buscar una mejor una vez cada vez que abres la página (no con cada
+  -- cosa que compras o fabricas: es un cálculo entero). Antes de las filas: si acaba
+  -- al momento (fuera del juego), su aviso ya sale en ellas
+  if lock and page.shownToken and page.betterAsked ~= page.shownToken and not page.calculating then
+    page.betterAsked = page.shownToken
+    self:CheckBetterRoute(page)
+  end
+
   local lines = {}
   if plan and #plan.steps > 0 then
     if page.view == "profit" then lines = ProfitLines(plan, page)
     elseif page.view == "shop" then lines = ShopLines(plan, page)
-    else lines = RouteLines(plan, page) end
+    else
+      lines = RouteLines(plan, page)
+      local better = BetterLine(page)
+      if better then table.insert(lines, 1, better) end
+    end
   end
   page.lines = lines
   page.empty:SetText(#lines == 0 and (plan and #plan.steps > 0 and L["Nada que mostrar en esta vista."] or "") or "")

@@ -71,6 +71,9 @@ local function Sources(r, e)
   if fee or r.trainer then Add({ kind = "trainer", cost = fee }) end
   if r.basic then
     Add({ kind = "basic" }) -- se aprende sola al coger la profesión (dato del cliente)
+  elseif r.gone then
+    -- De instructor en Classic, pero en Forever no la enseña ninguno (ver gen_profession.py)
+    Add({ kind = "unknown", gone = true })
   elseif not fee and not r.trainer and not r.scroll and not r.favor and r.basic == nil then
     Add({ kind = r.t[2] <= 50 and "basic" or "unknown" }) -- datos antiguos, sin ese dato
   end
@@ -124,7 +127,8 @@ function Collection:Build(profKey)
     e.alts = AltsKnowing(profKey, e.id, altSets)
     e.repOK = not r.rep or ES:RepMet(r.rep)
     -- ¿Puedes aprenderla ya? nivel suficiente y una fuente a mano (no botín)
-    local level = r.train or (r.t and r.t[1]) or 1
+    -- (las que Forever no enseña no tienen nivel de instructor: el de ponerse amarilla)
+    local level = r.train or (r.gone and r.t and r.t[2]) or (r.t and r.t[1]) or 1
     e.level = level
     if not e.known and skill and skill >= level and e.repOK then
       local best

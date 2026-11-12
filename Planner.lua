@@ -205,7 +205,7 @@ end
 -- Fabricaciones totales de un plan
 function Planner.TotalCrafts(plan)
   local n = 0
-  for _, st in ipairs(plan.steps or {}) do n = n + st.crafts end
+  for _, st in ipairs(plan.steps or {}) do n = n + st.crafts + (st.aheadCrafts or 0) end
   return n
 end
 local MAX_CRAFT_DEPTH = 3
@@ -287,6 +287,9 @@ Planner.Annotate = Annotate
 function Planner.LearnSkill(recipe, opts)
   local fee, train = Fee(recipe)
   if Known(recipe) then return train or 1 end -- ya la sabes: siempre disponible
+  if recipe.gone then return nil end -- Forever no la enseña (ver tools/gen_profession.py)
+  -- Ningún instructor visto la enseña (Forever la quitó; ver Ledger:ReadTrainer)
+  if recipe.id and ES.db and ES.db.trainerMissing and ES.db.trainerMissing[recipe.id] == "gone" then return nil end
   if recipe.rep and not ES:RepMet(recipe.rep) then return nil end -- te falta reputación
   -- Merchant's Favor: se compra con fichas y reputación del campamento, no con oro.
   -- Solo con su icono activado (opts.useFavor; por defecto no): entonces cuesta 0 oro
@@ -522,7 +525,13 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
       local exB, acB = Copy(extra), {}
       local costB = Acquire(ctx, itemID, qty, depth, exB, acB, why, "all")
 
-      local useA = costA and (not costB or costA <= costB)
+      -- (fabricar más de lo mismo dejando sin usar lo ya fabricado nunca: la ruta
+      -- decía "fabrica 108 de pólvora" con las 86 del paso anterior en la bolsa)
+      local craftsAgain = false
+      for _, a in ipairs(acB) do
+        if a.kind == "craft" and a.item == itemID then craftsAgain = true end
+      end
+      local useA = costA and (not costB or costA <= costB or craftsAgain)
       local cost, ex, ac = costB, exB, acB
       if useA then cost, ex, ac = costA, exA, acA end
       if not cost then return nil end
@@ -563,6 +572,7 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
   local canCraft = depth < MAX_CRAFT_DEPTH and ctx.producers[itemID] and not ctx.visiting[itemID]
   if via == "buy" and best then canCraft = false end
   local blockBuy -- (ver abajo: lo que la ruta fabrica y aún da puntos no se compra entretanto)
+  local ahead -- (ver abajo: se fabrica de más en su propio paso, antes)
   if canCraft then
     ctx.visiting[itemID] = true
     for _, rid in ipairs(ctx.producers[itemID]) do
@@ -572,13 +582,19 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
       -- Una receta que aún da puntos a tu nivel (Rough Blasting Powder a 1) no se
       -- fabrica a escondidas como preparación: la ruta diría "fabrica 133 a nivel 1" y
       -- esas fabricaciones subirían la profesión sin contar. Tiene que ser un paso de la
-      -- ruta (lo fabricado se guarda para el siguiente). Sí: lo intermedio que no da
-      -- puntos (Cured Thick Hide, conversiones) y lo que ya está en gris
-      if ctx.skill and not r.intermediate and not r.conversion and Planner.Chance(r.t, ctx.skill) > 0 then
+      -- ruta, y en ese paso se fabrica todo lo que pedirán los siguientes (como las
+      -- guías: "1-30: 60 pólvoras, guárdalas para las bombas"): si la ruta ya tuvo un
+      -- paso con esa receta (ctx.made), lo que falta se fabrica de más en él (ahead).
+      -- Sí como preparación: lo intermedio que no da puntos (Cured Thick Hide,
+      -- conversiones) y lo que ya está en gris
+      -- (aunque a este nivel ya esté en gris: se hace todo junto en su paso, como
+      -- los tornillos de las bombas, y no a mitad del paso que los usa)
+      if ctx.skill and ctx.made and ctx.made[rid] then
+        ahead = rid
+      elseif ctx.skill and not r.intermediate and not r.conversion and Planner.Chance(r.t, ctx.skill) > 0 then
         total = nil
         -- Y si la ruta lo fabrica (via "craft"), tampoco se compra mientras tanto: si
-        -- no, "compra hasta 40 y fabrica desde 40" (la dinamita pedía pólvora antes de
-        -- que la ruta dijera de dónde sale). Tiene que venir de un paso de la ruta
+        -- no, "compra hasta 40 y fabrica desde 40". Tiene que venir de un paso de la ruta
         if via == "craft" then blockBuy = true end
       end
       for _, rq in ipairs(total and r.r or {}) do
@@ -597,7 +613,7 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
         or (kind ~= "craft" and (via == "craft" or total + crafts * INTERMEDIATE_CRAFT_COST < best)))
       if better then
         best, kind = total, "craft"
-        craft = { extra = subExtra, actions = subActions, recipe = rid }
+        craft = { extra = subExtra, actions = subActions, recipe = rid, ahead = ahead == rid }
       end
     end
     ctx.visiting[itemID] = nil
@@ -612,7 +628,7 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
   if kind == "craft" then
     for k, v in pairs(craft.extra) do extra[k] = v end
     for _, a in ipairs(craft.actions) do actions[#actions + 1] = a end
-    actions[#actions + 1] = { kind = "craft", item = itemID, qty = qty, cost = best, recipe = craft.recipe }
+    actions[#actions + 1] = { kind = "craft", item = itemID, qty = qty, cost = best, recipe = craft.recipe, ahead = craft.ahead or nil }
   else
     if kind == "ah" then extra[itemID] = (extra[itemID] or 0) + qty end
     actions[#actions + 1] = { kind = kind, item = itemID, qty = qty, cost = best }
@@ -755,6 +771,8 @@ end
 -- sus recetas y cambiando fabricar ↔ comprar. Gana la de menor Planner.RouteScore.
 Planner.USE_GPS = true         -- el planificador del addon (false: el antiguo, solo para tools/route_qa.py)
 local GPS_STEP_COST = 100      -- cobre por cada receta nueva en la ruta (pocos pasos)
+local GPS_AHEAD_ROUNDS = 4      -- veces que se alarga un paso con lo que fabrica de más (ver Walk)
+local UNFOLLOWABLE_COST = 10000000 -- ruta que no se puede seguir (ver plan.unfollowable): solo si no hay otra
 local GPS_ROUNDS = 4           -- vueltas con los precios de la mejor ruta hasta ahora
 local GPS_VIA_ROUNDS = 2       -- vueltas de fabricar ↔ comprar sobre cada ruta recorrida
 local GPS_BAGS_ALTS = 4        -- recetas con lo tuyo que se prueban en su tramo
@@ -793,10 +811,12 @@ function Planner.RouteScore(plan)
     local per = st.crafts / math.max(1, st.to - st.from)
     if gain > 0 and per > PROFIT_FULL_CRAFTS then gain = gain * PROFIT_FULL_CRAFTS / per end
     score = score - gain
-    crafts = crafts + st.crafts
+    crafts = crafts + st.crafts + (st.aheadCrafts or 0)
   end
   for _, c in ipairs(plan.crafted or {}) do crafts = crafts + c.quantity end
   score = score + CW * crafts + GPS_STEP_COST * math.max(0, #plan.steps - 1)
+  -- (ruta que pide fabricar a mitad de paso lo que ya hacía falta al empezarlo)
+  if plan.unfollowable then score = score + UNFOLLOWABLE_COST end
   local have = plan.ctx and plan.ctx.opts.owned
   if have and plan.owned then
     for _, o in ipairs(plan.owned) do
@@ -820,7 +840,8 @@ end
 local function CraftBonus(ctx, actions, s)
   local g = 0
   for _, a in ipairs(actions or {}) do
-    local ir = a.kind == "craft" and a.recipe and ctx.data.recipes[a.recipe]
+    -- (lo fabricado de más en su paso, antes: sus puntos los da ese paso, ver Plan)
+    local ir = a.kind == "craft" and not a.ahead and a.recipe and ctx.data.recipes[a.recipe]
     if ir and not ir.intermediate and not ir.conversion and ir.t and (ir.t[1] or 1) <= s then
       g = g + a.qty / ((ir.out and ir.out[2]) or 1) * Planner.Chance(ir.t, s)
     end
@@ -1021,15 +1042,32 @@ function Planner.PlanGPS(data, opts)
   end
   -- Recorre una ruta de verdad (pasada forzada, rápida). via: fabricar o comprar
   -- fijado (lo del jugador siempre manda)
-  local function Walk(choice, via)
+  local function Walk(choice, via, depth)
     local v = Copy(via or {})
     for itemID, way in pairs(opts.via or {}) do v[itemID] = way end
     local key = ChoiceKey(opts, choice, v)
-    if seen[key] then return nil end
-    seen[key] = true
+    -- (ya recorrida: nil, salvo al alargar un paso, que quiere la ruta de verdad)
+    if seen[key] then return depth and seen[key] or nil end
     local t = Copy(opts)
     t.forced, t.via = choice, v
     local p = Planner:Plan(data, t)
+    seen[key] = p
+    -- Lo que un paso fabrica de más para los siguientes (ver Acquire) también sube
+    -- puntos: el paso se alarga con ellos y el siguiente empieza más tarde. Es la
+    -- misma ruta contada como de verdad se hace (fabricas 60 pólvoras y llegas a 30)
+    if (depth or 0) < GPS_AHEAD_ROUNDS then
+      local moved
+      for i, st in ipairs(p.steps) do
+        if (st.aheadGain or 0) >= 1 and p.steps[i + 1] then
+          moved = moved or Copy(p.choice)
+          for s = st.to, math.min(st.to + st.aheadGain, opts.to) - 1 do moved[s] = st.id end
+        end
+      end
+      if moved then
+        local q = Walk(moved, via, (depth or 0) + 1)
+        if q then seen[key] = q return q end
+      end
+    end
     -- Las mejores rutas vistas (la mejor recorrida de cada una), para repasarlas al final
     local rk = ChoiceKey(opts, p.choice)
     local q = pool[rk]
@@ -1400,7 +1438,12 @@ function Planner.PlanGPS(data, opts)
                   cuts[to] = true
                   local choice = Copy(best.choice)
                   for s = st.from, to - 1 do choice[s] = rid end
+                  -- (comprándolo como hasta ahora, y fabricándolo: lo que pida el
+                  -- paso después se hace de más en este, ver Acquire)
+                  local v = Copy(best.ctx.via)
+                  v[rg.item] = "craft"
                   if Try(choice, best.ctx.via) then found = true end
+                  if Try(choice, v) then found = true end
                 end
               end
             end
@@ -1668,6 +1711,7 @@ function Planner:Plan(data, opts)
   local learned = {}
   local bought = {} -- [itemID] = { ahQty, ahCost, vendorQty, vendorCost }
   local craftedQty = {}
+  local aheadQty = {} -- [receta] = { [recetaQueLoUsa] = unidades } fabricadas de más en el paso de esa receta
   local keptQty = {}  -- [itemID] = unidades fabricadas en el plan que se usan después
   local keptFor = {}  -- [itemID] = { [recetaQueLoUsa] = unidades }
   local ownedQty = {} -- [itemID] = unidades que se usan de tus bolsas/banco
@@ -1800,7 +1844,11 @@ function Planner:Plan(data, opts)
         if a.kind == "craft" then ctx.via[a.item] = "craft"
         elseif a.kind == "ah" or a.kind == "vendor" then ctx.via[a.item] = "buy" end
       end
-      if a.kind == "craft" then
+      if a.kind == "craft" and a.ahead then
+        -- Se fabrica de más en el paso de su receta (antes): ver Acquire
+        aheadQty[a.recipe] = aheadQty[a.recipe] or {}
+        aheadQty[a.recipe][best.id] = (aheadQty[a.recipe][best.id] or 0) + a.qty
+      elseif a.kind == "craft" then
         -- (from: el nivel en que se empieza a fabricar; antes, si daba puntos, no se podía)
         craftedQty[a.item] = craftedQty[a.item] or { qty = 0, recipe = a.recipe, from = s }
         craftedQty[a.item].qty = craftedQty[a.item].qty + a.qty
@@ -1825,11 +1873,20 @@ function Planner:Plan(data, opts)
     -- Materiales que pide este punto (comprados o de tus bolsas): con la ruta
     -- fijada, la lista de la compra cuenta lo que falta desde tu nivel actual
     best.need = {}
+    best.use = {} -- [itemID] = { [kind] = unidades }: de dónde sale cada material (auditoría)
     for _, a in ipairs(best.actions) do
       if a.kind == "ah" or a.kind == "vendor" or a.kind == "owned" then
         best.need[a.item] = (best.need[a.item] or 0) + a.qty
       end
+      local u = best.use[a.item] or {}
+      best.use[a.item] = u
+      local k = a.ahead and "ahead" or a.kind
+      u[k] = (u[k] or 0) + a.qty
     end
+    -- Esta receta ya es un paso de la ruta: lo que los siguientes pidan de lo que
+    -- fabrica se hace de más en él (ver Acquire)
+    ctx.made = ctx.made or {}
+    ctx.made[best.id] = true
     -- Lo fabricado entra al inventario del plan, valorado como se ha contado su venta
     local sale = info[best.id].sale
     if sale then
@@ -1846,10 +1903,11 @@ function Planner:Plan(data, opts)
   ctx.skill = nil -- (fuera del recorrido punto a punto: sin nivel)
 
   -- [nivel] = { [itemID] = unidades } que pide ese punto (ver arriba)
-  plan.pointNeed, plan.pointChance = {}, {}
+  plan.pointNeed, plan.pointChance, plan.pointUse = {}, {}, {}
   plan.freePoints = 0 -- puntos que dan los materiales fabricados por el camino (ver CraftBonus)
   for _, p in ipairs(perPoint) do
     plan.pointNeed[p.skill], plan.pointChance[p.skill] = p.need, p.chance
+    plan.pointUse[p.skill] = p.use -- (tools/route_audit.py)
     if p.free then plan.freePoints = plan.freePoints + 1 end
   end
 
@@ -1947,6 +2005,33 @@ function Planner:Plan(data, opts)
     plan.fees = plan.fees + st.fee
   end
 
+  -- Lo que pasos siguientes piden de lo que fabrica un paso, fabricado de más en él
+  -- (ver Acquire): "Rough Blasting Powder 1-30 · 60 fabricaciones (27 para Rough
+  -- Copper Bomb)". aheadGain: los puntos que darían esas fabricaciones de más al
+  -- final del paso (el GPS alarga el paso con ellos, ver Walk)
+  for rid, users in pairs(aheadQty) do
+    local host
+    for _, st in ipairs(plan.steps) do if st.id == rid then host = st end end
+    if host then
+      local r = host.recipe
+      local qty = 0
+      host.ahead = {}
+      for user, q in pairs(users) do
+        host.ahead[#host.ahead + 1] = { recipe = data.recipes[user], quantity = math.ceil(q - 0.001) }
+        qty = qty + q
+      end
+      table.sort(host.ahead, function(a, b) return a.quantity > b.quantity end)
+      host.aheadCrafts = math.ceil(qty / ((r.out and r.out[2]) or 1) - 0.001)
+      local lvl = host.to
+      for _ = 1, host.aheadCrafts do
+        local c = Planner.Chance(r.t, math.floor(lvl))
+        if c <= 0 then break end
+        lvl = lvl + c
+      end
+      host.aheadGain = math.floor(lvl - host.to + EPS)
+    end
+  end
+
   -- Lista de la compra (separando AH y vendedor) y lo que conviene fabricar antes
   for itemID, b in pairs(bought) do
     local supply = ctx.ladders[itemID] and LadderSupply(ctx.ladders[itemID])
@@ -1967,6 +2052,24 @@ function Planner:Plan(data, opts)
 
   for itemID, c in pairs(craftedQty) do
     plan.crafted[#plan.crafted + 1] = { itemID = itemID, quantity = math.ceil(c.qty - 0.001), recipe = data.recipes[c.recipe], from = c.from }
+  end
+  -- Un paso que empieza gastando lo fabricado antes (la pólvora del paso anterior) y a
+  -- mitad necesita fabricar más: el jugador lo tiene que tener ANTES de empezar el
+  -- paso (Discord: "112 de dinamita y no tengo pólvora", que la ruta dejaba para el
+  -- 40). Si la receta ya no da puntos al empezar el paso, se fabrica ahí; si aún los
+  -- da, la ruta no se puede seguir (el material solo cuadra con lo esperado de media)
+  -- y se descarta (ver RouteScore): mejor alargar el paso del ingrediente
+  for _, c in ipairs(plan.crafted) do
+    for _, st in ipairs(plan.steps) do
+      if c.from and st.from < c.from and c.from < st.to and st.reagents[c.itemID] then
+        local r = c.recipe
+        if r and not r.intermediate and not r.conversion and Planner.Chance(r.t, st.from) > 0 then
+          plan.unfollowable = true
+        end
+        c.from = st.from
+        break
+      end
+    end
   end
 
   -- Lo que sale de tus bolsas

@@ -5,15 +5,18 @@ local _, ES = ...
 -- (ES.Yield) cuando se gasta el presupuesto del fotograma, y sigue en el siguiente.
 -- Sin debugprofilestop (fuera del juego) los trabajos se hacen de golpe.
 
-local Jobs = { BUDGET = 8 } -- ms por fotograma
+-- LIGHT_BUDGET: los trabajos en segundo plano ("¿hay una ruta mejor?"), que nadie
+-- espera: menos tiempo por fotograma, después de los demás y nunca en combate
+local Jobs = { BUDGET = 8, LIGHT_BUDGET = 3 } -- ms por fotograma
 ES.Jobs = Jobs
 
 local queue = {}
 local scheduled = false
 local frameStart
+local budget = Jobs.BUDGET
 
 local function OverBudget()
-  return frameStart and debugprofilestop() - frameStart > Jobs.BUDGET
+  return frameStart and debugprofilestop() - frameStart > budget
 end
 
 -- Llamado desde dentro de los cálculos largos: cede si se acabó el tiempo del fotograma
@@ -44,6 +47,19 @@ function Step()
   -- Con la ventana cerrada no se calcula nada: lo pedido sigue en la cola y se
   -- retoma al abrirla (Jobs.Resume, UI.lua). Las rutas solo se calculan si se ven
   if CraftersJournalMainFrame and not CraftersJournalMainFrame:IsShown() then return end
+  -- Los de segundo plano van detrás de los que alguien espera
+  for i, job in ipairs(queue) do
+    if not job.light then
+      if i > 1 then table.insert(queue, 1, table.remove(queue, i)) end
+      break
+    end
+  end
+  if queue[1] and queue[1].light and InCombatLockdown and InCombatLockdown() then
+    scheduled = true
+    C_Timer.After(1, Step) -- en combate, nada en segundo plano
+    return
+  end
+  budget = queue[1] and queue[1].light and Jobs.LIGHT_BUDGET or Jobs.BUDGET
   frameStart = debugprofilestop()
   while queue[1] and not OverBudget() do
     local job = queue[1]
@@ -60,7 +76,7 @@ end
 -- apunta `onDone` entre quienes esperan (uno por `owner`: si el mismo lo pide otra
 -- vez, no se repite). Si en el hueco había otro trabajo, se descarta: lo que
 -- calculaba ya no le sirve a nadie. onDone(resultado) se llama al acabar.
-function Jobs.Run(key, version, fn, onDone, owner)
+function Jobs.Run(key, version, fn, onDone, owner, light)
   owner = owner or onDone
   if not debugprofilestop then
     onDone(fn())
@@ -79,7 +95,7 @@ function Jobs.Run(key, version, fn, onDone, owner)
       break
     end
   end
-  queue[#queue + 1] = { key = key, version = version, fn = fn, listeners = { [owner] = onDone } }
+  queue[#queue + 1] = { key = key, version = version, fn = fn, listeners = { [owner] = onDone }, light = light }
   Schedule()
 end
 

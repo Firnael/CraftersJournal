@@ -143,8 +143,11 @@ function Ledger:ReadAllTrainerServices()
       SetTrainerServiceTypeFilter(f, 1)
     end
   end
-  local changed = self:ReadTrainer()
+  self.fullList = true -- (la lista entera: lo que no sale, este instructor no lo enseña)
+  local ok, changed = pcall(self.ReadTrainer, self)
+  self.fullList = nil
   for _, f in ipairs(hidden) do SetTrainerServiceTypeFilter(f, 0) end
+  if not ok then error(changed, 0) end
   return changed
 end
 
@@ -164,6 +167,9 @@ function Ledger:ReadTrainer()
   local rep = UnitReaction and UnitReaction("npc", "player") or nil
   local changed = 0
   local changedProfs = {}
+  local listed, top, low = {}, 0, math.huge
+  local guid = UnitGUID and UnitGUID("npc")
+  local npc = guid and tonumber(guid:match("^%a+%-%d+%-%d+%-%d+%-%d+%-(%d+)%-"))
   for i = 1, GetNumTrainerServices() or 0 do
     local kind = GetTrainerServiceInfo and select(3, GetTrainerServiceInfo(i))
     if kind ~= "header" then
@@ -176,7 +182,74 @@ function Ledger:ReadTrainer()
           changed = changed + 1
           changedProfs[key] = true
         end
-        ES.db.trainerFees[id] = { cost = cost, skill = skill, rep = rep, prof = key, time = time() }
+        -- (npc: el instructor donde se vio, para llevarte a él: Forever enseña algunas
+        -- solo en sitios concretos, como Stranglethorn)
+        ES.db.trainerFees[id] = { cost = cost, skill = skill, rep = rep, prof = key, time = time(), npc = npc or (old and old.npc) }
+        listed[id] = true
+        if skill and skill > 0 then
+          top = math.max(top, skill)
+          low = math.min(low, skill)
+        end
+      end
+    end
+  end
+  -- Recetas de instructor de los datos que no enseña ningún instructor visto (con su
+  -- lista entera a la vista): Forever ha quitado o movido algunas (Green Iron
+  -- Leggings) y la ruta pedía aprender algo que tu instructor no tiene. Solo dentro
+  -- del tramo de niveles que enseña cada instructor visto (en Forever cada rango
+  -- tiene los suyos: uno de Experto no dice nada de las de Oficial). Si otro
+  -- instructor la enseña (en Stranglethorn, por ejemplo), vuelve
+  if self.fullList and prof and top > 0 then
+    local seen = ES.db.trainerListed or {}
+    ES.db.trainerListed = seen
+    seen[prof] = seen[prof] or { ranges = {}, ids = {} }
+    local s = seen[prof]
+    s.ranges = s.ranges or {}
+    local key = low .. "-" .. top
+    s.ranges[key] = { low, top }
+    for id in pairs(listed) do s.ids[id] = true end
+    -- "rank": el instructor de su rango no la tiene; Forever ha subido algunas al
+    -- rango siguiente (Green Iron Leggings, de 130, la enseña el de Experto: Bengus
+    -- Deepforge), así que la fila Entrenar lleva a ese. "gone": tampoco está en un
+    -- instructor de más nivel que hayas visto: no se enseña, fuera de las rutas
+    local function Covered(level)
+      for _, rg in pairs(s.ranges) do
+        if level >= rg[1] and level <= rg[2] then return true end
+      end
+      return false
+    end
+    local function Above(level)
+      for _, rg in pairs(s.ranges) do
+        if rg[1] > level then return true end
+      end
+      return false
+    end
+    ES.db.trainerMissing = ES.db.trainerMissing or {}
+    local missing = ES.db.trainerMissing
+    for id, r in pairs(ES.Data[prof].recipes) do
+      local trainerRecipe = (r.fee or r.trainer) and not r.scroll and not r.basic and not r.favor
+      local level = r.train or 0
+      local now = trainerRecipe and not s.ids[id] and Covered(level) and (Above(level) and "gone" or "rank") or nil
+      if missing[id] ~= now then
+        missing[id] = now
+        changed = changed + 1
+        changedProfs[prof] = true
+      end
+    end
+    -- Tu ruta empezada pasa por una de ellas (aún no la has hecho): ya no se puede
+    -- seguir; se suelta y se calcula otra desde tu nivel
+    local lock = ES.RouteLock and ES:RouteLock(prof)
+    if lock and lock.choice then
+      local skill = ES:GetProfessionSkill(ES.Data[prof].skillLine) or lock.from
+      for s, id in pairs(lock.choice) do
+        if s >= skill and missing[id] == "gone" and not (ES.IsRecipeKnown and ES:IsRecipeKnown(id)) then
+          ES:StopRoute(prof)
+          ES:Print(string.format(L["Tu ruta de %s usaba %s, que este instructor no enseña: se calcula otra desde tu nivel."],
+            ES:ProfLabel(prof), ES.Data[prof].recipes[id].name))
+          changedProfs[prof] = true
+          changed = changed + 1
+          break
+        end
       end
     end
   end

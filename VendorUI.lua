@@ -503,6 +503,12 @@ do
     if event == "MERCHANT_CLOSED" then
       Vendor.queue, Vendor.pumping, Vendor.selling = {}, nil, nil
       if panel then panel:Hide() end
+    elseif event == "MERCHANT_SHOW" then
+      -- Puede llegar antes de que el juego enseñe la ventana del vendedor (depende del
+      -- orden de los addons): entonces no se miraba nada y la ventana no salía hasta
+      -- que un cambio en el vendedor (vender algo a mano) la refrescaba. Se mira justo
+      -- después y otra vez más tarde (el juego aún puede no saber qué vende)
+      Later(0) Later(0.4) Later(1.5)
     elseif MerchantFrame and MerchantFrame:IsShown() then
       if event == "GET_ITEM_INFO_RECEIVED" then
         -- Llegan los objetos del vendedor que el juego aún no tenía: una vez, agrupado
@@ -513,8 +519,6 @@ do
         return
       end
       Vendor:Refresh()
-      -- Al abrir, el juego a veces aún no sabe qué vende (sin enlaces): se vuelve a mirar
-      if event == "MERCHANT_SHOW" then Later(0.4) Later(1.5) end
     end
   end)
 end
