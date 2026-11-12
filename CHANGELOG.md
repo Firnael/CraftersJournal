@@ -1,6 +1,6 @@
 # Crafter's Journal
 
-## Unreleased
+## 0.42.0
 
 - **Buying from the Shopping list keeps the quantity.** The Auction House could reset it to 1 right after Crafter's Journal set it; it's now set again for a couple of seconds after the results arrive.
 - **Shopping lists ask for whole crafts.** Each material is split between the recipes that use it and rounded up to what each craft takes, in stage lists and whole-route lists alike: 20 Light Leather for two Light Leather Pants (10 each), not 15.
