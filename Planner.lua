@@ -164,18 +164,44 @@ end
 -- lleva el colchón: en un punto con probabilidad p, las fabricaciones son aleatorias
 -- (media 1/p, varianza (1-p)/p²); un material que pide q de media en ese punto
 -- varía q²(1-p). Naranja (p = 1): lo justo
+-- En verde (la receta sube poco: muchas fabricaciones por punto, y con mucha suerte
+-- o mala suerte) no se compra el tramo entero con colchón: una tanda de unas
+-- BATCH_CRAFTS fabricaciones, lo esperado sin colchón. Como la lista es viva, al
+-- gastarla pide la siguiente: si tienes suerte no compras de más (Discord: subió
+-- Heavy Blasting Powder hasta 145 con mucho menos de lo que pedía la lista).
+-- phase.batchTo: hasta qué nivel llega la tanda
+Planner.BATCH_CRAFTS = 20
+
+local function GreenPoint(plan, s)
+  local id = plan.choice and plan.choice[s]
+  local r = id and plan.ctx and plan.ctx.data and plan.ctx.data.recipes[id]
+  if r and r.t then return s >= r.t[3] end
+  local p = plan.pointChance and plan.pointChance[s] or 1
+  return p < 0.5
+end
+
 function Planner.PhaseNeed(plan, level, z)
   local phase = Planner.Phase(plan, level)
   if not phase then return {}, nil end
   z = z or Planner.PHASE_Z
   local acc = {}
+  local batch -- fabricaciones de la tanda en verde
+  phase.batchTo = nil
   for s = phase.from, phase.to - 1 do
     local p = plan.pointChance and plan.pointChance[s] or 1
+    local green = GreenPoint(plan, s)
+    if green then
+      if batch and batch >= Planner.BATCH_CRAFTS then
+        phase.batchTo = s
+        break
+      end
+      batch = (batch or 0) + (p > 0 and 1 / p or 0)
+    end
     for itemID, q in pairs(plan.pointNeed and plan.pointNeed[s] or {}) do
       local a = acc[itemID] or { expected = 0, var = 0 }
       acc[itemID] = a
       a.expected = a.expected + q
-      a.var = a.var + q * q * (1 - p)
+      if not green then a.var = a.var + q * q * (1 - p) end -- (en verde, sin colchón)
     end
   end
   local out = {}

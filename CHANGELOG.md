@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Green skill-ups are bought in batches.** When a step goes green (few skill-ups per craft, lots of luck either way), the stage shopping list no longer asks for the whole stage plus a safety margin: it asks for about 20 crafts' worth, and the next batch once you use it up (with a chat notice). Heavy Dynamite from 135: 44 Heavy Blasting Powder instead of 118 up front.
+
 - **A route's tool row is marked done once you have the tool**, whether you bought it or crafted it yourself (the Arclight Spanner stayed pending after crafting it).
 
 - **Trainer and vendor data now matches WoW Forever.** Learn levels, trainer costs and who teaches each recipe come from Forever's own trainers (Bronze Warhammer at 100, Green Iron Leggings for 50s), so "Train" rows take you to a trainer that really teaches the recipe (Green Iron Leggings is only taught by Expert trainers such as Bengus Deepforge). Recipes no Forever trainer teaches (The Shatterer, Troll's Blood Elixir…) are no longer used, recipe vendors new in Forever are included, and patterns Forever doesn't sell (Spitfire, Ironvine…) no longer send you to a vendor.

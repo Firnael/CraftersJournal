@@ -117,7 +117,8 @@ function Shopping.PhaseList(profKey)
     local need, phase = ES.Planner.PhaseNeed(plan, level)
     if not phase then return nil end
     list.phase = phase
-    list.title = string.format(L["%s: tramo %d-%d"], ES:ProfLabel(profKey), phase.from, phase.to)
+    list.title = string.format(L["%s: tramo %d-%d"], ES:ProfLabel(profKey), phase.from, phase.batchTo or phase.to)
+      .. (phase.batchTo and L[" · por tandas (en verde)"] or "")
     for itemID, n in pairs(need) do wanted[itemID] = { need = n.target, expected = n.expected } end
   else
     list.whole = true

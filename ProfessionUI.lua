@@ -538,13 +538,13 @@ local function PhaseStatus(page, plan)
   if short then
     local more = 0
     for _ in pairs(o.short) do more = more + 1 end
-    return ORANGE .. " · " .. string.format(L["tramo %d-%d: faltan ~%d %s"], ph.from, ph.to, short.n,
+    return ORANGE .. " · " .. string.format(L["tramo %d-%d: faltan ~%d %s"], ph.from, ph.batchTo or ph.to, short.n,
       ES:DataItemName(short.itemID) or short.itemID)
       .. (more > 1 and string.format(L[" y %d más"], more - 1) or "") .. "|r"
   elseif next(o.extra) then
-    return GREY .. " · " .. string.format(L["tramo %d-%d: lo justo, sin margen"], ph.from, ph.to) .. "|r"
+    return GREY .. " · " .. string.format(L["tramo %d-%d: lo justo, sin margen"], ph.from, ph.batchTo or ph.to) .. "|r"
   end
-  return GREEN .. " · " .. string.format(L["tramo %d-%d: tienes todo"], ph.from, ph.to) .. "|r"
+  return GREEN .. " · " .. string.format(L["tramo %d-%d: tienes todo"], ph.from, ph.batchTo or ph.to) .. "|r"
 end
 
 -- Avisos en el chat al subir puntos (con el addon abierto o no): tramo nuevo (qué
@@ -574,7 +574,17 @@ function ES:PhaseNotices(profKey)
   state.last = phaseKey
   -- (solo si ya vas por el tramo y compraste algo: al entrar en él aún no lo has comprado)
   local short = level > ph.steps[1].from and PhaseShort(o)
-  if short and ES:ItemCount(short.itemID) > 0 and not state.seen[phaseKey .. ":" .. short.itemID] then
+  -- (la tanda va con tu nivel: se avisa al quedarte corto, no en cada punto)
+  if not short then state.batchWarned = nil end
+  if short and ph.batchTo then
+    -- En verde, por tandas: gastada una, la siguiente
+    if not state.batchWarned then
+      state.batchWarned = true
+      ES:Print(string.format(L["Siguiente tanda (hasta %d): te faltan ~%d %s. Está en la Lista de compra."],
+        ph.batchTo, short.n, ES:DataItemName(short.itemID) or short.itemID))
+      ES:FlashTab("shopping", true)
+    end
+  elseif short and ES:ItemCount(short.itemID) > 0 and not state.seen[phaseKey .. ":" .. short.itemID] then
     state.seen[phaseKey .. ":" .. short.itemID] = true
     ES:Print(string.format(L["Los puntos tardan en subir: te faltan ~%d %s para acabar el tramo %s. Compra un poco más."],
       short.n, ES:DataItemName(short.itemID) or short.itemID, key))
@@ -2608,7 +2618,8 @@ local function ShopLines(plan, page)
     if phase then
       local names = {}
       for _, st in ipairs(phase.steps) do names[#names + 1] = st.recipe.name end
-      title = string.format(L["Lista de compra · Tramo %d-%d (%s)"], phase.from, phase.to, table.concat(names, ", "))
+      title = string.format(L["Lista de compra · Tramo %d-%d (%s)"], phase.from, phase.batchTo or phase.to, table.concat(names, ", "))
+        .. (phase.batchTo and L[" · por tandas (en verde)"] or "")
       sub = ACT .. L["Pulsa para cambiar a la ruta entera"] .. "|r · " .. L["ahora: este tramo, con margen por si los puntos tardan"]
     else
       title = L["Lista de compra · Ruta entera"]

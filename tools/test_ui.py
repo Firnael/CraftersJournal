@@ -2134,6 +2134,36 @@ step("ruta empezada: aviso de ruta mejor (cambiar o seguir con la tuya)", functi
   lp.lock, page.plan, page.view, ES.Print = saved.lock, saved.plan, saved.view, saved.Print
   ES.lockedPlans.Leatherworking, ES.betterCache.Leatherworking = nil, nil
 end)
+step("lista por tramos: en verde, por tandas", function()
+  -- Un paso que entra en verde: la lista no pide todo el tramo con colchón, sino una
+  -- tanda (~BATCH_CRAFTS fabricaciones) sin colchón; la siguiente, al gastarla
+  local P = ES.Planner
+  local plan, st
+  for _, prof in ipairs({ "Engineering", "Leatherworking", "Blacksmithing", "Tailoring" }) do
+    local opts = ES:PlanOptions(prof, 1, 150, nil)
+    opts.owned = nil
+    local p = P:Plan(ES.Data[prof], opts)
+    for _, s in ipairs(p.steps) do
+      -- un paso con varios niveles en verde (que dé para más de una tanda)
+      if s.to - math.max(s.from, s.recipe.t[3]) >= 4 then plan, st = p, s break end
+    end
+    if st then break end
+  end
+  assert(st, "ninguna ruta de prueba tiene un paso que entre en verde")
+  local saved = P.BATCH_CRAFTS
+  P.BATCH_CRAFTS = 1e9
+  local whole = P.PhaseNeed(plan, st.from)
+  P.BATCH_CRAFTS = saved
+  local batch, phase = P.PhaseNeed(plan, st.from)
+  assert(phase.batchTo and phase.batchTo < phase.to, "en verde la lista debería llegar solo hasta el final de la tanda")
+  local less = false
+  for id, n in pairs(batch) do if whole[id] and n.target < whole[id].target then less = true end end
+  assert(less, "la tanda debería pedir menos que el tramo entero")
+  -- Al subir dentro del verde, la tanda sigue (lo que pide sale desde tu nivel)
+  local _, later = P.PhaseNeed(plan, phase.batchTo)
+  assert(later and (later.batchTo or later.to) > phase.batchTo, "al acabar una tanda debería venir la siguiente")
+  log[#log+1] = string.format("     %s %d-%d: tanda hasta %d", st.recipe.name, phase.from, phase.to, phase.batchTo)
+end)
 step("comandos /es", function()
   SlashCmdList.CRAFTERSJOURNAL("") SlashCmdList.CRAFTERSJOURNAL("cancel")
   -- Registro de errores: los iguales juntos, con cuántas veces; /cj errores los lista y los borra   ES.db.errorLog = nil   ES:RecordError("lua", "Interface/AddOns/CraftersJournal/Planner.lua:1: boom", "pila")   ES:RecordError("lua", "Interface/AddOns/CraftersJournal/Planner.lua:1: boom", "pila")   ES:RecordError("bloqueada", "SetRaidTarget()")   assert(#ES.db.errorLog == 2 and ES.db.errorLog[1].count == 2, "no agrupó los errores iguales")   SlashCmdList.CRAFTERSJOURNAL("errores")   SlashCmdList.CRAFTERSJOURNAL("errores borrar")   assert(ES.db.errorLog == nil, "/cj errores borrar no lo vació")
