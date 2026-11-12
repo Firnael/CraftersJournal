@@ -91,3 +91,11 @@ function Jobs.Busy(key)
   end
   return false
 end
+
+-- ¿Hay en la cola algún trabajo cuyo hueco empiece por `prefix`? ("plan:Alchemy:")
+function Jobs.Queued(prefix)
+  for _, job in ipairs(queue) do
+    if job.key:sub(1, #prefix) == prefix then return true end
+  end
+  return false
+end

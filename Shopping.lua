@@ -83,10 +83,10 @@ function Shopping.RemoveItem(list, itemID)
 end
 
 ---------------------------------------------------------------------------
--- Comprar por tramos (Planner.Phase): con la ruta empezada y el modo activo (por
--- defecto), la lista de esa profesión es la del tramo en el que estás, calculada al
--- vuelo: lo que pide el tramo (con colchón) menos lo que llevas. Sustituye a la
--- lista guardada de la ruta entera
+-- Lista de una ruta empezada, calculada al vuelo (no se añade a mano): por tramos
+-- (por defecto, Planner.Phase) lo del tramo en el que estás con su colchón; con
+-- "Ruta entera", todo lo que pide la ruta desde tu nivel. Lo que llevas se cuenta
+-- al enseñarla (Status)
 ---------------------------------------------------------------------------
 function Shopping.ByPhase(profKey)
   local s = ES.db and ES.db.prof and ES.db.prof[profKey]
@@ -103,27 +103,40 @@ local function SourceOf(plan, itemID)
   return (ES.Data.VendorPrices and ES.Data.VendorPrices[itemID]) and "vendor" or "ah", 0
 end
 
--- Lista del tramo de una profesión con la ruta empezada, o nil
+-- Lista de la ruta empezada de una profesión (del tramo o de la ruta entera), o nil
 function Shopping.PhaseList(profKey)
-  if not (ES.RouteLock and ES:RouteLock(profKey) and Shopping.ByPhase(profKey)) then return nil end
+  local lock = ES.RouteLock and ES:RouteLock(profKey)
+  if not lock or lock.completed then return nil end
   local plan = ES:LockedPlan(profKey)
   local data = ES.Data[profKey]
   if not (plan and data) then return nil end
-  local level = ES:GetProfessionSkill(data.skillLine) or plan.from
-  local need, phase = ES.Planner.PhaseNeed(plan, level)
-  if not phase then return nil end
-  local list = { t = 0, kind = "phase", key = profKey, live = true, phase = phase, items = {},
-    title = string.format(L["%s: tramo %d-%d"], ES:ProfLabel(profKey), phase.from, phase.to) }
-  for itemID, n in pairs(need) do
+  local level = math.max(plan.from, ES:GetProfessionSkill(data.skillLine) or plan.from)
+  local list = { t = 0, kind = "phase", key = profKey, live = true, items = {} }
+  local wanted = {} -- [itemID] = { need, expected }
+  if Shopping.ByPhase(profKey) then
+    local need, phase = ES.Planner.PhaseNeed(plan, level)
+    if not phase then return nil end
+    list.phase = phase
+    list.title = string.format(L["%s: tramo %d-%d"], ES:ProfLabel(profKey), phase.from, phase.to)
+    for itemID, n in pairs(need) do wanted[itemID] = { need = n.target, expected = n.expected } end
+  else
+    list.whole = true
+    list.title = string.format(L["%s: ruta %d-%d"], ES:ProfLabel(profKey), level, lock.to)
+    for itemID, q in pairs(ES.Planner.NeedFrom(plan, level)) do
+      local n = math.ceil(q - 0.001)
+      if n > 0 then wanted[itemID] = { need = n, expected = q } end
+    end
+  end
+  for itemID, w in pairs(wanted) do
     local source, unit = SourceOf(plan, itemID)
-    list.items[#list.items + 1] = { itemID = itemID, need = n.target, expected = n.expected, unit = unit, source = source }
+    list.items[#list.items + 1] = { itemID = itemID, need = w.need, expected = w.expected, unit = unit, source = source }
   end
   table.sort(list.items, function(a, b) return a.need * (a.unit or 0) > b.need * (b.unit or 0)
     or (a.need * (a.unit or 0) == b.need * (b.unit or 0) and a.itemID < b.itemID) end)
   return #list.items > 0 and list or nil
 end
 
--- Las listas de tramo de todas las rutas empezadas
+-- Las listas de todas las rutas empezadas
 function Shopping.PhaseLists()
   local out = {}
   for _, p in ipairs(ES.PROFESSIONS or {}) do
@@ -164,11 +177,28 @@ function Shopping.Status()
     phased[list.key] = true
     AddList(list)
   end
-  -- Las guardadas, de la más antigua a la más nueva
-  for _, list in ipairs(Shopping.Lists()) do
+  -- Las guardadas, de la más antigua a la más nueva. La de una ruta ya acabada (la
+  -- profesión llegó a su objetivo) se quita sola: no queda nada que comprar para ella
+  local lists = Shopping.Lists()
+  for i = #lists, 1, -1 do
+    if lists[i].kind == "route" and Shopping.RouteDone(lists[i].key) then table.remove(lists, i) end
+  end
+  for _, list in ipairs(lists) do
     if not (list.kind == "route" and phased[list.key]) then AddList(list) end
   end
   return res
+end
+
+-- ¿Ha terminado la ruta de esta profesión? (ruta empezada y completada, o tu nivel ya
+-- llega al objetivo)
+function Shopping.RouteDone(profKey)
+  local data = profKey and ES.Data[profKey]
+  if not data then return false end
+  local lock = ES.RouteLock and ES:RouteLock(profKey)
+  if lock and lock.completed then return true end
+  local rank = data.skillLine and ES:GetProfessionSkill(data.skillLine)
+  local target = lock and lock.to or (ES.ProfessionTarget and ES:ProfessionTarget(profKey))
+  return rank ~= nil and target ~= nil and rank >= target
 end
 
 -- Lo siguiente que comprar en la AH: el material `current` si aún falta (la compra se

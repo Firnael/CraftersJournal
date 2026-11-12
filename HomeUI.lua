@@ -542,4 +542,23 @@ function ES:RenderHome()
   end
 
   ES.UI.RenderCards(page, cards)
+
+  -- Tarjetas calculando: "Calculando la ruta… 42%" (ES:PlanProgress), cada 0,2 s
+  page.pendingKeys = {}
+  for _, e in ipairs(entries) do if e.pending then page.pendingKeys[e.key] = true end end
+  if not page.progressFrame then
+    page.progressFrame = CreateFrame("Frame", nil, page)
+    local since = 0
+    page.progressFrame:SetScript("OnUpdate", function(_, elapsed)
+      since = since + (elapsed or 0)
+      if since < 0.2 or not next(page.pendingKeys) then return end
+      since = 0
+      for _, card in ipairs(page.cards or {}) do
+        local p = page.pendingKeys[card.key] and ES:PlanProgress(card.key)
+        if p and card.note then
+          card.note:SetText(GREY .. L["Calculando la ruta…"] .. string.format(" %d%%", math.floor(p * 100)) .. "|r")
+        end
+      end
+    end)
+  end
 end

@@ -347,13 +347,13 @@ function ES:RenderInventory()
   else
     local mins = math.floor((time() - scan.time) / 60)
     page.status:SetText(mins > 12 * 60 and (ORANGE .. string.format(L["Precios de la AH de hace %d h: escanea antes de anunciar.|r"], math.floor(mins / 60)))
-      or (GREY .. string.format(L["Precios de la AH de hace %d min · en la AH, lo que te queda tras la comisión|r"], mins)))
+      or (GREY .. string.format(L["Precios de la AH de hace %d min · neto tras la comisión|r"], mins)))
   end
   local merchant = ES.Ledger:MerchantOpen()
   -- Qué hace el clic en una fila ahora mismo (vender o anunciar sin buscarlo en las bolsas)
   local hint = merchant and L["Clic en una fila: venderla al vendedor."]
     or ES:IsAuctionHouseOpen() and L["Clic en una fila: anunciarla en la AH."]
-    or L["Abre un vendedor o la AH y pulsa una fila para venderla sin buscarla en las bolsas."]
+    or L["Con vendedor o AH abiertos, clic en una fila para venderla."] -- (corto: comparte línea con los precios)
   page.status:SetText(page.status:GetText() .. "  |cff80ccff" .. hint .. "|r")
   page.action:SetShown(merchant and #vendor > 0)
   page.action:SetText(L["Vender al vendedor"])

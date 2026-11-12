@@ -222,14 +222,15 @@ ES.SKILLS_ICON = 8197101
 local TABS = ES.Localize({
   { key = "home",     label = "Subir profesiones",    icon = "skills",
     desc = "Cómo subir cada profesión: la ruta más barata paso a paso." },
+  -- (justo debajo de Subir profesiones: es lo que se usa al seguir una ruta)
+  { key = "shopping", label = "Lista de compra",      icon = "Interface\\Icons\\INV_Misc_Note_01",
+    desc = "Lo que pide tu ruta empezada (sale sola) y lo que añades desde Ganar dinero o la calculadora; con la AH abierta, se compra desde aquí." },
   { key = "money",    label = "Ganar dinero",         icon = "Interface\\Icons\\INV_Misc_Coin_02",
     desc = "Qué fabricar hoy con tus recetas porque da beneficio." },
   { key = "inventory", label = "Inventario",          icon = "Interface\\Icons\\INV_Misc_Bag_08",
     desc = "Qué vender de tus bolsas, dónde y cuánto sacas; y lo que ha subido de precio." },
   { key = "calc",     label = "Calculadora",          icon = "Interface\\Icons\\INV_Misc_Note_02",
     desc = "Cuánto ganas con una receta, como en una hoja de cálculo: guarda varios cálculos y escribe tus precios." },
-  { key = "shopping", label = "Lista de compra",      icon = "Interface\\Icons\\INV_Misc_Note_01",
-    desc = "Los materiales que has añadido desde una ruta, Ganar dinero o la calculadora; con la AH abierta, se compran desde aquí." },
   { key = "patterns", label = "Colección de recetas", icon = "Interface\\Icons\\INV_Scroll_03",
     desc = "Todas las recetas de cada profesión: cuántas tienes y dónde conseguir las demás." },
 }, "label")
@@ -295,6 +296,37 @@ local function CreateTab(parent, icon)
   return tab
 end
 
+-- Avisa de que algo nuevo ha llegado a una pestaña (la Lista de compra al añadir un
+-- tramo): la pestaña brilla unos segundos y, si sound, suena el de las monedas
+function ES:FlashTab(key, sound)
+  if sound and PlaySound then
+    pcall(PlaySound, SOUNDKIT and SOUNDKIT.IG_BACKPACK_COIN_OK or 891)
+  end
+  if not main or not main.tabs then return end
+  for _, tab in ipairs(main.tabs) do
+    if tab.key == key then
+      if not tab.flash then
+        tab.flash = tab:CreateTexture(nil, "OVERLAY")
+        tab.flash:SetAllPoints(tab.icon)
+        tab.flash:SetColorTexture(1, 0.82, 0.25, 1)
+        tab.flash:SetBlendMode("ADD")
+        tab.flash:SetAlpha(0)
+        local ag = tab.flash:CreateAnimationGroup()
+        local up = ag:CreateAnimation("Alpha")
+        up:SetFromAlpha(0) up:SetToAlpha(0.55) up:SetDuration(0.35) up:SetOrder(1)
+        local down = ag:CreateAnimation("Alpha")
+        down:SetFromAlpha(0.55) down:SetToAlpha(0) down:SetDuration(0.35) down:SetOrder(2)
+        ag:SetLoopType("REPEAT")
+        tab.flashAnim = ag
+      end
+      tab.flashAnim:Stop()
+      tab.flashAnim:Play()
+      tab.flashing = true -- (para pruebas)
+      C_Timer.After(2.8, function() if tab.flashAnim then tab.flashAnim:Stop() tab.flash:SetAlpha(0) end tab.flashing = nil end)
+    end
+  end
+end
+
 function ES:CreateSideTabs(f)
   f.tabs = {}
   for _, t in ipairs(TABS) do
@@ -305,7 +337,9 @@ function ES:CreateSideTabs(f)
       tab:SetPoint("TOPLEFT", f.tabs[#f.tabs], "BOTTOMLEFT", 0, -TAB_GAP)
     end
     tab.key = t.key
-    tab:SetScript("OnClick", function() ES:SelectPage(t.key) end)
+    -- Vuelve a donde estabas en esa pestaña (la profesión que mirabas), no a su portada;
+    -- a la portada se va con el botón "Profesiones" / "Colección"
+    tab:SetScript("OnClick", function() ES:SelectPage(ES.tabLastPage[t.key] or t.key) end)
     tab:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
       GameTooltip:AddLine(t.label)
@@ -317,6 +351,7 @@ function ES:CreateSideTabs(f)
   end
 end
 
+ES.tabLastPage = {} -- [pestaña] = última página vista en ella (solo esta sesión)
 function ES:SelectPage(key)
   if key == "lw" or key == "profit" then key = "Leatherworking" end -- nombres de versiones anteriores
   if not main or not main.pages[key] then key = "home" end -- (también pestañas que ya no existen)
@@ -324,6 +359,7 @@ function ES:SelectPage(key)
   self.sessionPage = key -- lo que recuerda la ventana al volver a abrirla (solo esta sesión)
   for k, page in pairs(main.pages) do page:SetShown(k == key) end
   local tab, back = TabOf(key)
+  self.tabLastPage[tab] = key -- (la pestaña vuelve aquí al pulsarla otra vez)
   for _, t in ipairs(main.tabs or {}) do t:SetChecked(t.key == tab) end
   -- "Volver" solo dentro de una pestaña (una profesión, la colección de una profesión)
   local inner = key ~= tab

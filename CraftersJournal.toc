@@ -51,4 +51,3 @@ CalculatorUI.lua
 CollectionUI.lua
 PatternsUI.lua
 VendorUI.lua
-Options.lua

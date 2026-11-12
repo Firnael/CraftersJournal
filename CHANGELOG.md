@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **The Shopping list tab now sits right under Level professions.**
+- **The Auction House icon is gone.** Routes can always buy on the AH; the "route without AH" mode is removed.
+- **No more options panel.** Clicking a route step always crafts what's left for that step (the "Craft when clicking a route step" option is gone).
+- **The route's shopping list fills itself.** The top row of the Materials view says what the Shopping list has for a started route: the current stage (with a margin) or the whole route. Click it to switch; the Shopping list tab glows and you hear coins. There's no "Add to shopping list" button for routes any more; old route lists are removed once.
+- **Progress while the route is calculated.** "Calculating the route…" now shows a percentage and a progress bar on the profession page, and a percentage on the profession cards.
+- **Faster routes by default: the target is your level + 150.** Long routes take much longer to work out, so by default each profession aims 150 points above your current level (up to 300), and the target moves up with you. Type another target to keep it.
 - **No more money tracking.** The addon no longer records every change in your gold, and the popup asking how to count a trade or a mail with money is gone. Shopping lists now count what you carry in your bags. What a vendor really pays for an item is still learned when you sell.
 - **"Buy all" at the vendor no longer buys several times what you need.** For materials a vendor sells in lots (5 at a time, for example), the game counts the purchase amount in lots, not items: asking for 20 bought 20 lots, 100 items. Lots are now bought one at a time, so you get exactly what's missing.
 - **New Shopping list tab.** One shopping list for everything you want to buy. You add materials to it with an "Add to shopping list" button in Make Money (today's batch), in the calculator (the selected calculation) and in each route (top line of its Materials view, formerly called Shopping list). Each one is a section with its own progress and a ✕ to remove it; each material also has its own ✕ to drop just that one. Nothing gets in on its own. A list keeps its amounts as they were when added, and what you carry in your bags counts toward it.

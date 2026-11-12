@@ -131,7 +131,7 @@ local function BuildLines(st, ahOpen)
       local name, texture = ES.UI.ItemLabel(it.itemID, L["Objeto "] .. it.itemID)
       local where = it.source == "ah" and string.format(L["AH ~%s/u"], ES.Money(it.unit or 0)) or string.format(L["vendedor %s/u"], ES.Money(it.unit or 0))
       local line = { icon = texture or 134400, item = it.itemID, current = it.itemID == selected and e.left > 0 }
-      -- (la lista del tramo se calcula sola: no se quitan materiales a mano)
+      -- (la lista de una ruta empezada se calcula sola: no se quitan materiales a mano)
       if not list.live then
         line.onSkip = function() ES.Shopping.RemoveItem(list, it.itemID) ES:RenderShopping() end
         line.skipTitle, line.skipTip = L["Quitar de la lista"], L["Quita este material de la lista: ya no se compra."]
@@ -165,11 +165,17 @@ local function BuildLines(st, ahOpen)
       lines[#lines + 1] = line
     end
     if list.live then
-      -- Tramo: sin ✕ (se va sola al acabar la ruta; el modo se cambia en la ruta)
-      lines[#lines + 1] = { total = true, icon = KIND_ICON.route,
-        title = string.format(L["%d de %d listos"], s.done, s.total),
+      -- Ruta empezada: sin ✕ (se va sola al acabar la ruta; el modo se cambia en la ruta)
+      local sub
+      if list.whole then
+        sub = s.done == s.total and (GREEN .. L["Tienes todo lo que queda de ruta."] .. "|r")
+          or L["Todo lo que queda de ruta. Se cambia a tramos en la vista Materiales de la ruta."]
+      else
         sub = s.done == s.total and (GREEN .. L["Tienes lo de este tramo. Al acabarlo sale el siguiente."] .. "|r")
-          or L["Solo este tramo, con un margen por si los puntos tardan en subir. Al acabarlo sale el siguiente."],
+          or L["Solo este tramo, con un margen por si los puntos tardan en subir. Al acabarlo sale el siguiente."]
+      end
+      lines[#lines + 1] = { total = true, icon = KIND_ICON.route,
+        title = string.format(L["%d de %d listos"], s.done, s.total), sub = sub,
         value = s.cost > 0 and Signed(s.cost) or "" }
     else
     lines[#lines + 1] = { total = true, icon = KIND_ICON[list.kind],

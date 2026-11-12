@@ -293,6 +293,13 @@ step("lista de compra", function()
     string.format("reparto de lo que llevas: %d %d %d", r1[1].bought, r2[1].bought, r2[1].left))
   assert(r1[3].left == 0 and r2[2].left == 0, "lo que llevas cuenta como tenido")
   assert(st.done == 3 and st.total == 5, string.format("progreso %d/%d", st.done, st.total))
+  -- Ruta acabada (la profesión llega a su objetivo): su lista se quita sola
+  local savedSkill = ES.GetProfessionSkill
+  ES.GetProfessionSkill = function(_, line) if line == ES.Data.Leatherworking.skillLine then return 300, 300 end end
+  local done = SH.Status()
+  ES.GetProfessionSkill = savedSkill
+  assert(#done.lists == 1 and done.lists[1].list.kind == "money" and #SH.Lists() == 1, "la lista de una ruta acabada debería quitarse")
+  table.insert(SH.Lists(), 1, route) -- (vuelve para el resto de la prueba)
   -- Comprar siguiente: el primero que falta (2319); el abierto, si aún falta
   local id, left = SH.NextToBuy(st)
   assert(id == 2319 and left == 5, "siguiente: " .. tostring(id))
@@ -873,18 +880,15 @@ step("portada: tarjetas de profesiones", function()
   assert(opened == page.plan.steps[1].id, "el clic no abrió la receta del paso")
   assert(crafted and crafted[1] == page.plan.steps[1].id and crafted[2] == page.plan.steps[1].crafts, "el clic no fabricó lo del paso")
   log[#log+1] = "     fabricar: " .. tostring(craftLine.title)
-  -- Opción desactivada (Opciones > AddOns): el clic solo abre la receta
-  local op = ES.optionsPanel
-  op._scripts.OnShow(op)
-  op.craftCheck:SetChecked(false)
-  op.craftCheck._scripts.OnClick(op.craftCheck)
-  assert(ES.db.autoCraft == false, "la opción no se guardó")
+  -- Sin panel en Opciones: pulsar un paso siempre fabrica
+  assert(ES.optionsPanel == nil, "no debería haber nada en Opciones")
+  -- Una receta que no sabes: el clic solo abre la receta (no hay nada que fabricar)
+  ES.IsRecipeKnown = function() return false end
   ES:RenderPlan(page)
   crafted, opened = nil, nil
-  for _, l in ipairs(page.lines) do assert(not l.craftCount, "con la opción desactivada no debería fabricar") end
+  for _, l in ipairs(page.lines) do assert(not l.craftCount, "sin saber la receta no debería fabricar") end
   for _, l in ipairs(page.lines) do if l.onClick and l.item then l.onClick() break end end
-  assert(opened and not crafted, "con la opción desactivada el clic solo abre la receta")
-  ES.db.autoCraft = nil
+  assert(opened and not crafted, "sin saber la receta el clic solo abre la receta")
   ES.IsRecipeKnown, C_TradeSkillUI = savedKnown, nil
   ES:RenderPlan(page)
   -- ✕ en un paso: la receta sale de la ruta y una fila permite recuperarla
@@ -1478,7 +1482,7 @@ step("icono menos fabricaciones: pesa cada fabricación al elegir", function()
   local settings = ES.db.prof.Enchanting
   local saved = settings.fewerCrafts
   settings.fewerCrafts = nil
-  assert(ES:PlanOptions("Enchanting", 79, 150).craftWeight == nil, "por defecto, la ruta más barata")
+  assert(ES:PlanOptions("Enchanting", 79, 150).craftWeight == nil, "por defecto (apagado), la ruta más barata (con el peso mínimo por fabricación)")
   local k1 = ES:PlanKey("Enchanting", 79, 150)
   page.fewerButton:GetScript("OnClick")(page.fewerButton)
   assert(settings.fewerCrafts, "el clic no lo activó")
@@ -1571,7 +1575,9 @@ step("comprar por tramos: tramo, margen, lista viva y avisos", function()
     if s.list.live then live = s end
     if s.list.kind == "route" and s.list.key == "Alchemy" then whole = s end
   end
-  assert(not live and whole, "ruta entera: la lista guardada, sin tramo")
+  -- Ruta entera: también sale sola (todo lo que queda: 1+2+1+1 de 100 desde el 1), sin la guardada
+  assert(live and live.list.whole and not whole, "ruta entera: lista viva de toda la ruta")
+  assert(live.items[1].it.itemID == 100 and live.items[1].it.need == 5, "ruta entera: pide todo lo que queda")
   ES.db.prof.Alchemy.byPhase = nil
   -- Avisos: el primero solo apunta el tramo; al pasar a C, tramo nuevo; con mala
   -- suerte dentro del tramo (llevas algo, pero no da), "compra un poco más"
@@ -1727,6 +1733,174 @@ step("parar de fabricar al llegar al tope o al final de la ruta", function()
   ES.lastRanks = {}
   if not ok then error(err, 0) end
 end)
+step("barra de progreso al calcular la ruta", function()
+  local P = ES.Planner
+  local saved = { run = ES.planRunning, passes = P.passes, db = ES.db.planPasses }
+  local ok, err = pcall(function()
+    -- La última vez, 200 pasadas para 100 niveles: a 100 pasadas, la mitad
+    ES.db.planPasses = { Alchemy = { passes = 200, span = 100 } }
+    ES.planRunning = { prof = "Alchemy", span = 100 }
+    P.passes = 100
+    assert(math.abs(ES:PlanProgress("Alchemy") - 0.5) < 1e-6, "a mitad: " .. ES:PlanProgress("Alchemy"))
+    -- Tramo el doble de largo: se espera el doble
+    ES.planRunning.span = 200
+    assert(math.abs(ES:PlanProgress("Alchemy") - 0.25) < 1e-6, "tramo más largo")
+    -- Pasada la previsión: se acerca al 99% sin llegar
+    P.passes = 2000
+    local p = ES:PlanProgress("Alchemy")
+    assert(p > 0.9 and p < 0.99, "pasada la previsión: " .. p)
+    -- Sin cálculo en marcha para esa profesión: nada
+    assert(ES:PlanProgress("Tailoring") == nil, "otra profesión no se está calculando")
+    -- La página: barra y porcentaje mientras calcula; sin calcular, se esconde
+    local page
+    for _, pg in ipairs(ES.professionPages) do if pg.profKey == "Alchemy" then page = pg end end
+    if page and page.calcBar then
+      P.passes, ES.planRunning.span = 100, 100
+      page.calculating = true
+      ES:UpdateCalcProgress(page)
+      assert(page.calcBar._shown and tostring(page.status._text):find("50%%"), "falta la barra: " .. tostring(page.status._text))
+      page.calculating = nil
+      ES:UpdateCalcProgress(page)
+      assert(page.calcBar._shown == false, "la barra debería esconderse al acabar")
+    end
+  end)
+  ES.planRunning, P.passes, ES.db.planPasses = saved.run, saved.passes, saved.db
+  if not ok then error(err, 0) end
+end)
+step("pestañas: vuelven a donde estabas, no a su portada", function()
+  local f = ES:GetMainFrame()
+  local function Tab(key) for _, t in ipairs(f.tabs) do if t.key == key then return t end end end
+  ES:SelectPage("Alchemy")
+  Tab("shopping")._scripts.OnClick(Tab("shopping"))
+  assert(ES.db.lastPage == "shopping", "no fue a la lista de compra")
+  Tab("home")._scripts.OnClick(Tab("home"))
+  assert(ES.db.lastPage == "Alchemy", "Subir profesiones debería volver a Alquimia: " .. tostring(ES.db.lastPage))
+  -- El botón "Profesiones" sí lleva a la portada, y la pestaña recuerda la portada
+  f.back._scripts.OnClick(f.back)
+  assert(ES.db.lastPage == "home", "el botón Profesiones lleva a la portada")
+  Tab("shopping")._scripts.OnClick(Tab("shopping"))
+  Tab("home")._scripts.OnClick(Tab("home"))
+  assert(ES.db.lastPage == "home", "tras volver a la portada, la pestaña abre la portada")
+  -- Colección: igual
+  ES:SelectPage("pattern:Alchemy")
+  ES:SelectPage("home")
+  Tab("patterns")._scripts.OnClick(Tab("patterns"))
+  assert(ES.db.lastPage == "pattern:Alchemy", "la colección debería volver a Alquimia")
+  ES:SelectPage("home")
+end)
+step("lista de compra: añadir tramo o ruta entera, con aviso", function()
+  local f = ES:GetMainFrame()
+  local saved = { lock = ES.RouteLock, locked = ES.LockedPlan, play = PlaySound, print = ES.Print }
+  local played, printed = 0, {}
+  PlaySound = function() played = played + 1 end
+  ES.Print = function(_, m) printed[#printed + 1] = m end
+  local ok, err = pcall(function()
+    local page
+    for _, p in ipairs(ES.professionPages) do if p.profKey == "Leatherworking" then page = p end end
+    local opts = ES:PlanOptions("Leatherworking", page.from or 1, 225, nil)
+    opts.owned = nil
+    local plan = ES.Planner:Plan(ES.Data.Leatherworking, opts)
+    ES.RouteLock = function(_, k) return k == "Leatherworking" and { from = plan.from, to = 225 } or nil end
+    ES.LockedPlan = function(_, k) return k == "Leatherworking" and plan or nil end
+    page.plan, page.view = plan, "shop"
+    ES:RenderPlan(page)
+    local line
+    for _, l in ipairs(page.lines) do if l.phaseLine then line = l end end
+    assert(line and line.onClick and line.title:find("Tramo"), "falta la fila de la lista de compra (por tramos)")
+    assert(line.sub:find("Pulsa para cambiar a la ruta entera"), "el texto debería decir qué hace pulsar: " .. tostring(line.sub))
+    line.tooltip(CreateFrame("Frame"))
+    line.onClick() -- (pulsar la fila: pasa a la ruta entera)
+    assert(ES.db.prof.Leatherworking.byPhase == false, "no pasó a ruta entera")
+    for _, l in ipairs(page.lines) do if l.phaseLine then line = l end end
+    assert(line.title:find("Ruta entera") and line.sub:find("solo este tramo"), "la fila debería decir ruta entera: " .. tostring(line.title))
+    assert(printed[1] and printed[1]:find("Añadido"), "falta el aviso en el chat")
+    assert(played == 1, "falta el sonido")
+    local shopTab
+    for _, t in ipairs(f.tabs) do if t.key == "shopping" then shopTab = t end end
+    assert(shopTab.flashing, "la pestaña Lista de compra debería brillar")
+    line.onClick() -- (y otra vez: vuelve a tramos)
+    assert(ES.db.prof.Leatherworking.byPhase == nil, "no volvió a tramos")
+  end)
+  ES.RouteLock, ES.LockedPlan, PlaySound, ES.Print = saved.lock, saved.locked, saved.play, saved.print
+  ES.db.prof.Leatherworking.byPhase = nil
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Leatherworking" then p.view = "route" end end
+  if not ok then error(err, 0) end
+end)
+step("ruta: lo que aún da puntos no se fabrica como preparación", function()
+  -- (Rough Blasting Powder: la ruta decía "fabrica 133 a nivel 1" y subían la profesión
+  -- sin contar; tiene que ser un paso de la ruta, o fabricarse cuando ya está en gris)
+  local checked = 0
+  for _, prof in ipairs({ "Leatherworking", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Enchanting" }) do
+    local opts = ES:PlanOptions(prof, 1, 225, nil)
+    opts.owned = nil
+    local plan = ES.Planner:Plan(ES.Data[prof], opts)
+    for _, c in ipairs(plan.crafted or {}) do
+      local r = c.recipe
+      if r and c.from and not r.intermediate and not r.conversion then
+        local isTool = false
+        for _, t in pairs(ES.Data.Tools or {}) do if t.item == c.itemID then isTool = true end end
+        assert(isTool or ES.Planner.Chance(r.t, c.from) == 0,
+          string.format("%s: fabrica %d %s como preparación a %d, donde aún da puntos", prof, c.quantity, r.name or "?", c.from))
+        checked = checked + 1
+      end
+    end
+  end
+  log[#log+1] = "     preparación revisada: " .. checked .. " materiales"
+  -- Todas las rutas, como las ves: la columna de nivel nunca baja; nada que dé puntos se
+  -- compra y además se fabrica; y ningún paso usa algo fabricado que salga después
+  local routes = 0
+  for _, prof in ipairs({ "Leatherworking", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Enchanting", "Cooking", "FirstAid" }) do
+    local page
+    for _, p in ipairs(ES.professionPages) do if p.profKey == prof then page = p end end
+    for _, rg in ipairs({ { 1, 225 }, { 150, 300 } }) do
+      local opts = ES:PlanOptions(prof, rg[1], rg[2], nil)
+      opts.owned = nil
+      local plan = ES.Planner:Plan(ES.Data[prof], opts)
+      if page and #plan.steps > 0 then
+        routes = routes + 1
+        local where = string.format("%s %d-%d", prof, rg[1], rg[2])
+        page.plan, page.view = plan, "route"
+        ES:RenderPlan(page)
+        local last = 0
+        for _, l in ipairs(page.lines) do
+          local n = l.level and tonumber(tostring(l.level):match("^(%d+)"))
+          if n then
+            assert(n >= last, string.format("%s no va en orden: %s después de %d (%s)", where, tostring(l.level), last, tostring(l.title)))
+            last = n
+          end
+        end
+        -- La mezcla confusa: comprar un material en un paso mientras aún da puntos y
+        -- fabricarlo más tarde (la pólvora: comprada de 3 a 40, fabricada desde 40)
+        for _, c in ipairs(plan.crafted or {}) do
+          local r = c.recipe
+          if r and c.from and not r.intermediate and not r.conversion then
+            for _, st in ipairs(plan.steps) do
+              for _, rg2 in ipairs(st.reagents or {}) do
+                local buys = rg2.kinds and (rg2.kinds.ah or rg2.kinds.vendor)
+                if rg2.item == c.itemID and buys and st.from < c.from and ES.Planner.Chance(r.t, st.from) > 0 then
+                  error(string.format("%s: %s se compra en %s %d-%d (cuando aún da puntos) y se fabrica desde %d",
+                    where, tostring(r.name), st.recipe.name, st.from, st.to, c.from), 0)
+                end
+              end
+            end
+          end
+        end
+        -- Lo "tuyo de la ruta" (stock) de un paso sale de un paso anterior
+        local made = {}
+        for _, st in ipairs(plan.steps) do
+          for _, rg2 in ipairs(st.reagents or {}) do
+            if rg2.kinds and rg2.kinds.stock then
+              assert(made[rg2.item], string.format("%s: %s usa %s de un paso que va después", where, st.recipe.name, tostring(ES:DataItemName(rg2.item))))
+            end
+          end
+          if st.sale then made[st.sale.itemID] = true end
+        end
+      end
+    end
+  end
+  log[#log+1] = "     rutas revisadas (orden, mezclas, de dónde sale cada material): " .. routes
+  for _, p in ipairs(ES.professionPages) do p.view = "route" end
+end)
 step("ruta parada: con lo que llevas se puede intentar el punto siguiente", function()
   -- Herrería 60 sin AH, 2 Rough Stone y 4 Copper Bar (Discord): ningún punto
   -- seguro, pero Rough Grinding Stone al 62% sí se puede probar
@@ -1744,33 +1918,34 @@ step("máximo 300: el objetivo llega hasta 300", function()
   t.target, t.lock = 260, nil
   assert(ES:ProfessionTarget("Tailoring") == 260, "un objetivo entre 225 y 300 no debería recortarse")
   t.target = nil
-  assert(ES:ProfessionTarget("Tailoring") == 300, "sin objetivo, el máximo")
+  -- Sin objetivo: tu nivel + 150, hasta el máximo (las rutas largas tardan mucho)
+  local savedSkill = ES.GetProfessionSkill
+  local rank = 60
+  ES.GetProfessionSkill = function(_, line) if line == ES.Data.Tailoring.skillLine then return rank, 150 end end
+  assert(ES:ProfessionTarget("Tailoring") == 210, "sin objetivo, tu nivel + 150: " .. ES:ProfessionTarget("Tailoring"))
+  rank = 200
+  assert(ES:ProfessionTarget("Tailoring") == 300, "sin objetivo, como mucho el máximo")
+  -- Calcular con el de por defecto no lo guarda (sube contigo); uno escrito, sí
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Tailoring" then page = p end end
+  if page and page.toBox then
+    rank = 60
+    ES:DetectSkill(page)
+    page.toBox._text = "210"
+    ES:CalculatePlan(page)
+    assert(t.target == nil, "el objetivo por defecto no debería guardarse: " .. tostring(t.target))
+    page.toBox._text = "250"
+    ES:CalculatePlan(page)
+    assert(t.target == 250, "el objetivo escrito debería guardarse")
+  end
+  ES.GetProfessionSkill = savedSkill
   t.target, t.lock = savedT, savedLock
 end)
-step("icono Casa de Subastas desactivado: ruta sin AH", function()
+step("sin icono de la Casa de Subastas: la ruta siempre puede usarla", function()
   local page
   for _, p in ipairs(ES.professionPages) do if p.profKey == "Enchanting" then page = p end end
-  assert(page.ahButton, "falta el icono de la Casa de Subastas")
-  local settings = ES.db.prof.Enchanting
-  local saved = settings.useAH
-  settings.useAH = nil
-  assert(ES:PlanOptions("Enchanting", 1, 50).noAH == nil, "por defecto se usa la AH")
-  page.ahButton:GetScript("OnClick")(page.ahButton)
-  assert(settings.useAH == false, "el clic no la desactivó")
-  local opts = ES:PlanOptions("Enchanting", 1, 50)
-  assert(opts.noAH, "no pasa el sin AH al plan")
-  -- Sin AH no se compra nada en la subasta ni se aconseja anunciar lo fabricado
-  local plan = ES.Planner:Plan(ES.Data.Enchanting, opts)
-  for _, it in ipairs(plan.shopping or {}) do
-    assert(it.source ~= "ah", "sin AH no debería comprar en la subasta: " .. tostring(it.itemID))
-  end
-  for _, st in ipairs(plan.steps) do
-    local sale = st.sale or (st.recipe and st.recipe.out and ES.Planner.SaleInfo(plan.ctx, st.recipe))
-    assert(not (sale and sale.ahNet), "sin AH no debería valorar la venta en la subasta")
-  end
-  page.ahButton:GetScript("OnClick")(page.ahButton)
-  assert(settings.useAH == true and not ES:PlanOptions("Enchanting", 1, 50).noAH, "al volver a pulsarlo, con AH")
-  settings.useAH = saved
+  assert(page.ahButton == nil, "el icono de la Casa de Subastas debería haberse quitado")
+  assert(ES:PlanOptions("Enchanting", 1, 50).noAH == nil, "la ruta siempre usa la AH")
 end)
 step("objetos que llegan: solo recalcula por los que esperaba, y nunca a mitad de cálculo", function()
   local page
@@ -2041,7 +2216,7 @@ step("sin modo desarrollo: ni Subastas, ni Flipping, ni Pesca, ni buscador", fun
   local f = ES:GetMainFrame()
   assert(#f.tabs == 6, "pestañas: " .. #f.tabs) -- portada, ganar dinero, inventario, calculadora, lista de compra y colección
   assert(not f.globalSearch, "queda el buscador de la cabecera")
-  assert(not ES.optionsPanel.devCheck, "queda el interruptor de vista de jugador")
+  assert(not ES.optionsPanel, "queda el panel de Opciones (con el interruptor de vista de jugador)")
   -- Lo guardado de versiones anteriores (la última página) vuelve a la portada
   for _, key in ipairs({ "ah", "flipping", "Fishing", "pattern:Fishing" }) do
     ES:SelectPage(key)

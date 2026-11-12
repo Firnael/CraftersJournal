@@ -427,7 +427,29 @@ local function LoadCharacterData()
     end
     c.max300 = true
   end
+  -- El objetivo por defecto pasó del máximo a tu nivel + 150 (las rutas largas tardan
+  -- mucho en calcularse). Antes se guardaba siempre: el 300 guardado era el de
+  -- entonces, no uno elegido; pasa al nuevo (una vez; una ruta empezada no se toca)
+  if not c.target150 then
+    for _, settings in pairs(c.prof) do
+      if type(settings) == "table" and settings.target == 300 and not settings.lock then settings.target = nil end
+    end
+    c.target150 = true
+  end
   c.books = nil -- (la contabilidad del dinero ya no existe: fuera lo que guardó)
+  db.tabs = nil -- (orden y pestañas ocultas: se quitó de Opciones)
+  db.autoCraft = nil -- (pulsar un paso siempre fabrica: ya no es una opción)
+  for _, settings in pairs(c.prof) do -- (ruta sin AH: ya no existe; la ruta siempre puede usarla)
+    if type(settings) == "table" then settings.useAH = nil end
+  end
+  -- Las listas de la compra de una ruta ya no se añaden a mano: con la ruta empezada
+  -- salen solas (Shopping.PhaseList). Las guardadas de antes se quitan, una vez
+  if not c.routeListsLive and type(c.shopping) == "table" then
+    for i = #c.shopping, 1, -1 do
+      if type(c.shopping[i]) == "table" and c.shopping[i].kind == "route" then table.remove(c.shopping, i) end
+    end
+  end
+  c.routeListsLive = true
   db.prof, db.lastProf = c.prof, c.lastProf
   ES.charData, ES.charDataKey = c, key
 end
