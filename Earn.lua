@@ -8,7 +8,9 @@ local L = ES.L
 --   alerta "bien":            hasta el AH_SHARE de las unidades a la venta (tope MAX_BATCH)
 --   "ojo" / "pocos datos":    unas pocas para probar (TEST_BATCH)
 --   "evitar":                 no se recomienda (se lista aparte con el motivo)
---   se vende al vendedor:     venta segura, VENDOR_BATCH
+--   se vende al vendedor:     venta segura: tantas como dejen beneficio, mientras
+--                             la siguiente aún compense y queden materiales en la AH
+--                             (ver VendorCrafts); van aparte del lote
 -- (El buzón no se lee: el addon no guarda nada de tu correo.)
 
 local Earn = {}
@@ -19,7 +21,9 @@ local MIN_MARGIN = 0.10      -- y al menos un 10% sobre el coste
 local AH_SHARE = 0.3         -- no anunciar más del 30% de lo que ya hay a la venta
 local MAX_BATCH = 10
 local TEST_BATCH = 3
-local VENDOR_BATCH = 20
+-- Vendedor: tope de la búsqueda (el vendedor compra sin límite; lo que para es la
+-- escalera de los materiales)
+local VENDOR_MAX = 1000
 local BATCH_SIZE = 8         -- recetas en el lote de hoy
 local WATCH_WEIGHT = 0.5     -- "ojo" puntúa la mitad
 local OLD_SCAN = 12 * 3600   -- más viejo que esto: avisar
@@ -60,7 +64,7 @@ end
 -- Cuántas fabricar y por qué
 local function Batch(idea, e)
   if idea.sellWhere == "vendor" then
-    return VENDOR_BATCH, L["Se vende al vendedor: venta segura."]
+    return VENDOR_MAX, L["Se vende al vendedor: venta segura, sin límite de ventas."]
   end
   local onSale = math.floor((e.quantity or 0) / math.max(1, e.qty))
   local share = onSale > 0 and math.max(1, math.floor(onSale * AH_SHARE)) or TEST_BATCH
@@ -76,12 +80,72 @@ local function Batch(idea, e)
   return math.max(1, n), why
 end
 
+-- ¿Cabe lo comprado en la AH (en `extra`, con clave itemID) en lo que hay a la venta,
+-- contando lo que ya compran otras líneas (ctx.used)? Con ignoreSupply, lo que pasa
+-- de ahí se pagaría a la mediana: para el vendedor no vale, esas subastas no existen
+local function WithinSupply(ctx, extra)
+  for key, q in pairs(extra or {}) do
+    if type(key) == "number" and key > 0 then
+      local supply = ctx.supply[key]
+      if supply and (ctx.used[key] or 0) + q > supply + 1e-6 then return false end
+    end
+  end
+  return true
+end
+
+-- Venta al vendedor: el vendedor compra todas, así que el límite lo pone la escalera
+-- de los materiales. Se fabrica mientras la SIGUIENTE (no la media) deje al menos
+-- MIN_PROFIT y MIN_MARGIN sobre lo que cuesta, y sus materiales sigan a la venta.
+-- Cada fabricación cuesta igual o más que la anterior (se sube por la escalera), así
+-- que se busca por bisección la última que compensa. Devuelve cuántas, por qué se
+-- para ("margin", "supply" o "max") y el coste { cost, reagents, extra, actions }.
+local function VendorCrafts(idea)
+  local ctx, recipe, memo = idea.ctx, idea.e.recipe, {}
+  local function At(n)
+    if n == 0 then return { cost = 0 } end
+    local r = memo[n]
+    if not r then
+      r = {}
+      r.cost, r.reagents, r.extra, r.actions = ES.Planner.RecipeCost(ctx, recipe, n, {})
+      memo[n] = r
+    end
+    return r
+  end
+  local function Fits(n)
+    local cur, prev = At(n), At(n - 1)
+    if not cur.cost or not prev.cost then return false, "supply" end
+    if not WithinSupply(ctx, cur.extra) then return false, "supply" end
+    local marginal = cur.cost - prev.cost
+    if idea.sale - marginal < math.max(MIN_PROFIT, MIN_MARGIN * marginal) then return false, "margin" end
+    return true
+  end
+  local ok, why = Fits(1)
+  if not ok then return 0, why, { cost = 0 } end
+  if Fits(VENDOR_MAX) then return VENDOR_MAX, "max", At(VENDOR_MAX) end
+  local lo, hi = 1, VENDOR_MAX
+  while hi - lo > 1 do
+    local mid = math.floor((lo + hi) / 2)
+    if Fits(mid) then lo = mid else hi = mid end
+  end
+  local _, stop = Fits(hi)
+  return lo, stop, At(lo)
+end
+
 -- Coste de una idea para las fabricaciones que quiere (idea.wanted), descontando
 -- lo que ya llevas fabricado. El coste de 1 es el de las subastas más baratas;
 -- para N hay que subir por la escalera: si a N ya no compensa, se reduce a la mitad.
 function Earn.CostIdea(idea)
   local e = idea.e
   idea.have = ES:ItemCount(e.itemID)
+  if idea.sellWhere == "vendor" then
+    -- Lo que ya llevas también se lo vendes: no quita fabricaciones
+    local n, limit, at = VendorCrafts(idea)
+    idea.crafts, idea.limit, idea.why2, idea.fewer = n, limit, nil, nil
+    idea.invest = at.cost or 0
+    idea.profit = idea.sale * n - idea.invest
+    idea.reagents, idea.extra, idea.actions = at.reagents or {}, at.extra or {}, at.actions
+    return
+  end
   local haveCrafts = math.floor(idea.have / math.max(1, e.qty))
   local n = math.max(0, idea.wanted - haveCrafts)
   idea.why2 = haveCrafts > 0 and string.format(L["Ya tienes %d: se fabrican solo las que faltan."], idea.have) or nil
@@ -91,7 +155,8 @@ function Earn.CostIdea(idea)
   end
   local cost, reagents, extra, actions = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
   local start = n
-  while n > 1 and (not cost or idea.sale * n - cost < math.max(MIN_PROFIT, MIN_MARGIN * cost) * n) do
+  -- (cost es el de las n juntas: el margen se mide sobre él, el mínimo por fabricación)
+  while n > 1 and (not cost or idea.sale * n - cost < math.max(MIN_PROFIT * n, MIN_MARGIN * cost)) do
     n = math.max(1, math.floor(n / 2))
     cost, reagents, extra, actions = ES.Planner.RecipeCost(idea.ctx, e.recipe, n, {})
   end
@@ -108,6 +173,7 @@ end
 -- Lo que deja una línea del lote: el beneficio de sus fabricaciones; si ya las
 -- tienes hechas (no hay que fabricar), lo que dejan las que llevas
 function Earn.LineValue(idea)
+  if idea.sellWhere == "vendor" then return idea.profit or 0 end
   if idea.crafts and idea.crafts > 0 then return idea.profit or 0 end
   return (idea.e.profit or 0) * math.floor((idea.have or 0) / math.max(1, idea.e.qty))
 end
@@ -123,12 +189,47 @@ do
   f:SetScript("OnEvent", function() cache = nil end)
 end
 
+-- Lo que hay que comprar (AH y vendedor) para unas ideas ya costeadas, juntando cada
+-- material: { itemID, quantity, total, source, unit }, de más a menos caro
+function Earn.Shopping(ideas)
+  local need, list = {}, {}
+  local function Need(itemID, source, qty, cost)
+    local n = need[itemID]
+    if not n then
+      n = { itemID = itemID, quantity = 0, total = 0, source = source }
+      need[itemID] = n
+    end
+    n.quantity = n.quantity + qty
+    n.total = n.total + cost
+  end
+  for _, idea in ipairs(ideas) do
+    if idea.actions then
+      -- Las compras (AH y vendedor) de todas sus fabricaciones, también las de los
+      -- materiales que fabricas tú (un Bolt of Mageweave se compra como Mageweave Cloth)
+      for _, a in ipairs(idea.actions) do
+        if a.kind == "ah" or a.kind == "vendor" then Need(a.item, a.kind, a.qty, a.cost or 0) end
+      end
+    else
+      -- idea.reagents ya va para todas sus fabricaciones
+      for _, rg in ipairs(idea.reagents or {}) do
+        Need(rg.item, rg.kinds.ah and "ah" or rg.kinds.vendor and "vendor" or "craft", rg.qty, rg.cost)
+      end
+    end
+  end
+  for _, n in pairs(need) do
+    n.unit = n.total / math.max(1, n.quantity)
+    list[#list + 1] = n
+  end
+  table.sort(list, function(a, b) return a.total > b.total end)
+  return list
+end
+
 function Earn:Ideas()
   local scan = ES.db.scans and ES.db.scans[ES:RealmKey()]
   local minLine = Earn.MinLineProfit()
   local stamp = table.concat({ scan and scan.time or 0, ES:RealmKey(), ES.repStamp or "", minLine }, ":")
   if cache and cache.stamp == stamp then return cache end
-  local res = { stamp = stamp, ideas = {}, avoided = {}, scanTime = scan and scan.time, profs = Earn.MyProfessions(), known = 0,
+  local res = { stamp = stamp, ideas = {}, avoided = {}, vendor = {}, scanTime = scan and scan.time, profs = Earn.MyProfessions(), known = 0,
     minLine = minLine, hidden = 0 }
   for _, profKey in ipairs(res.profs) do
     local data = ES.Data[profKey]
@@ -157,6 +258,11 @@ function Earn:Ideas()
             idea.ctx = ctx
             idea.wanted, idea.why = Batch(idea, e)
             idea.sale = (idea.sellWhere == "ah" and e.ahNet or e.vendor) * e.qty -- por fabricación
+          end
+          if idea.sellWhere == "vendor" then
+            -- Se costea después del lote (con lo que el lote ya compra)
+            res.vendor[#res.vendor + 1] = idea
+          elseif idea.verdict ~= "avoid" then
             Earn.CostIdea(idea)
             if Earn.LineValue(idea) >= minLine then
               idea.score = idea.profit * ((idea.verdict == "watch" or idea.verdict == "unknown") and WATCH_WEIGHT or 1)
@@ -178,8 +284,8 @@ function Earn:Ideas()
   res.batch, res.invest, res.profit = {}, 0, 0
   local ctxs = {}
   for _, idea in ipairs(res.ideas) do ctxs[idea.ctx] = true end
+  for _, idea in ipairs(res.vendor) do ctxs[idea.ctx] = true end
   for ctx in pairs(ctxs) do ctx.used = {} end
-  local need = {}
   for _, idea in ipairs(res.ideas) do
     if #res.batch >= BATCH_SIZE then break end
     Earn.CostIdea(idea)
@@ -197,35 +303,23 @@ function Earn:Ideas()
       end
     end
   end
-  local function Need(itemID, source, qty, cost)
-    local n = need[itemID]
-    if not n then
-      n = { itemID = itemID, quantity = 0, total = 0, source = source }
-      need[itemID] = n
-    end
-    n.quantity = n.quantity + qty
-    n.total = n.total + cost
-  end
-  for _, idea in ipairs(res.batch) do
-    if idea.actions then
-      -- Las compras (AH y vendedor) de todas sus fabricaciones, también las de los
-      -- materiales que fabricas tú (un Bolt of Mageweave se compra como Mageweave Cloth)
-      for _, a in ipairs(idea.actions) do
-        if a.kind == "ah" or a.kind == "vendor" then Need(a.item, a.kind, a.qty, a.cost or 0) end
-      end
+  res.shopping = Earn.Shopping(res.batch)
+
+  -- Venta al vendedor (venta segura): aparte del lote, cada línea por su cuenta con
+  -- lo que el lote ya compra; si dos usan los mismos materiales, cada una se calcula
+  -- como si fuera la única (se elige una)
+  local vendor = res.vendor
+  res.vendor = {}
+  for _, idea in ipairs(vendor) do
+    Earn.CostIdea(idea)
+    if idea.crafts > 0 and Earn.LineValue(idea) >= minLine then
+      idea.shopping = Earn.Shopping({ idea })
+      res.vendor[#res.vendor + 1] = idea
     else
-      -- idea.reagents ya va para todas sus fabricaciones
-      for _, rg in ipairs(idea.reagents or {}) do
-        Need(rg.item, rg.kinds.ah and "ah" or rg.kinds.vendor and "vendor" or "craft", rg.qty, rg.cost)
-      end
+      res.hidden = res.hidden + 1
     end
   end
-  res.shopping = {}
-  for _, n in pairs(need) do
-    n.unit = n.total / math.max(1, n.quantity)
-    res.shopping[#res.shopping + 1] = n
-  end
-  table.sort(res.shopping, function(a, b) return a.total > b.total end)
+  table.sort(res.vendor, function(a, b) return a.profit > b.profit end)
   cache = res
   return res
 end
@@ -247,6 +341,7 @@ function Earn:Cooldowns()
         -- Beneficio de hacerlo, si está entre las ideas (o las descartadas por el mercado)
         local profit
         for _, idea in ipairs(cache and cache.ideas or {}) do if idea.e.id == id then profit = idea.e.profit end end
+        for _, idea in ipairs(cache and cache.vendor or {}) do if idea.e.id == id then profit = idea.e.profit end end
         for _, idea in ipairs(cache and cache.avoided or {}) do if idea.e.id == id then profit = idea.e.profit end end
         list[#list + 1] = { recipe = r, id = id, profKey = profKey, ready = left <= 0, left = math.max(0, left), profit = profit }
       end
