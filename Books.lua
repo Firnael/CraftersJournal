@@ -38,8 +38,6 @@ Books.KINDS = ES.Localize({
   trainer = "Instructor", sale = "Ventas a jugadores", buy = "Compras a jugadores",
   trade = "Trades sin contar", mail = "Correo sin contar", other = "Otros (botín, misiones...)",
 })
-Books.ORDER = { "ahSale", "vendorSale", "sale", "ahBuy", "vendorBuy", "buy", "ahDeposit", "ahOther",
-  "trainer", "repair", "trade", "mail", "other" }
 
 local Log = function(text) if ES.Ledger and ES.Ledger.Log then ES.Ledger.Log("cuentas: " .. text) end end
 
@@ -49,16 +47,6 @@ local function DayKey(t)
   t = t or time()
   if date then return date("%Y-%m-%d", t) end
   return tostring(math.floor(t / DAY))
-end
-
--- Inicio del día de hoy (medianoche local)
-local function Midnight()
-  if date then
-    local d = date("*t")
-    d.hour, d.min, d.sec = 0, 0, 0
-    return time(d)
-  end
-  return math.floor(time() / DAY) * DAY
 end
 
 function Books.Data()
@@ -211,7 +199,6 @@ function Books.Start()
     b.lastMoney = money
   end
   lastMoney = money
-  Books.session = Books.session or { start = before, t = time() }
   Books.Prune()
 end
 
@@ -234,70 +221,6 @@ function Books.Prune()
   b.posts = posts
   local oldDay = DayKey(cutoff)
   for day in pairs(b.days) do if day < oldDay then b.days[day] = nil end end
-end
-
----------------------------------------------------------------------------
--- Resúmenes
----------------------------------------------------------------------------
--- Suma por categoría de los movimientos desde `from` (time()): { [kind] = cobre }, total
-function Books.Totals(from)
-  local b = Books.Data()
-  local totals, total = {}, 0
-  for _, m in ipairs(b and b.moves or {}) do
-    if m.t >= from then
-      totals[m.k] = (totals[m.k] or 0) + m.m
-      total = total + m.m
-    end
-  end
-  return totals, total
-end
-
--- Hoy: { totals, total (de los movimientos), net (dinero de ahora - el de antes del primer cambio) }
-function Books.Today()
-  local b = Books.Data()
-  local totals, total = Books.Totals(Midnight())
-  local d = b and b.days[DayKey()]
-  return { totals = totals, total = total, net = d and (d.last - d.first) or 0 }
-end
-
-function Books.Session()
-  if not Books.session then return nil end
-  local totals, total = Books.Totals(Books.session.t)
-  return { totals = totals, total = total, net = Money() - Books.session.start }
-end
-
-local function PrintTotals(title, s)
-  ES:Print(string.format("%s: %s%s", title, ES.UI and ES.UI.Signed and ES.UI.Signed(-s.net) or tostring(s.net),
-    s.total == s.net and "" or ("|cffff4040 " .. string.format(L["(los movimientos suman %s: no cuadra)"], ES.Money(math.abs(s.total))) .. "|r")))
-  for _, k in ipairs(Books.ORDER) do
-    local v = s.totals[k]
-    if v and v ~= 0 then
-      print(string.format("   %s: %s", Books.KINDS[k], ES.UI and ES.UI.Signed and ES.UI.Signed(-v) or tostring(v)))
-    end
-  end
-end
-
--- /cj cuentas: hoy y la sesión por categoría; /cj cuentas log: los últimos movimientos
-function Books.Report(what)
-  if not Books.Data() then return end
-  if what == "log" then
-    local moves = Books.Data().moves
-    ES:Print(L["Últimos movimientos de dinero:"])
-    for idx = math.max(1, #moves - 14), #moves do
-      local m = moves[idx]
-      local item = m.i and (ItemName(m.i) or ("#" .. m.i)) or nil
-      print(string.format("   %s %s %s%s%s%s", date and date("%H:%M", m.t) or "", ES.UI.Signed(-m.m), Books.KINDS[m.k] or m.k,
-        item and (" · " .. (m.q and (m.q .. "× ") or "") .. item) or "", m.w and (" · " .. m.w) or "", m.n and (" · " .. m.n) or ""))
-    end
-    return
-  end
-  PrintTotals(L["Hoy"], Books.Today())
-  local s = Books.Session()
-  if s then PrintTotals(L["Esta sesión"], s) end
-  local open = 0
-  for _, p in ipairs(Books.Data().posts) do if not p.s then open = open + 1 end end
-  if open > 0 then ES:Print(string.format(L["%d subastas anunciadas sin vender ni caducar todavía."], open)) end
-  ES:Print(L["/cj cuentas log: los últimos movimientos."])
 end
 
 ---------------------------------------------------------------------------

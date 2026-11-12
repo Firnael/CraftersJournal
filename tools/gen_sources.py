@@ -19,8 +19,7 @@ from questie import (ITEM, NPC, NPC_AUCTIONEER, NPC_INNKEEPER, QUEST, all_ids, a
 
 HERE = Path(__file__).resolve().parent
 ADDON = HERE.parent
-PROFS = ["Leatherworking", "Enchanting", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Cooking", "FirstAid",
-         "Fishing"]
+PROFS = ["Leatherworking", "Enchanting", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Cooking", "FirstAid"]
 RANK_BOOKS = [16072, 16084]  # Expert Cookbook, Expert First Aid - Under Wraps
 
 WORLD_DROP = 12  # más criaturas que esto: botín del mundo (solo se guarda cuántas)
@@ -52,7 +51,7 @@ def main():
         tm = re.search(r"trainers = \{(.*)\},", text)
         if tm:
             trainers.update(int(a) for a, _ in re.findall(r"\{ (\d+), (\d+) \}", tm.group(1)))
-        # Otros PNJ a los que hay que ir (Pesca: quien vende el libro de Experto, Nat Pagle)
+        # Otros PNJ a los que hay que ir (extraNPCs en los datos de la profesión)
         em = re.search(r"extraNPCs = \{([^}]*)\}", text)
         if em:
             trainers.update(int(a) for a in re.findall(r"\d+", em.group(1)))

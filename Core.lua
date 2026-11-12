@@ -5,27 +5,6 @@ _G.CraftersJournal = ES
 ES.ICON = "Interface\\Icons\\Trade_BlackSmithing" -- martillo y yunque: profesiones (minimapa y lista de addons)
 ES.ahOpen = false
 
--- Modo desarrollo: lo que aún no está listo para los jugadores (pestañas Ganar
--- dinero y Subastas, la Pesca y el buscador de la cabecera).
---   ES.DEV_BUILD: copia de desarrollo (el repositorio). El empaquetador de CurseForge
---     comenta el bloque @debug@ al publicar: en la versión descargada es false.
---   ES.DEV: si se ve lo de desarrollo. En la copia de desarrollo hay un interruptor
---     en la cabecera ("Vista de jugador") para ver el addon como lo verán los demás.
-ES.DEV_BUILD = false
---@debug@
-ES.DEV_BUILD = true
---@end-debug@
-ES.DEV = ES.DEV_BUILD
-
--- Pasar de modo desarrollo a vista de jugador (y vuelta); solo en la copia de desarrollo
-function ES:SetUserPreview(on)
-  if not self.DEV_BUILD then return end
-  self.db.userPreview = on or nil
-  self.DEV = not on
-  if self.ClearHomeCache then self:ClearHomeCache() end
-  if self.RebuildMainFrame then self:RebuildMainFrame() end
-end
-
 -- AH abierta: por el evento o porque su ventana está a la vista (si el evento se
 -- pierde, el botón de escanear no debe quedarse en gris con la AH delante)
 -- El cliente puede tener las dos ventanas (moderna y clásica): vale cualquiera
@@ -93,7 +72,7 @@ ES.MAX_SKILL = 300
 -- tabla en ES.Data; `icon`, su imagen en el juego.
 -- El orden de esta lista es el orden interno de las tarjetas (la portada y
 -- Patterns, ver ES.SortProfessionCards): las principales y, al final, las
--- secundarias (Cocina, Primeros auxilios, Pesca)
+-- secundarias (Cocina, Primeros auxilios)
 local ICONS = "Interface\\Icons\\"
 ES.PROFESSIONS = {
   { key = "Alchemy",        label = "Alquimia",      icon = ICONS .. "Trade_Alchemy" },
@@ -105,7 +84,6 @@ ES.PROFESSIONS = {
   -- Secundarias
   { key = "Cooking",        label = "Cocina",        icon = ICONS .. "INV_Misc_Food_15" },
   { key = "FirstAid",       label = "Primeros aux.", icon = ICONS .. "Spell_Holy_SealOfSacrifice", name = "Primeros auxilios" },
-  { key = "Fishing",        label = "Pesca",         icon = ICONS .. "Trade_Fishing", dev = true }, -- solo en desarrollo
 }
 
 -- Orden de las tarjetas de profesión (la portada y Patterns): primero las que
@@ -116,11 +94,6 @@ function ES.SortProfessionCards(entries)
     if a.learned ~= b.learned then return a.learned end
     return a.order < b.order
   end)
-end
-
--- ¿Se ve esta profesión? (las marcadas dev = true, solo en modo desarrollo)
-function ES:ProfessionVisible(prof)
-  return not prof.dev or self.DEV
 end
 
 function ES:ProfLabel(key)
@@ -399,14 +372,12 @@ end
 -- Recalcula todos los apartados que dependen de los datos de la AH activa (tras
 -- un escaneo o al cambiar de AH). Lo que no está a la vista se recalcula al mostrarse.
 function ES:RefreshAllViews()
-  if self.RenderResults then self:RenderResults() end          -- Subastas
   if self.ClearHomeCache then self:ClearHomeCache() end        -- precios nuevos: planes de las tarjetas
   if self.RenderHome then self:RenderHome() end                -- portada (tarjetas)
   if self.RefreshProfessionPages then self:RefreshProfessionPages() end -- planes de cada profesión
   if self.Earn then self.Earn:Clear() end                       -- Ganar dinero
   if self.RenderEarn then self:RenderEarn() end
   if self.RenderInventory then self:RenderInventory() end      -- Inventario
-  if self.RenderFlipping then self:RenderFlipping() end        -- Flipping
   if self.RefreshPatternPages then self:RefreshPatternPages() end -- Colección de recetas
   if self.RenderCalculator then self:RenderCalculator() end    -- Calculadora (sus precios salen del escaneo)
   if self.RenderShopping then self:RenderShopping() end        -- Lista de compra
@@ -563,8 +534,9 @@ events:SetScript("OnEvent", function(_, event, arg1)
     ES.db = CraftersJournalDB
     LoadCharacterData()
     ES.lang = ES.db.lang or ES.DefaultLanguage()
-    ES.DEV = ES.DEV_BUILD and not ES.db.userPreview -- vista de jugador guardada (copia de desarrollo)
     ES.db.lastGetAll, ES.db.serverLimit = nil, nil -- claves de versiones anteriores (ver Scanner.lua)
+    -- (de versiones anteriores: modo desarrollo, pestaña Subastas y comandos de depuración)
+    ES.db.userPreview, ES.db.topSortBy, ES.db.topWindow, ES.db.debugFrame, ES.db.trainerFeesCSV = nil, nil, nil, nil, nil
     ES.db.useGPS = nil -- (/cj gps de las pruebas: el GPS ya es el planificador de todos)
     ES.db.mail = nil   -- (lo que se leía del buzón en versiones anteriores: ya no se guarda nada del correo)
     ES.db.earnBudget = nil -- (presupuesto de Ganar dinero: ya no existe)
@@ -614,97 +586,6 @@ events:SetScript("OnEvent", function(_, event, arg1)
   end
 end)
 
--- /es icono: escribe las texturas del marco bajo el ratón y de sus padres
-function ES:PrintIconUnderMouse()
-  local frames = (GetMouseFoci and GetMouseFoci()) or { GetMouseFocus and GetMouseFocus() }
-  local found, seen = {}, {}
-  local function Add(tex)
-    if not tex or not tex.GetObjectType or tex:GetObjectType() ~= "Texture" then return end
-    local id = (tex.GetTextureFileID and tex:GetTextureFileID()) or (tex.GetTexture and tex:GetTexture())
-    if id and not seen[id] then
-      seen[id] = true
-      found[#found + 1] = tostring(id)
-    end
-  end
-  for _, frame in ipairs(frames) do
-    local f, depth = frame, 0
-    while f and depth < 3 and f ~= UIParent and f ~= WorldFrame do
-      if f.GetNormalTexture then Add(f:GetNormalTexture()) end
-      if f.icon then Add(f.icon) end
-      if f.Icon then Add(f.Icon) end
-      if f.GetRegions then for _, region in ipairs({ f:GetRegions() }) do Add(region) end end
-      f, depth = f.GetParent and f:GetParent(), depth + 1
-    end
-  end
-  ES:Print(#found > 0 and string.format(L["Icono bajo el ratón: %s"], table.concat(found, ", "))
-    or L["No hay ningún icono bajo el ratón. Escribe /es icono y pon el ratón encima antes de 3 segundos."])
-end
-
--- /es pestaña: guarda en CraftersJournalDB.debugFrame cómo está hecho el botón bajo el
--- ratón (tamaño, texturas con su capa, tamaño y anclaje, y la posición de sus
--- hermanos para ver la separación). Sirve para copiar al detalle un marco de Blizzard.
-function ES:DumpFrameUnderMouse()
-  local frames = (GetMouseFoci and GetMouseFoci()) or { GetMouseFocus and GetMouseFocus() }
-  local f = frames[1]
-  if not f or f == WorldFrame or f == UIParent then
-    ES:Print(L["No hay ningún icono bajo el ratón. Escribe /es icono y pon el ratón encima antes de 3 segundos."])
-    return
-  end
-  local function Name(x) return x and x.GetName and x:GetName() or tostring(x) end
-  local function Points(x)
-    local out = {}
-    for i = 1, (x.GetNumPoints and x:GetNumPoints() or 0) do
-      local p, rel, rp, dx, dy = x:GetPoint(i)
-      out[#out + 1] = string.format("%s %s %s %.1f %.1f", tostring(p), Name(rel), tostring(rp), dx or 0, dy or 0)
-    end
-    return table.concat(out, " | ")
-  end
-  local function Describe(x)
-    local d = { name = Name(x), type = x:GetObjectType(), w = x:GetWidth(), h = x:GetHeight(), points = Points(x),
-      scale = x.GetScale and x:GetScale(), regions = {} }
-    for _, r in ipairs({ x:GetRegions() }) do
-      if r:GetObjectType() == "Texture" then
-        local layer, sub = r:GetDrawLayer()
-        d.regions[#d.regions + 1] = {
-          tex = (r.GetTextureFileID and r:GetTextureFileID()) or r:GetTexture(), atlas = r.GetAtlas and r:GetAtlas(),
-          layer = layer, sub = sub, w = r:GetWidth(), h = r:GetHeight(), points = Points(r),
-          blend = r:GetBlendMode(), shown = r:IsShown(), coords = { r:GetTexCoord() },
-        }
-      end
-    end
-    -- Barras de progreso: la textura del relleno
-    local bar = x.GetStatusBarTexture and x:GetStatusBarTexture()
-    if bar then
-      d.bar = { tex = (bar.GetTextureFileID and bar:GetTextureFileID()) or bar:GetTexture(), atlas = bar.GetAtlas and bar:GetAtlas(),
-        coords = { bar:GetTexCoord() } }
-    end
-    return d
-  end
-  -- Hijos de un marco (una barra suele tener fondo, relleno y borde como hijos)
-  local function Children(x)
-    local out = {}
-    for i, c in ipairs({ x.GetChildren and x:GetChildren() }) do
-      if i > 12 then break end
-      out[#out + 1] = Describe(c)
-    end
-    return out
-  end
-  local dump = { button = Describe(f), parent = f:GetParent() and Describe(f:GetParent()) or nil, siblings = {},
-    children = Children(f), parentChildren = f:GetParent() and Children(f:GetParent()) or nil }
-  -- Hermanos del mismo tamaño (las otras pestañas): su posición para la separación
-  local parent = f:GetParent()
-  if parent and parent.GetChildren then
-    for _, c in ipairs({ parent:GetChildren() }) do
-      if math.abs(c:GetWidth() - f:GetWidth()) < 1 and math.abs(c:GetHeight() - f:GetHeight()) < 1 then
-        dump.siblings[#dump.siblings + 1] = { name = Name(c), top = c:GetTop(), left = c:GetLeft(), points = Points(c) }
-      end
-    end
-  end
-  ES.db.debugFrame = dump
-  ES:Print(string.format(L["Guardado: %s (%dx%d). Haz /reload para que se escriba en el archivo."], dump.button.name,
-    dump.button.w, dump.button.h))
-end
-
 ---------------------------------------------------------------------------
 -- Comandos
 ---------------------------------------------------------------------------
@@ -725,11 +606,6 @@ SlashCmdList.CRAFTERSJOURNAL = function(msg)
   elseif msg == "minimap" then
     ES.db.minimap.hide = not ES.db.minimap.hide
     ES.minimapButton:SetShown(not ES.db.minimap.hide)
-  elseif msg == "icono" or msg == "icon" then
-    -- Texturas del marco bajo el ratón (p. ej. una pestaña del libro de profesiones).
-    -- Se mira a los 3 s: al escribir el comando el ratón no suele estar encima
-    ES:Print(L["Pon el ratón sobre el icono: en 3 segundos lo leo."])
-    C_Timer.After(3, function() ES:PrintIconUnderMouse() end)
   elseif msg == "errores" or msg == "errors" or msg == "errores borrar" or msg == "errors clear" then
     -- Lo apuntado por ES:RecordError (ver arriba)
     if msg:find(" ") then
@@ -748,36 +624,6 @@ SlashCmdList.CRAFTERSJOURNAL = function(msg)
         e.msg, ""))
     end
     ES:Print(L["Detalle completo en CraftersJournalDB.errorLog (SavedVariables, tras /reload). /cj errores borrar para vaciarlo."])
-  elseif msg == "instructor" or msg == "trainer" then
-    -- Precios vistos en el instructor que no coinciden con los datos: filas para
-    -- tools/forever/trainer_fees.csv (también en el archivo de SavedVariables tras /reload)
-    local rows = ES.Ledger:TrainerDiffs()
-    ES.db.trainerFeesCSV = rows
-    -- Lo comprobado de cada profesión: para tenerlo todo, abre un instructor de cada una
-    for _, c in ipairs(ES.Ledger:TrainerCoverage()) do
-      ES:Print(string.format(L["%s: %d de %d recetas de instructor vistas en el juego, %d distintas de los datos."],
-        ES:ProfLabel(c.prof), c.seen, c.total, c.diff))
-    end
-    -- Recetas que enseñan los instructores y el addon no conoce (nuevas de Forever)
-    for prof, list in pairs(ES.db.trainerUnknown or {}) do
-      for name, s in pairs(list) do
-        ES:Print(string.format(L["%s: el instructor enseña %s (%s, nivel %s) y el addon no la tiene."],
-          ES:ProfLabel(prof), s.link or name, ES.Money(s.cost or 0), tostring(s.skill or "?")))
-      end
-    end
-    if #rows == 0 then
-      ES:Print(L["Lo visto en los instructores coincide con los datos del addon."])
-    else
-      ES:Print(string.format(L["%d precios de instructor distintos de los datos (spell,name,cost,reqskill,source):"], #rows))
-      for _, line in ipairs(rows) do print(line) end
-      ES:Print(L["Haz /reload y cópialos de CraftersJournalDB.trainerFeesCSV en SavedVariables."])
-    end
-  elseif msg == "cuentas" or msg == "books" or msg == "cuentas log" or msg == "books log" then
-    -- Contabilidad (Books.lua): hoy y la sesión por categoría, o los últimos movimientos
-    ES.Books.Report(msg:find(" log$") and "log" or nil)
-  elseif msg == "pestaña" or msg == "pestana" or msg == "tab" then
-    ES:Print(L["Pon el ratón sobre el icono: en 3 segundos lo leo."])
-    C_Timer.After(3, function() ES:DumpFrameUnderMouse() end)
   else
     ES:ToggleMainFrame()
   end

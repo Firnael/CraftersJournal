@@ -14,8 +14,8 @@ from pathlib import Path
 
 src = Path(sys.argv[1])
 dst = Path(sys.argv[2])
-# Peletería, Encantamiento, Sastrería, Herrería, Alquimia, Ingeniería, Cocina, Primeros auxilios, Pesca
-SKILL_LINES = {"165", "333", "197", "164", "171", "202", "185", "129", "356"}
+# Peletería, Encantamiento, Sastrería, Herrería, Alquimia, Ingeniería, Cocina, Primeros auxilios
+SKILL_LINES = {"165", "333", "197", "164", "171", "202", "185", "129"}
 TOOL_ITEMS = {"6218", "6339", "11130", "11145", "16207", "6217", "6338", "11128", "11144", "16206",
               "5956", "9149", "6219", "10498"}  # + martillo, piedra filosofal, llave inglesa, microajustador
 RECIPE_CLASS = "9"  # clase de objeto "Receta"

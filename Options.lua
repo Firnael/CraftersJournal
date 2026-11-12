@@ -2,10 +2,7 @@ local _, ES = ...
 local L = ES.L
 
 -- Panel del addon en Opciones > AddOns > Crafter's Journal.
---   Para todos: "Fabricar al pulsar un paso de la ruta" (por defecto, sí).
---   En la copia de desarrollo (ES.DEV_BUILD), además el interruptor "Vista jugador",
---   para ver el addon como lo verá quien se lo baje de CurseForge (fuera de la
---   ventana del addon, así no sale en las capturas).
+--   "Fabricar al pulsar un paso de la ruta" (por defecto, sí).
 
 local panel = CreateFrame("Frame")
 panel.name = "Crafter's Journal"
@@ -42,21 +39,12 @@ panel.craftCheck = Option(help, function(self)
   if ES.RefreshProfessionPages then ES:RefreshProfessionPages() end
 end)
 
-if ES.DEV_BUILD then
-  panel.devCheck = Option(panel.craftCheck.note, function(self) ES:SetUserPreview(self:GetChecked() and true or false) end)
-end
-
 -- Textos al mostrarse (el idioma puede haber cambiado) y estado de las casillas
 panel:SetScript("OnShow", function()
   help:SetText(L["Escribe /cj o pulsa el botón del minimapa para abrir el diario."])
   panel.craftCheck.label:SetText(L["Fabricar al pulsar un paso de la ruta"])
   panel.craftCheck.note:SetText(L["Un clic en un paso abre la receta en tu profesión y fabrica las que faltan para ese paso. Desactivado, el clic solo abre la receta."])
   panel.craftCheck:SetChecked(ES:AutoCraft())
-  if panel.devCheck then
-    panel.devCheck.label:SetText(L["Vista jugador: ver el addon como en CurseForge"])
-    panel.devCheck:SetChecked(not ES.DEV)
-    panel.devCheck.note:SetText(L["Solo en tu copia de desarrollo. Marcado: sin Ganar dinero, Subastas, Flipping, Pesca ni buscador, como en la versión publicada."])
-  end
 end)
 
 if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then

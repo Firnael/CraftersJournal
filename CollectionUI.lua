@@ -169,9 +169,16 @@ local function Settings()
   return s
 end
 
+-- Beneficio de una receta: lo mejor entre la AH y el vendedor, o solo el vendedor
+-- con la opción "Beneficio vendiendo al vendedor" (venta segura; Discord)
+local function Profit(e)
+  if Settings().vendorProfit and e.profitVendor then return e.profitVendor end
+  return e.profit
+end
+
 -- Filtros que no son los de por defecto (para "Filtros (2)")
 local function ActiveFilters(s)
-  local n = (s.sort ~= "level" and 1 or 0) + (s.hideBound and 1 or 0)
+  local n = (s.sort ~= "level" and 1 or 0) + (s.hideBound and 1 or 0) + (s.vendorProfit and 1 or 0)
   for _ in pairs(s.hidden) do n = n + 1 end
   for _ in pairs(s.hiddenState) do n = n + 1 end
   return n
@@ -179,8 +186,9 @@ end
 
 local function CreateFilterPopup(frame)
   local Panel, Label = ES.UI.Panel, ES.UI.Label
-  local p = Panel(frame, 0.08, 0.06, 0.04, 0.98)
-  p:SetSize(300, 380)
+  local G = ES.UI.BROWN.group -- (paleta común)
+  local p = Panel(frame, G[1], G[2], G[3], 0.99)
+  p:SetSize(300, 402)
   p:SetPoint("TOPRIGHT", frame.filterButton, "BOTTOMRIGHT", 0, -4)
   p:SetFrameStrata("DIALOG")
   p:EnableMouse(true)
@@ -222,6 +230,9 @@ local function CreateFilterPopup(frame)
   Header(L["Venta"])
   Check(L["Ocultar las que no se venden en la AH (ligadas)"], 10, function() return Settings().hideBound end,
     function(on) Settings().hideBound = on or nil end)
+  y = y - 22
+  Check(L["Beneficio vendiendo al vendedor (sin AH)"], 10, function() return Settings().vendorProfit end,
+    function(on) Settings().vendorProfit = on or nil end)
   y = y - 28
   Header(L["Orden"])
   for i, o in ipairs(SORTS) do
@@ -572,15 +583,17 @@ function ES:RenderCollectionDetail(frame)
   KV(d, L["Fabricar 1"], e.cost and ES.UI.Signed(e.cost) or (GREY .. L["faltan precios"] .. "|r"))
   if e.itemID then
     local sell
-    if e.sellWhere == "ah" and e.ahPrice then sell = ES.Money(e.ahPrice) .. GREY .. L[" (AH)"] .. "|r"
+    local vendorOnly = Settings().vendorProfit
+    if e.sellWhere == "ah" and e.ahPrice and not vendorOnly then sell = ES.Money(e.ahPrice) .. GREY .. L[" (AH)"] .. "|r"
     elseif e.vendor and e.vendor > 0 then sell = ES.Money(e.vendor) .. GREY .. L[" (vendedor)"] .. "|r"
     else sell = GREY .. (scanned and L["no hay ninguno"] or L["sin escanear"]) .. "|r" end
     KV(d, (e.qty or 1) > 1 and string.format(L["Vender lo fabricado (%s uds)"], ES.Num(e.qty)) or L["Vender lo fabricado"], sell, { item = e.itemID })
     if r.bop then KV(d, ORANGE .. L["Se liga al recogerlo: no se puede vender en la AH"] .. "|r") end
-    if e.profit then KV(d, L["Beneficio por fabricación"], ES.UI.Signed(-e.profit)) end
+    local profit = Profit(e)
+    if profit then KV(d, L["Beneficio por fabricación"], ES.UI.Signed(-profit)) end
     local price = e.scrollAH or r.scrollPrice
-    if not e.known and price and e.profit and e.profit > 0 then
-      KV(d, L["Recuperas el pergamino tras"], string.format(L["%d fabricaciones"], math.ceil(price / e.profit)))
+    if not e.known and price and profit and profit > 0 then
+      KV(d, L["Recuperas el pergamino tras"], string.format(L["%d fabricaciones"], math.ceil(price / profit)))
     end
   end
 
@@ -705,7 +718,7 @@ local function SortedEntries(res, sortKey)
   for i, e in ipairs(res.entries) do entries[i] = e end
   local function Value(e)
     if sortKey == "scroll" then return e.scrollAH or math.huge end
-    if sortKey == "profit" then return -(e.profit or -math.huge) end
+    if sortKey == "profit" then return -(Profit(e) or -math.huge) end
     return e.getCost or (e.scrollAH or math.huge) -- más barata de conseguir
   end
   table.sort(entries, function(a, b)

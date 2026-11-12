@@ -1,6 +1,5 @@
 # Empaquetado para CurseForge (BigWigsMods/packager y tools/package.py): qué se
-# publica y qué no. Lo que está entre --@debug@ y --@end-debug@ queda comentado en
-# la versión publicada (ES.DEV_BUILD = false: sin el modo desarrollo, ver Core.lua).
+# publica y qué no.
 package-as: CraftersJournal
 
 # Notas de la versión que se ven en CurseForge

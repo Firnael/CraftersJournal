@@ -1,49 +1,6 @@
 local _, ES = ...
 local L = ES.L
 
-local MAX_ROWS = 100
-local ROW_HEIGHT = 22
-
--- Mercado de los objetos de profesiones (materiales y fabricados) en la AH
-local COLUMNS = ES.Localize({
-  { key = "name",     title = "Objeto",        width = 210, justify = "LEFT" },
-  { key = "price",    title = "Precio típico", width = 90,  justify = "RIGHT" },
-  { key = "min",      title = "Más barata",    width = 90,  justify = "RIGHT" },
-  { key = "listings", title = "Subastas",      width = 58,  justify = "RIGHT" },
-  { key = "quantity", title = "Uds",           width = 50,  justify = "RIGHT" },
-  { key = "trend",    title = "Tendencia",     width = 62,  justify = "RIGHT" },
-  { key = "market",   title = "Mercado",       width = 92,  justify = "RIGHT" },
-}, "title")
-
--- Columna de la tabla -> campo por el que se ordena
-local SORT_FIELDS = {
-  name = "sortName", price = "nowPrice", min = "minUnit", listings = "listings",
-  quantity = "quantity", trend = "trend", market = "marketRank",
-}
-local VERDICT_RANK = { good = 3, unknown = 2, watch = 1, avoid = 0 }
-
--- Orden de la lista: { key = columna, asc = true/false }
-function ES:GetTopSort()
-  local s = self.db.topSortBy
-  if type(s) ~= "table" or not SORT_FIELDS[s.key] then
-    s = { key = "listings", asc = false } -- columnas de versiones anteriores: ya no existen
-    self.db.topSortBy = s
-  end
-  return s
-end
-
--- Pulsar una columna: ordenar por ella; otra vez, al revés. Los números empiezan
--- de mayor a menor y el nombre de la A a la Z.
-function ES:SetTopSort(key)
-  local s = self:GetTopSort()
-  if s.key == key then
-    s.asc = not s.asc
-  else
-    s.key, s.asc = key, (key == "name")
-  end
-  self:RenderResults()
-end
-
 local GOLD_ICON   = "|TInterface\\MoneyFrame\\UI-GoldIcon:0:0:2:0|t"
 local SILVER_ICON = "|TInterface\\MoneyFrame\\UI-SilverIcon:0:0:2:0|t"
 local COPPER_ICON = "|TInterface\\MoneyFrame\\UI-CopperIcon:0:0:2:0|t"
@@ -93,75 +50,6 @@ end
 local main
 local PAGE_MARGIN = 14 -- margen negro de las páginas a los lados y abajo
 
-local function CreateRow(parent, i)
-  local row = CreateFrame("Button", nil, parent)
-  row:SetSize(700, ROW_HEIGHT)
-  row:SetPoint("TOPLEFT", 0, -(i - 1) * ROW_HEIGHT)
-
-  if i % 2 == 0 then
-    local bg = row:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(1, 1, 1, 0.04)
-  end
-  local hl = row:CreateTexture(nil, "HIGHLIGHT")
-  hl:SetAllPoints()
-  hl:SetColorTexture(0.2, 0.6, 1, 0.15)
-
-  row.icon = row:CreateTexture(nil, "ARTWORK")
-  row.icon:SetSize(18, 18)
-  row.icon:SetPoint("LEFT", 4, 0)
-
-  row.cells = {}
-  local x = 26
-  for c, col in ipairs(COLUMNS) do
-    local fs = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    local w = (c == 1) and (col.width - 26) or col.width
-    fs:SetSize(w, ROW_HEIGHT)
-    fs:SetPoint("LEFT", x, 0)
-    fs:SetJustifyH(col.justify)
-    fs:SetWordWrap(false)
-    row.cells[col.key] = fs
-    x = x + w + 4
-  end
-
-  row:SetScript("OnEnter", function(self)
-    if not self.itemID then return end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetHyperlink("item:" .. self.itemID)
-    local d = self.data
-    if d then
-      local W = { 0.8, 0.8, 0.8, 1, 1, 1 }
-      local e = d.current
-      GameTooltip:AddLine(" ")
-      GameTooltip:AddLine("Crafter's Journal", 0.2, 0.8, 1)
-      GameTooltip:AddDoubleLine(L["Ahora en la AH"], string.format(L["%d subastas, %d uds"], e.listings, e.quantity), unpack(W))
-      GameTooltip:AddDoubleLine(L["Precio típico (mediana de lo anunciado)"], Money(e.median or e.minUnit), unpack(W))
-      GameTooltip:AddDoubleLine(L["La más barata"], Money(e.minUnit), unpack(W))
-      if d.oldMin then
-        GameTooltip:AddDoubleLine(L["Precio hace "] .. d.windowLabel, Money(d.oldMin) .. " (" .. TimeAgo(d.oldTime) .. ")", unpack(W))
-      end
-      -- Lo que dice el histórico de escaneos
-      local ph = ES.History:PriceHistory(self.itemID)
-      if #ph >= 2 then
-        local lo, hi = math.huge, 0
-        for _, p in ipairs(ph) do lo, hi = math.min(lo, p.median), math.max(hi, p.median) end
-        GameTooltip:AddDoubleLine(string.format(L["Precio en %d escaneos (desde %s)"], #ph, TimeAgo(ph[1].time)),
-          Money(lo) .. " a " .. Money(hi), unpack(W))
-      end
-      local vendor = ES:VendorSellPrice(self.itemID)
-      if vendor then GameTooltip:AddDoubleLine(L["Precio de vendedor"], Money(vendor), unpack(W)) end
-      local risk = ES:PriceRisk(self.itemID, e)
-      if risk then GameTooltip:AddLine(L["Precio poco fiable: "] .. risk .. ".", 1, 0.5, 0, true) end
-      ES.Market.AddToTooltip(self.itemID)
-      GameTooltip:AddLine(L["El juego no dice qué se vende: las alertas avisan de lo que probablemente no."], 0.5, 0.5, 0.5, true)
-    end
-    GameTooltip:Show()
-  end)
-  row:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-  return row
-end
-
 local function CreateMainFrame()
   local f = CreateFrame("Frame", "CraftersJournalMainFrame", UIParent, "BackdropTemplate")
   f:SetSize(840, 612)
@@ -184,7 +72,7 @@ local function CreateMainFrame()
   f:Hide()
   tinsert(UISpecialFrames, "CraftersJournalMainFrame") -- cerrar con Escape
 
-  -- Cabecera: buscador, título e idioma (HeaderUI.lua)
+  -- Cabecera: Informar, título e idioma (HeaderUI.lua)
   ES:CreateHeader(f)
 
   -- Escalar arrastrando la esquina inferior derecha: toda la ventana se amplía o
@@ -245,11 +133,37 @@ local function CreateMainFrame()
 
   -- Navegación: la portada (tarjetas) y una página por tarjeta. Encima de la
   -- página, el título y "Volver" a la portada
+  -- Flechas a los lados, como "Mazmorras" en el diario: la profesión anterior y la
+  -- siguiente (en Subir profesiones y en la colección de recetas)
+  local function Arrow(dir)
+    local b = CreateFrame("Button", nil, f)
+    b:SetSize(26, 26)
+    local base = "Interface\\Buttons\\UI-SpellbookIcon-" .. (dir < 0 and "Prev" or "Next") .. "Page-"
+    b:SetNormalTexture(base .. "Up")
+    b:SetPushedTexture(base .. "Down")
+    b:SetDisabledTexture(base .. "Disabled")
+    b:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    b:SetScript("OnClick", function() ES:SelectSiblingPage(dir) end)
+    b:SetScript("OnEnter", function(self)
+      local key = ES:SiblingPage(dir)
+      if not key then return end
+      GameTooltip:SetOwner(self, "ANCHOR_TOP")
+      GameTooltip:AddLine(dir < 0 and L["Profesión anterior"] or L["Profesión siguiente"])
+      GameTooltip:AddLine(f.pageTitles[key] or key, 1, 1, 1)
+      GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    return b
+  end
+  f.prevPage = Arrow(-1)
+  f.prevPage:SetPoint("TOPLEFT", 14, -57) -- con aire encima (cabecera) y debajo (la página)
   f.back = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
   f.back:SetSize(130, 24)
-  f.back:SetPoint("TOPLEFT", 16, -58) -- con aire encima (cabecera) y debajo (la página)
+  f.back:SetPoint("LEFT", f.prevPage, "RIGHT", 2, 0)
   f.back:SetText(L["Profesiones"])
   f.back:SetScript("OnClick", function() ES:SelectPage(f.backTarget or "home") end)
+  f.nextPage = Arrow(1)
+  f.nextPage:SetPoint("LEFT", f.back, "RIGHT", 2, 0)
 
   f.navTitle = f:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
   f.navTitle:SetJustifyH("LEFT")
@@ -271,131 +185,10 @@ local function CreateMainFrame()
   ES:CreateInventoryPage(AddPage("inventory", ""))
   ES:CreateCalculatorPage(AddPage("calc", ""))
   ES:CreateShoppingPage(AddPage("shopping", ""))
-  ES:CreateFlippingPage(AddPage("flipping", ""))
   ES:CreatePatternsPage(AddPage("patterns", L["Colección de recetas"]))
   for _, prof in ipairs(ES.PROFESSIONS) do
     if ES.Data[prof.key] then ES:CreatePatternPage(AddPage("pattern:" .. prof.key, ES:ProfLabel(prof.key)), prof.key) end
   end
-
-  local page = AddPage("ah", L["Subastas"])
-
-  -- Cabecera de la sección (el botón de escanear está en la cabecera del panel)
-  local header = page:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  header:SetPoint("TOPLEFT", 16, -6)
-  header:SetText(L["Mercado de profesiones en la AH"])
-
-  -- Buscador de la lista: filtra mientras se escribe
-  f.search = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
-  f.search:SetSize(160, 20)
-  f.search:SetPoint("TOPRIGHT", -16, -4)
-  f.search:SetAutoFocus(false)
-  f.search:SetMaxLetters(40)
-  f.search:SetScript("OnTextChanged", function() ES:RenderResults() end)
-  f.search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-  f.search:SetScript("OnEscapePressed", function(self)
-    self:SetText("") -- Escape borra la búsqueda
-    self:ClearFocus()
-  end)
-  local searchLabel = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  searchLabel:SetPoint("RIGHT", f.search, "LEFT", -8, 0)
-  searchLabel:SetText(L["Buscar:"])
-
-  f.status = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-  f.status:SetPoint("TOPLEFT", 16, -32)
-  f.status:SetPoint("RIGHT", -16, 0)
-  f.status:SetJustifyH("LEFT")
-
-  f.summary = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  f.summary:SetPoint("TOPLEFT", 16, -50)
-  f.summary:SetPoint("RIGHT", -16, 0)
-  f.summary:SetJustifyH("LEFT")
-
-  -- Franja de tiempo y orden
-  local function SmallButton(text, width, onClick)
-    local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
-    b:SetSize(width, 20)
-    b:SetText(text)
-    b:SetScript("OnClick", onClick)
-    return b
-  end
-
-  local windowLabel = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-  windowLabel:SetPoint("TOPLEFT", 16, -92)
-  windowLabel:SetText(L["Tendencia de precio en:"])
-  f.windowButtons = {}
-  local prev = windowLabel
-  for _, w in ipairs(ES.History.WINDOWS) do
-    local b = SmallButton(w.label, 62, function()
-      ES.db.topWindow = w.key
-      ES:RenderResults()
-    end)
-    b:SetPoint("LEFT", prev, "RIGHT", 6, 0)
-    b.key = w.key
-    f.windowButtons[#f.windowButtons + 1] = b
-    prev = b
-  end
-
-  local sortHint = page:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  sortHint:SetPoint("TOPRIGHT", -16, -94)
-  sortHint:SetText(L["Pulsa una columna para ordenar (otra vez: al revés)"])
-
-  -- Títulos de columna: pulsables para ordenar; la flecha marca columna y sentido
-  local x = 16 + 26
-  f.headers = {}
-  for c, col in ipairs(COLUMNS) do
-    local w = (c == 1) and (col.width - 26) or col.width
-    local b = CreateFrame("Button", nil, page)
-    b:SetSize(w, 16)
-    b:SetPoint("TOPLEFT", x, -118)
-    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    b.text:SetAllPoints()
-    b.text:SetJustifyH(col.justify)
-    b.text:SetText(col.title)
-    b.arrow = b:CreateTexture(nil, "OVERLAY")
-    b.arrow:SetTexture("Interface\\Buttons\\UI-SortArrow")
-    b.arrow:SetSize(9, 8)
-    if col.justify == "RIGHT" then
-      b.arrow:SetPoint("RIGHT", b.text, "RIGHT", 2 - b.text:GetStringWidth() - 4, 0)
-    else
-      b.arrow:SetPoint("LEFT", b.text, "LEFT", b.text:GetStringWidth() + 4, 0)
-    end
-    b.arrow:Hide()
-    local hl = b:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints()
-    hl:SetColorTexture(1, 1, 1, 0.08)
-    b:SetScript("OnClick", function() ES:SetTopSort(col.key) end)
-    b.key = col.key
-    f.headers[#f.headers + 1] = b
-    x = x + w + 4
-  end
-
-  -- Lista con scroll
-  local scroll = ES.UI.WheelScroll(page)
-  scroll:SetPoint("TOPLEFT", 12, -136)
-  scroll:SetPoint("BOTTOMRIGHT", -12, 12)
-
-  local content = CreateFrame("Frame", nil, scroll)
-  content:SetSize(700, 1)
-  scroll:SetScrollChild(content)
-  f.content = content
-  f.rows = {}
-
-  f.empty = content:CreateFontString(nil, "OVERLAY", "GameFontDisable")
-  f.empty:SetPoint("TOP", 0, -40)
-  f.empty:SetWidth(600)
-  f.empty:SetText(L["Todavía no hay datos.\nAbre la Casa de Subastas y pulsa \"Escanear\" arriba."])
-
-  -- Refresca nombres/iconos cuando el servidor nos envía la info de un objeto
-  ES.SafeRegister(f, "GET_ITEM_INFO_RECEIVED")
-  f:SetScript("OnEvent", function(self)
-    if self.pendingItems and not self.refreshQueued then
-      self.refreshQueued = true
-      C_Timer.After(0.3, function()
-        self.refreshQueued = false
-        if self:IsShown() then ES:RenderResults() end
-      end)
-    end
-  end)
 
   -- Al abrir el panel se vuelve a donde estabas en esta sesión (la última página; en
   -- una profesión, también su vista), salvo que se pida otra. Solo en la sesión: con
@@ -425,7 +218,6 @@ end
 ---------------------------------------------------------------------------
 -- Icono de "Subir profesiones": el del libro de profesiones de Forever (pico y
 -- martillo). Es un icono propio de Forever, sin nombre de archivo: su número
--- (leído con /es icono sobre esa pestaña)
 ES.SKILLS_ICON = 8197101
 local TABS = ES.Localize({
   { key = "home",     label = "Subir profesiones",    icon = "skills",
@@ -438,15 +230,10 @@ local TABS = ES.Localize({
     desc = "Cuánto ganas con una receta, como en una hoja de cálculo: guarda varios cálculos y escribe tus precios." },
   { key = "shopping", label = "Lista de compra",      icon = "Interface\\Icons\\INV_Misc_Note_01",
     desc = "Los materiales que has añadido desde una ruta, Ganar dinero o la calculadora; con la AH abierta, se compran desde aquí." },
-  { key = "flipping", label = "Flipping",             icon = "flip", dev = true,
-    desc = "Objetos de la AH que han bajado de precio: cómpralos barato y revéndelos." },
   { key = "patterns", label = "Colección de recetas", icon = "Interface\\Icons\\INV_Scroll_03",
     desc = "Todas las recetas de cada profesión: cuántas tienes y dónde conseguir las demás." },
-  { key = "ah",       label = "Subastas",             icon = "Interface\\Icons\\INV_Misc_Bag_10", dev = true,
-    desc = "Precios, oferta y alertas de mercado de los objetos de profesiones." },
 }, "label")
 ES.Localize(TABS, "desc")
--- dev = true: solo en modo desarrollo (ES.DEV, Core.lua); en la 1.0 no se ven
 
 -- Pestaña a la que pertenece cada página, y adónde vuelve "Volver"
 local function TabOf(key)
@@ -456,7 +243,7 @@ local function TabOf(key)
 end
 
 -- Pestaña idéntica a las del libro de profesiones de Forever (medidas leídas del
--- juego con /es pestaña sobre ProfessionsFrame): botón de 55x55; marco
+-- juego sobre ProfessionsFrame): botón de 55x55; marco
 -- "common-sidetab" de 55x60 centrado; icono de 50x50 desplazado -4 px y recortado
 -- 1/32 por borde; seleccionada = "common-sidetab-selected" dos veces (normal y
 -- sumado); ratón encima = "common-sidetab-hover". La primera, 60 px bajo la esquina
@@ -511,37 +298,28 @@ end
 function ES:CreateSideTabs(f)
   f.tabs = {}
   for _, t in ipairs(TABS) do
-    if not t.dev or ES.DEV then
-      local tab = CreateTab(f, t.icon == "skills" and ES.SKILLS_ICON or t.icon ~= "flip" and t.icon or nil)
-      if t.icon == "flip" then ES.UI.FlipIcon(tab.icon) end -- dos flechas (FlippingUI.lua)
-      if #f.tabs == 0 then
-        tab:SetPoint("TOPLEFT", f, "TOPRIGHT", 0, TAB_TOP)
-      else
-        tab:SetPoint("TOPLEFT", f.tabs[#f.tabs], "BOTTOMLEFT", 0, -TAB_GAP)
-      end
-      tab.key = t.key
-      tab:SetScript("OnClick", function() ES:SelectPage(t.key) end)
-      tab:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(t.label)
-        GameTooltip:AddLine(t.desc, 0.8, 0.8, 0.8, true)
-        GameTooltip:Show()
-      end)
-      tab:SetScript("OnLeave", function() GameTooltip:Hide() end)
-      f.tabs[#f.tabs + 1] = tab
+    local tab = CreateTab(f, t.icon == "skills" and ES.SKILLS_ICON or t.icon)
+    if #f.tabs == 0 then
+      tab:SetPoint("TOPLEFT", f, "TOPRIGHT", 0, TAB_TOP)
+    else
+      tab:SetPoint("TOPLEFT", f.tabs[#f.tabs], "BOTTOMLEFT", 0, -TAB_GAP)
     end
+    tab.key = t.key
+    tab:SetScript("OnClick", function() ES:SelectPage(t.key) end)
+    tab:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:AddLine(t.label)
+      GameTooltip:AddLine(t.desc, 0.8, 0.8, 0.8, true)
+      GameTooltip:Show()
+    end)
+    tab:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    f.tabs[#f.tabs + 1] = tab
   end
 end
 
 function ES:SelectPage(key)
   if key == "lw" or key == "profit" then key = "Leatherworking" end -- nombres de versiones anteriores
-  if not main or not main.pages[key] then key = "home" end
-  if not ES.DEV and (key == "ah" or key == "flipping") then key = "home" end -- pestañas solo de desarrollo
-  if not ES.DEV then -- profesiones solo de desarrollo (Pesca) y su colección
-    for _, p in ipairs(ES.PROFESSIONS) do
-      if p.dev and (key == p.key or key == "pattern:" .. p.key) then key = "home" end
-    end
-  end
+  if not main or not main.pages[key] then key = "home" end -- (también pestañas que ya no existen)
   self.db.lastPage = key
   self.sessionPage = key -- lo que recuerda la ventana al volver a abrirla (solo esta sesión)
   for k, page in pairs(main.pages) do page:SetShown(k == key) end
@@ -552,14 +330,50 @@ function ES:SelectPage(key)
   main.back:SetShown(inner)
   main.backTarget = back
   main.back:SetText(back == "patterns" and L["Colección"] or L["Profesiones"])
+  -- Flechas: solo dentro de una profesión, y si hay otra a la que pasar
+  local siblings = inner and #self:SiblingPages(key) > 1
+  main.prevPage:SetShown(siblings)
+  main.nextPage:SetShown(siblings)
   main.navTitle:ClearAllPoints()
   if inner then
-    main.navTitle:SetPoint("LEFT", main.back, "RIGHT", 12, 0)
+    main.navTitle:SetPoint("LEFT", siblings and main.nextPage or main.back, "RIGHT", 12, 0)
   else
     main.navTitle:SetPoint("TOPLEFT", 22, -62)
   end
   main.navTitle:SetText(main.pageTitles[key] or "")
-  if key == "home" then self:RenderHome() elseif key == "ah" then self:RenderResults() end
+  if key == "home" then self:RenderHome() end
+end
+
+-- Páginas hermanas de una página interior, en el orden de la portada: primero las
+-- profesiones que tienes y luego el resto (las profesiones, o sus colecciones)
+function ES:SiblingPages(key)
+  local prefix = key:match("^pattern:") and "pattern:" or ""
+  local mine, others = {}, {}
+  for _, p in ipairs(self.PROFESSIONS or {}) do
+    local k = prefix .. p.key
+    if main and main.pages[k] then
+      local data = self.Data[p.key]
+      local has = data and data.skillLine and self:GetProfessionSkill(data.skillLine)
+      table.insert(has and mine or others, k)
+    end
+  end
+  for _, k in ipairs(others) do mine[#mine + 1] = k end
+  return mine
+end
+
+-- La anterior (dir = -1) o la siguiente (1) de la página actual, dando la vuelta
+function ES:SiblingPage(dir)
+  local key = self.db and self.db.lastPage
+  if not key then return nil end
+  local list = self:SiblingPages(key)
+  for i, k in ipairs(list) do
+    if k == key then return list[(i - 1 + dir) % #list + 1] end
+  end
+end
+
+function ES:SelectSiblingPage(dir)
+  local key = self:SiblingPage(dir)
+  if key then self:SelectPage(key) end
 end
 
 function ES:GetMainFrame()
@@ -576,7 +390,7 @@ function ES:RebuildMainFrame()
   main:SetScript("OnShow", nil)
   main = nil
   self.professionPages, self.patternPages = nil, nil
-  self.homePage, self.earnPage, self.patternsPage, self.fishingPage = nil, nil, nil, nil
+  self.homePage, self.earnPage, self.patternsPage = nil, nil, nil
   self.shoppingPage = nil
   if wasShown then self:ShowMainFrame(page) end
 end
@@ -600,155 +414,6 @@ end
 function ES:ToggleMainFrame()
   local f = self:GetMainFrame()
   f:SetShown(not f:IsShown())
-end
-
----------------------------------------------------------------------------
--- Resultados
----------------------------------------------------------------------------
-local function HideRows()
-  for _, row in ipairs(main.rows) do row:Hide() end
-  main.content:SetHeight(1)
-end
-
-function ES:RenderResults()
-  if not main then return end
-  local scan = self.db.scans[self:RealmKey()]
-
-  -- Botones de franja y orden
-  local windowKey = self.db.topWindow or "24h"
-  local window = self.History.WINDOWS[1]
-  for _, w in ipairs(self.History.WINDOWS) do
-    if w.key == windowKey then window = w end
-  end
-  for _, b in ipairs(main.windowButtons) do
-    if b.key == window.key then b:LockHighlight() else b:UnlockHighlight() end
-  end
-  -- Columna y sentido de orden; flecha en la cabecera activa
-  local sort = self:GetTopSort()
-  for _, h in ipairs(main.headers) do
-    if h.key == sort.key then
-      h.arrow:Show()
-      if sort.asc then h.arrow:SetTexCoord(0, 0.5625, 1, 0) else h.arrow:SetTexCoord(0, 0.5625, 0, 1) end
-      h.text:SetTextColor(1, 1, 1)
-    else
-      h.arrow:Hide()
-      h.text:SetTextColor(1, 0.82, 0)
-    end
-  end
-
-  local scans, _, firstTime = self.History:Summary()
-  if not scan then
-    main.summary:SetText("")
-    main.empty:SetText(L["Todavía no hay datos.\nAbre la Casa de Subastas y pulsa \"Escanear\" arriba."])
-    main.empty:Show()
-    HideRows()
-    return
-  end
-
-  local ahLabel = self:RealmKey():match("%-Neutral$") and L["AH neutral"] or L["AH de tu facción"]
-  main.summary:SetText(string.format(
-    L["%s · último escaneo %s (%d subastas) · %d escaneos guardados%s · alertas de mercado con 1-2 escaneos al día"],
-    ahLabel, TimeAgo(scan.time), scan.total, scans, firstTime and (L[", el primero "] .. TimeAgo(firstTime)) or ""))
-
-  -- Buscador: filtra por nombre (o número de objeto) mientras se escribe
-  local query = strtrim(main.search:GetText() or ""):lower()
-  local list, hidden, namesPending = {}, 0, false
-  for itemID, current in pairs(scan.items) do
-    if current.minUnit and self.History:IsTracked(itemID) then
-      local name = self:GetItemData(itemID)
-      if not name then namesPending = true end
-      local matches = query == "" or (name and name:lower():find(query, 1, true))
-        or tostring(itemID):find(query, 1, true)
-      if not matches then
-        hidden = hidden + 1
-      else
-        local oldMin, _, oldTime = self.History:OldestSnapshot(itemID, window.seconds)
-        -- Precio típico: mediana de lo anunciado (no le mueve una subasta suelta)
-        local nowPrice = current.median or current.minUnit
-        local signals = self.Market:Signals(itemID)
-        list[#list + 1] = {
-          itemID = itemID, current = current, nowPrice = nowPrice, minUnit = current.minUnit,
-          listings = current.listings, quantity = current.quantity,
-          trend = (oldMin and oldMin > 0 and oldTime < scan.time) and (nowPrice - oldMin) / oldMin * 100 or nil,
-          signals = signals, marketRank = VERDICT_RANK[signals.verdict] * 10 - signals.flags,
-          sortName = name and name:lower() or nil, -- sin nombre cargado aún: al final
-          oldMin = oldMin, oldTime = oldTime, windowLabel = window.label,
-        }
-      end
-    end
-  end
-  main.pendingItems = namesPending
-
-  if #list == 0 then
-    main.empty:SetText(query ~= "" and (L["Nada en la AH coincide con \""] .. query .. "\".")
-      or L["No hay objetos de profesiones en el último escaneo."])
-    main.empty:Show()
-    HideRows()
-    return
-  end
-  main.empty:Hide()
-
-  -- Ordenar por la columna elegida; los que no tienen ese dato van siempre al final
-  local field = SORT_FIELDS[sort.key] or "listings"
-  table.sort(list, function(a, b)
-    local va, vb = a[field], b[field]
-    if va == nil or vb == nil then
-      if va ~= nil or vb ~= nil then return va ~= nil end
-    elseif va ~= vb then
-      if sort.asc then return va < vb else return va > vb end
-    end
-    return a.itemID < b.itemID
-  end)
-  if query ~= "" then
-    main.summary:SetText(main.summary:GetText() .. string.format(L[" · búsqueda \"%s\": %d de %d objetos"], query, #list, #list + hidden))
-  end
-
-  local shown = math.min(MAX_ROWS, #list)
-  if #list > MAX_ROWS then
-    main.summary:SetText(main.summary:GetText() .. string.format(
-      L["\n|cffff9933Se muestran los %d primeros de %d según el orden elegido: usa el buscador para ver uno concreto.|r"], MAX_ROWS, #list))
-  end
-  for i = 1, shown do
-    local row = main.rows[i] or CreateRow(main.content, i)
-    main.rows[i] = row
-    local entry = list[i]
-    local name, quality, texture = self:GetItemData(entry.itemID)
-
-    row.itemID = entry.itemID
-    row.icon:SetTexture(texture or 134400) -- interrogación
-    if name then
-      local color = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality or 1]
-      row.cells.name:SetText(name)
-      if color then row.cells.name:SetTextColor(color.r, color.g, color.b) end
-    else
-      main.pendingItems = true
-      row.cells.name:SetText(L["Cargando... ("] .. entry.itemID .. ")")
-      row.cells.name:SetTextColor(0.6, 0.6, 0.6)
-    end
-    row.data = entry
-    local risk = ES:PriceRisk(entry.itemID, entry.current)
-    row.cells.price:SetText((risk and "|cffff8000! |r" or "") .. Money(entry.nowPrice))
-    row.cells.min:SetText(Money(entry.minUnit))
-    row.cells.listings:SetText(entry.listings)
-    row.cells.quantity:SetText(entry.quantity)
-    if entry.trend then
-      local change = entry.trend
-      local color = change > 2 and "|cff40ff40" or change < -2 and "|cffff6060" or "|cffcccccc"
-      row.cells.trend:SetText(string.format("%s%+d%%|r", color, math.floor(change + 0.5)))
-    else
-      row.cells.trend:SetText("|cff888888—|r")
-    end
-    local s = entry.signals
-    row.cells.market:SetText(ES.Market.LABELS[s.verdict] .. (s.flags > 0 and string.format(" |cff888888%d/%d|r", s.flags, ES.Market.SIGNALS) or ""))
-    row:Show()
-  end
-  for i = shown + 1, #main.rows do main.rows[i]:Hide() end
-
-  main.content:SetHeight(math.max(1, shown * ROW_HEIGHT))
-end
-
-function ES:OnScanStatus(text)
-  if main then main.status:SetText(text or "") end
 end
 
 function ES:OnScanComplete(scan)
@@ -798,11 +463,6 @@ function ES:RefreshScanButtons()
     main.scanButton:SetEnabled(enabled)
     main.scanButton:SetText(progress or L["Escanear"])
     self:UpdateLastScan()
-    if not self.ahOpen and not busy then
-      main.status:SetText(L["Abre la Casa de Subastas para poder analizarla."])
-    elseif self.ahOpen and not busy and not self.Scanner.statusText then
-      main.status:SetText(L["Casa de Subastas abierta: listo para analizar."])
-    end
   end
   if ahButton then
     ahButton:SetEnabled(enabled)

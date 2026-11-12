@@ -318,16 +318,6 @@ step("G. SavedVariables serializables y tamaÃ±o tras muchos escaneos", functio
   end
   local h = ES.History:Entries()
   log("      escaneos en historial: %d; tamaÃ±o aprox tras 100 escaneos: %.0f KB", #h, Size(CraftersJournalDB, {}, 0) / 1024)
-  ES:ShowMainFrame()
-  ES:SelectPage("ah")
-  for _, w in ipairs({ "24h", "3d", "7d" }) do
-    ES.db.topWindow = w
-    local t0 = py_clock()
-    ES:RenderResults()
-    local shown = 0
-    for _, row in ipairs(CraftersJournalMainFrame.rows) do if row._shown then shown = shown + 1 end end
-    log("      pintar mercado (%s) con historial lleno: %.3fs, %d filas", w, py_clock() - t0, shown)
-  end
   local t0
   t0 = py_clock()
   ES.Planner:Plan(data, { from = 1, to = 300, sellAH = true, sellDays = 2, includeScrolls = true })
@@ -445,12 +435,6 @@ end)
 ---------------------------------------------------------------------------
 step("E. UI: pestaÃ±as, planes y tooltips", function()
   ES:ShowMainFrame()
-  for _, w in ipairs({ "24h", "3d", "7d" }) do
-    ES.db.topWindow = w
-    ES:RenderResults()
-  end
-  local f = CraftersJournalMainFrame
-  for _, row in ipairs(f.rows) do if row._shown then TOOLTIP = {} row._scripts.OnEnter(row) end end
   local function clean(t) return (tostring(t):gsub("|T[^|]+|t", ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")) end
   local function bad(t) t = t or "" return t:find("%f[%w]nan%f[%W]") or t:find("%f[%w]inf%f[%W]") end
   for pi, page in ipairs(ES.professionPages) do

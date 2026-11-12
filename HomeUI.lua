@@ -34,7 +34,7 @@ local function CheckLearned()
   local changed = false
   for _, prof in ipairs(ES.PROFESSIONS) do
     local data = ES.Data[prof.key]
-    if data and data.recipes and not data.guide and ES:GetProfessionSkill(data.skillLine) then
+    if data and data.recipes and ES:GetProfessionSkill(data.skillLine) then
       local n = KnownCount(prof.key)
       if knownCount[prof.key] and knownCount[prof.key] ~= n then
         ES:InvalidatePlan(prof.key)
@@ -111,7 +111,6 @@ local ART = {
   Tailoring      = { wide = "Profession-overview-Card-Tailoring" },
   Cooking        = { wide = "Profession-overview-Card", detail = "Profession-overview-card-generic-cooking", crop = { 0.08, 0.92, 0.30, 0.80 } },
   FirstAid       = { wide = "Profession-overview-Card", detail = "Profession-overview-card-generic-firstaid", crop = { 0.08, 0.92, 0.36, 0.86 } },
-  Fishing        = { wide = "Profession-overview-Card", detail = "Profession-overview-card-generic-fishing", crop = { 0.08, 0.92, 0.30, 0.80 } },
 }
 local DETAIL_SIZE = { 225, 275 }
 
@@ -126,7 +125,6 @@ local COLORS = {
   Tailoring      = { tint = { 0.78, 0.80, 1.00 }, glow = { 0.28, 0.28, 0.72 } },
   Cooking        = { tint = { 1.00, 0.90, 0.60 }, glow = { 0.70, 0.45, 0.08 } },
   FirstAid       = { tint = { 1.00, 0.72, 0.72 }, glow = { 0.70, 0.12, 0.12 } },
-  Fishing        = { tint = { 0.70, 0.95, 1.00 }, glow = { 0.08, 0.48, 0.65 } },
 }
 local GLOW_ALPHA = 0.55 -- fuerza del resplandor a la izquierda (a la derecha, casi nada)
 
@@ -434,16 +432,12 @@ local function ProfessionEntries()
   local list = {}
   for order, prof in ipairs(ES.PROFESSIONS) do
     local data = ES.Data[prof.key]
-    if data and ES:ProfessionVisible(prof) then
+    if data then
       local rank, cap = ES:GetProfessionSkill(data.skillLine)
       -- Mismo objetivo que el detalle de la profesión, para que el coste coincida
       local e = { key = prof.key, prof = prof, order = order, rank = rank, learned = rank ~= nil, from = rank or 1,
         target = ES:ProfessionTarget(prof.key) }
       e.cap = rank and cap or nil
-      if data.guide then
-        -- Pesca: no hay ruta de fabricación, sino el tramo de la guía en el que estás
-        e.guide = ES.FishingStep(data, e.from)
-      end
       list[#list + 1] = e
     end
   end
@@ -454,7 +448,7 @@ local function ProfessionEntries()
   -- demás (de 1 a 300, las más caras de calcular) se calculan al abrirlas, y la
   -- tarjeta enseña esa ruta si sigue valiendo
   for _, e in ipairs(list) do
-    if not e.guide and e.from < e.target then
+    if e.from < e.target then
       if e.learned then
         e.plan = ES:RequestPlan(e.key, e.from, e.target, e.cap, function() ES:RenderHome() end, "home")
         e.pending = not e.plan
@@ -501,7 +495,7 @@ local function ProfessionTooltip(e)
       GameTooltip:AddLine(L["Calculando la ruta…"], 0.6, 0.6, 0.6)
     elseif e.from >= e.target then
       GameTooltip:AddLine(e.from >= ES.MAX_SKILL and L["Ya está al máximo."] or L["Ya has llegado a tu objetivo."], 0.4, 1, 0.4)
-    elseif not e.learned and not e.guide then
+    elseif not e.learned then
       -- (las que no tienes no se calculan solas: ver ProfessionEntries)
       GameTooltip:AddLine(" ")
       GameTooltip:AddLine(L["Su ruta se calcula al abrirla (solo se calculan solas las profesiones que tienes)."], 0.6, 0.6, 0.6, true)
@@ -526,8 +520,6 @@ function ES:RenderHome()
       -- Ruta empezada: se ve de un vistazo (borde verde y aviso)
       note = GREEN .. string.format(lock.completed and L["Ruta completada · de %d a %d"] or L["Ruta en curso · de %d a %d"],
         lock.from, lock.to) .. "|r"
-    elseif e.guide then
-      note = GREY .. string.format(L["Tramo %d-%d de la guía"], e.guide.from, e.guide.to) .. "|r"
     elseif e.pending then
       note = GREY .. L["Calculando la ruta…"] .. "|r"
     elseif plan and #plan.steps == 0 then
@@ -543,7 +535,7 @@ function ES:RenderHome()
     end
     cards[#cards + 1] = {
       key = e.key, name = ES:ProfLabel(e.key), icon = e.prof.icon or ES.ICON, learned = e.learned,
-      cost = e.guide and (GREY .. L["Guía de zonas"] .. "|r") or plan and SignedCost(plan.net) or e.pending and (GREY .. "…|r") or (e.from >= e.target and (GREEN .. (e.from >= ES.MAX_SKILL and L["Al máximo"] or L["Objetivo cumplido"]) .. "|r") or (GREY .. "—|r")),
+      cost = plan and SignedCost(plan.net) or e.pending and (GREY .. "…|r") or (e.from >= e.target and (GREEN .. (e.from >= ES.MAX_SKILL and L["Al máximo"] or L["Objetivo cumplido"]) .. "|r") or (GREY .. "—|r")),
       level = string.format(L["Nivel %s%d|r / %d"], e.learned and GOLD or GREY, e.from, e.target),
       note = note or "", tooltip = ProfessionTooltip(e), active = (lock and plan) and true or nil,
     }

@@ -22,9 +22,26 @@ local function Log(text)
 end
 Ledger.Log = Log
 
-local NumSlots = (C_Container and C_Container.GetContainerNumSlots) or GetContainerNumSlots
-local ContainerItemID = (C_Container and C_Container.GetContainerItemID) or GetContainerItemID
-local UseItem = (C_Container and C_Container.UseContainerItem) or UseContainerItem
+-- Funciones de las bolsas: C_Container (cliente moderno) o las de siempre. Se buscan
+-- al usarlas, no al cargar (así también valen las de las pruebas)
+local function CC(name) return (C_Container and C_Container[name]) or _G[name] end
+local function NumSlots(bag) local f = CC("GetContainerNumSlots") return f and f(bag) or 0 end
+local function ContainerItemID(bag, slot) local f = CC("GetContainerItemID") return f and f(bag, slot) end
+local function UseItem(bag, slot) local f = CC("UseContainerItem") if f then f(bag, slot) end end
+
+-- Una casilla libre en una bolsa normal (no de hierbas, de encantamiento...): bag, slot
+local function EmptySlot()
+  local free = CC("GetContainerNumFreeSlots")
+  for bag = 0, 4 do
+    local n, family = 1, 0
+    if free then n, family = free(bag) end
+    if (n or 0) > 0 and (family or 0) == 0 then
+      for slot = 1, NumSlots(bag) do
+        if not ContainerItemID(bag, slot) then return bag, slot end
+      end
+    end
+  end
+end
 
 -- Unidades de un objeto en una casilla de las bolsas
 local function SlotCount(bag, slot)
@@ -39,7 +56,6 @@ end
 -- Casillas de las bolsas (no el banco) con este objeto: { {bag, slot, count} }
 local function Slots(itemID)
   local list = {}
-  if not (NumSlots and ContainerItemID) then return list end
   for bag = 0, 4 do
     for slot = 1, NumSlots(bag) or 0 do
       if ContainerItemID(bag, slot) == itemID then
@@ -84,7 +100,6 @@ end
 ---------------------------------------------------------------------------
 -- Descuento del instructor por reputación (UnitReaction: 5 amistoso ... 8 exaltado)
 local REP_DISCOUNT = { [5] = 0.05, [6] = 0.10, [7] = 0.15, [8] = 0.20 }
-local REP_NAMES = { [5] = "Friendly", [6] = "Honored", [7] = "Revered", [8] = "Exalted" }
 
 -- Precio sin el descuento de reputación (el que vale para todos)
 local function BaseCost(seen)
@@ -133,30 +148,6 @@ function Ledger:ReadAllTrainerServices()
   return changed
 end
 
--- Cuántas recetas de instructor de cada profesión se han visto en el juego y cuántas
--- cobran distinto de los datos: { { prof, total, seen, diff } } (/cj instructor)
-function Ledger:TrainerCoverage()
-  local list = {}
-  for _, p in ipairs(ES.PROFESSIONS or {}) do
-    local data = ES.Data[p.key]
-    if data and data.recipes and not data.guide then
-      local total, seen, diff = 0, 0, 0
-      for id, r in pairs(data.recipes) do
-        if r.fee or r.trainer then
-          total = total + 1
-          local s = ES.db.trainerFees and ES.db.trainerFees[id]
-          if s then
-            seen = seen + 1
-            if BaseCost(s) ~= r.fee or (s.skill and s.skill ~= r.train) then diff = diff + 1 end
-          end
-        end
-      end
-      list[#list + 1] = { prof = p.key, total = total, seen = seen, diff = diff }
-    end
-  end
-  return list
-end
-
 function Ledger:ReadTrainer()
   if not (ES.db and GetNumTrainerServices and GetTrainerServiceCost) then return 0 end
   local prof = TrainerProfession()
@@ -186,18 +177,6 @@ function Ledger:ReadTrainer()
           changedProfs[key] = true
         end
         ES.db.trainerFees[id] = { cost = cost, skill = skill, rep = rep, prof = key, time = time() }
-      elseif not id and prof then
-        -- Receta que el instructor enseña y los datos no tienen (nueva de Forever, como
-        -- Gray Leather Boots): se apunta para añadirla (/cj instructor). Los rangos de la
-        -- profesión (Oficial, Experto...) se llaman como ella: esos no
-        local name = GetTrainerServiceInfo and GetTrainerServiceInfo(i)
-        if name and name ~= ES:ProfLabel(prof) and name ~= SpellName(PROF_SPELLS[prof]) then
-          ES.db.trainerUnknown = ES.db.trainerUnknown or {}
-          ES.db.trainerUnknown[prof] = ES.db.trainerUnknown[prof] or {}
-          ES.db.trainerUnknown[prof][name] = { cost = GetTrainerServiceCost(i),
-            skill = GetTrainerServiceSkillReq and select(2, GetTrainerServiceSkillReq(i)),
-            link = GetTrainerServiceItemLink and GetTrainerServiceItemLink(i), time = time() }
-        end
       end
     end
   end
@@ -213,44 +192,6 @@ function Ledger:ReadTrainer()
     if ES.RefreshProfessionPages then ES:RefreshProfessionPages() end
   end
   return changed
-end
-
--- "1s 35c" (texto plano, sin iconos: va a un CSV)
-local function PlainMoney(copper)
-  if not copper then return "?" end
-  local g, s, c = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
-  local parts = {}
-  if g > 0 then parts[#parts + 1] = g .. "g" end
-  if s > 0 then parts[#parts + 1] = s .. "s" end
-  if c > 0 or #parts == 0 then parts[#parts + 1] = c .. "c" end
-  return table.concat(parts, " ")
-end
-
--- Lo visto en el instructor que no coincide con los datos, como filas de
--- tools/forever/trainer_fees.csv (spell,name,cost,reqskill,source)
-function Ledger:TrainerDiffs()
-  local rows = {}
-  for id, seen in pairs(ES.db and ES.db.trainerFees or {}) do
-    local data = seen.prof and ES.Data[seen.prof]
-    local r = data and data.recipes[id]
-    if r then
-      local base = BaseCost(seen)
-      if base ~= r.fee or (seen.skill and seen.skill ~= r.train) then
-        local profName = seen.prof:gsub("(%l)(%u)", "%1 %2") -- FirstAid -> First Aid
-        local note = string.format("In-game %s trainer%s (%s%s; Requires %s (%s); data says %s at %s)",
-          profName, date and (" " .. date("%Y-%m-%d", seen.time)) or "", PlainMoney(seen.cost),
-          REP_NAMES[seen.rep or 0] and string.format(" at %s, base %s", REP_NAMES[seen.rep], PlainMoney(base)) or "",
-          profName, tostring(seen.skill or "?"), PlainMoney(r.fee), tostring(r.train or "?"))
-        local name = r.nameEN or r.name
-        if name:find(",") then name = '"' .. name .. '"' end -- CSV
-        rows[#rows + 1] = { id = id, line = string.format("%d,%s,%d,%s,%s", id, name, base,
-          tostring(seen.skill or r.train or ""), note) }
-      end
-    end
-  end
-  table.sort(rows, function(a, b) return a.id < b.id end)
-  for i, row in ipairs(rows) do rows[i] = row.line end
-  return rows
 end
 
 ---------------------------------------------------------------------------
@@ -296,7 +237,7 @@ local SELL_WINDOW = 3  -- s entre vender y que suba tu dinero
 local function NoteSale(bag, slot)
   if not (MerchantFrame and MerchantFrame:IsShown()) then return end
   local info = C_Container and C_Container.GetContainerItemInfo and C_Container.GetContainerItemInfo(bag, slot)
-  local itemID = info and info.itemID or (ContainerItemID and ContainerItemID(bag, slot))
+  local itemID = info and info.itemID or ContainerItemID(bag, slot)
   local count = info and info.stackCount or SlotCount(bag, slot)
   -- Solo lo que el vendedor compra (sin valor: no hay venta que esperar) y sin
   -- dañar (el equipo dañado se paga menos: no es su precio)
@@ -389,16 +330,37 @@ end
 -- Vende hasta `n` unidades al vendedor abierto, pilas enteras que quepan en `n`.
 -- Devuelve cuántas vendió.
 function Ledger:SellToVendor(itemID, n)
-  if not self:MerchantOpen() or not UseItem or n <= 0 then return 0 end
+  if not self:MerchantOpen() or not CC("UseContainerItem") or n <= 0 then return 0 end
   local sold = 0
-  for _, s in ipairs(Slots(itemID)) do
+  local slots = Slots(itemID)
+  for _, s in ipairs(slots) do
     if sold + s.count <= n then
       UseItem(s.bag, s.slot)
       sold = sold + s.count
+      s.used = true
     end
   end
-  if sold < n then
-    ES:Print(string.format(L["Vendidos %d de %d: el resto está en pilas más grandes de lo que hay que vender."], sold, n))
+  -- Lo que queda está en una pila más grande (17 y hay que vender 12): se parte. Las
+  -- 12 van a una casilla libre y se vende esa pila; las otras 5 se quedan
+  local left = n - sold
+  if left > 0 then
+    local from
+    for _, s in ipairs(slots) do if not s.used and s.count > left then from = s break end end
+    local bag, slot = EmptySlot()
+    local split, pickup = CC("SplitContainerItem"), CC("PickupContainerItem")
+    if from and bag and split and pickup and not (CursorHasItem and CursorHasItem()) then
+      split(from.bag, from.slot, left)
+      pickup(bag, slot)
+      -- (el juego tarda un momento en dejar la pila nueva en su casilla)
+      C_Timer.After(0.5, function()
+        if self:MerchantOpen() and ContainerItemID(bag, slot) == itemID then UseItem(bag, slot) end
+      end)
+      sold = n
+    elseif from and not bag then
+      ES:Print(string.format(L["Vendidos %d de %d: para vender el resto hace falta un hueco libre en la bolsa (se parte la pila)."], sold, n))
+    else
+      ES:Print(string.format(L["Vendidos %d de %d: el resto está en pilas más grandes de lo que hay que vender."], sold, n))
+    end
   end
   return sold
 end

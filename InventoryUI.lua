@@ -122,13 +122,10 @@ end
 local function ItemLabel(itemID) return ES.UI.ItemLabel(itemID, L["Objeto "] .. itemID) end
 
 -- Cabecera con icono, título y subtítulo; franja de cifras; estado; lista con scroll.
--- La comparten Inventario y Flipping (FlippingUI.lua). stats = { { key, label } }
+-- stats = { { key, label } }
 function ES.UI.ListPage(page, title, icon, stats)
-  local Panel, Label = ES.UI.Panel, ES.UI.Label
-  local head = Panel(page)
-  head:SetPoint("TOPLEFT", 10, -2)
-  head:SetPoint("TOPRIGHT", -10, -2)
-  head:SetHeight(66)
+  local Label = ES.UI.Label
+  local head = ES.UI.CardHead(page) -- (fondo y colores de Subir profesiones)
   page.icon = head:CreateTexture(nil, "ARTWORK")
   page.icon:SetSize(44, 44)
   page.icon:SetPoint("LEFT", 12, 0)
@@ -167,9 +164,7 @@ function ES.UI.ListPage(page, title, icon, stats)
   page.status:SetJustifyH("LEFT")
   page.status:SetWordWrap(false)
 
-  local list = Panel(page, 0.07, 0.05, 0.03, 0.9)
-  list:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -70)
-  list:SetPoint("BOTTOMRIGHT", -10, 4)
+  local list = ES.UI.ListPanel(page, head, 70)
   local scroll = ES.UI.WheelScroll(list)
   scroll:SetPoint("TOPLEFT", 8, -8)
   scroll:SetPoint("BOTTOMRIGHT", -8, 8)

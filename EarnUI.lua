@@ -78,11 +78,8 @@ local function IdeaLine(idea, dim)
 end
 
 function ES:CreateEarnPage(page)
-  local Panel, Label = ES.UI.Panel, ES.UI.Label
-  local head = Panel(page)
-  head:SetPoint("TOPLEFT", 10, -2)
-  head:SetPoint("TOPRIGHT", -10, -2)
-  head:SetHeight(66)
+  local Label = ES.UI.Label
+  local head = ES.UI.CardHead(page) -- (fondo y colores de Subir profesiones)
   local icon = head:CreateTexture(nil, "ARTWORK")
   icon:SetSize(44, 44)
   icon:SetPoint("LEFT", 12, 0)
@@ -160,9 +157,7 @@ function ES:CreateEarnPage(page)
   page.status:SetJustifyH("LEFT")
   page.status:SetWordWrap(false)
 
-  local list = Panel(page, 0.07, 0.05, 0.03, 0.9)
-  list:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -70)
-  list:SetPoint("BOTTOMRIGHT", -10, 4)
+  local list = ES.UI.ListPanel(page, head, 70)
   local scroll = ES.UI.WheelScroll(list)
   scroll:SetPoint("TOPLEFT", 8, -8)
   scroll:SetPoint("BOTTOMRIGHT", -8, 8)

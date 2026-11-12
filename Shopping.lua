@@ -16,6 +16,7 @@ local _, ES = ...
 
 local Shopping = {}
 ES.Shopping = Shopping
+local L = ES.L
 
 local MAX_LISTS = 20
 local BUY = { ahBuy = true, vendorBuy = true, buy = true }
@@ -84,6 +85,57 @@ function Shopping.RemoveItem(list, itemID)
   if #list.items == 0 then Shopping.Remove(list) end
 end
 
+---------------------------------------------------------------------------
+-- Comprar por tramos (Planner.Phase): con la ruta empezada y el modo activo (por
+-- defecto), la lista de esa profesión es la del tramo en el que estás, calculada al
+-- vuelo: lo que pide el tramo (con colchón) menos lo que llevas. Sustituye a la
+-- lista guardada de la ruta entera
+---------------------------------------------------------------------------
+function Shopping.ByPhase(profKey)
+  local s = ES.db and ES.db.prof and ES.db.prof[profKey]
+  return not (s and s.byPhase == false)
+end
+
+-- Fuente y precio de un material según la ruta (AH antes que vendedor)
+local function SourceOf(plan, itemID)
+  local found
+  for _, e in ipairs(plan.shopping or {}) do
+    if e.itemID == itemID and (not found or e.source == "ah") then found = e end
+  end
+  if found then return found.source, found.unit end
+  return (ES.Data.VendorPrices and ES.Data.VendorPrices[itemID]) and "vendor" or "ah", 0
+end
+
+-- Lista del tramo de una profesión con la ruta empezada, o nil
+function Shopping.PhaseList(profKey)
+  if not (ES.RouteLock and ES:RouteLock(profKey) and Shopping.ByPhase(profKey)) then return nil end
+  local plan = ES:LockedPlan(profKey)
+  local data = ES.Data[profKey]
+  if not (plan and data) then return nil end
+  local level = ES:GetProfessionSkill(data.skillLine) or plan.from
+  local need, phase = ES.Planner.PhaseNeed(plan, level)
+  if not phase then return nil end
+  local list = { t = 0, kind = "phase", key = profKey, live = true, phase = phase, items = {},
+    title = string.format(L["%s: tramo %d-%d"], ES:ProfLabel(profKey), phase.from, phase.to) }
+  for itemID, n in pairs(need) do
+    local source, unit = SourceOf(plan, itemID)
+    list.items[#list.items + 1] = { itemID = itemID, need = n.target, expected = n.expected, unit = unit, source = source }
+  end
+  table.sort(list.items, function(a, b) return a.need * (a.unit or 0) > b.need * (b.unit or 0)
+    or (a.need * (a.unit or 0) == b.need * (b.unit or 0) and a.itemID < b.itemID) end)
+  return #list.items > 0 and list or nil
+end
+
+-- Las listas de tramo de todas las rutas empezadas
+function Shopping.PhaseLists()
+  local out = {}
+  for _, p in ipairs(ES.PROFESSIONS or {}) do
+    local list = ES.Data[p.key] and Shopping.PhaseList(p.key)
+    if list then out[#out + 1] = list end
+  end
+  return out
+end
+
 -- Compras de cada material según la contabilidad: { [itemID] = { { t, q }, ... } }
 local function Purchases()
   local out = {}
@@ -113,8 +165,24 @@ function Shopping.Status()
   local lists = Shopping.Lists()
   local buys = Purchases()
   local res = { lists = {}, done = 0, total = 0, cost = 0 }
+  -- Rutas por tramos: su lista viva va primero y la guardada de la ruta entera no sale
+  local phased = {}
+  for _, list in ipairs(Shopping.PhaseLists()) do
+    phased[list.key] = true
+    local s = { list = list, items = {}, done = 0, total = 0, cost = 0 }
+    for _, it in ipairs(list.items) do
+      local bought = math.min(ES:ItemCount(it.itemID) or 0, it.need) -- (lo que llevas)
+      local left = it.need - bought
+      s.items[#s.items + 1] = { it = it, bought = bought, left = left }
+      s.total = s.total + 1
+      if left == 0 then s.done = s.done + 1 else s.cost = s.cost + left * (it.unit or 0) end
+    end
+    res.lists[#res.lists + 1] = s
+    res.done, res.total, res.cost = res.done + s.done, res.total + s.total, res.cost + s.cost
+  end
   -- De la más antigua a la más nueva: cada compra llena la primera lista que la cubre
   for _, list in ipairs(lists) do
+    if not (list.kind == "route" and phased[list.key]) then
     local s = { list = list, items = {}, done = 0, total = 0, cost = 0 }
     for _, it in ipairs(list.items) do
       local bought = 0
@@ -131,6 +199,7 @@ function Shopping.Status()
     end
     res.lists[#res.lists + 1] = s
     res.done, res.total, res.cost = res.done + s.done, res.total + s.total, res.cost + s.cost
+    end
   end
   return res
 end

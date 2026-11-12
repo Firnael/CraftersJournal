@@ -13,6 +13,6 @@ Download it from CurseForge (link coming soon).
 
 - The addon code is this folder. In WoW, `Interface\AddOns\CraftersJournal` can be a directory junction to it.
 - Data is generated from the WoW Forever client tables (wago.tools), CMaNGOS and QuestieDB: `python tools/build_data.py` regenerates `Data/` and runs the tests.
-- `python tools/package.py` builds the release zip in `dist/` (the same as the CurseForge packager: no `tools/` or `docs/`, development mode off).
-- Features in progress are only visible in development mode (`ES.DEV`, see `Core.lua`). Releases are published by `.github/workflows/release.yml` when a `v*` tag is pushed.
+- `python tools/package.py` builds the release zip in `dist/` (the same as the CurseForge packager: no `tools/` or `docs/`).
+- Releases are published by `.github/workflows/release.yml` when a `v*` tag is pushed.
 - Roadmap: `docs/PLAN.md` (in Spanish).

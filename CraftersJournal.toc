@@ -19,7 +19,6 @@ Data\Alchemy.lua
 Data\Engineering.lua
 Data\Cooking.lua
 Data\FirstAid.lua
-Data\Fishing.lua
 Data\Sources.lua
 Data\Names_esES.lua
 
@@ -40,7 +39,6 @@ Shopping.lua
 Collection.lua
 UI.lua
 ProfessionUI.lua
-FishingUI.lua
 HomeUI.lua
 HeaderUI.lua
 AuctionUI.lua
@@ -51,7 +49,6 @@ InventoryUI.lua
 Calculator.lua
 Auctionator.lua
 CalculatorUI.lua
-FlippingUI.lua
 CollectionUI.lua
 PatternsUI.lua
 VendorUI.lua

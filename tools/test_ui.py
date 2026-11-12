@@ -140,29 +140,12 @@ step("historial: 3 escaneos", function()
   local n, c2 = S:Summary()
   log[#log+1] = string.format("     resumen: %d escaneos, %d comparaciones", n, c2)
   assert(n == 3 and c2 == 2, "resumen incorrecto")
-  log[#log+1] = "     snapshot antiguo pantalones: " .. tostring(S:OldestSnapshot(4242, 86400))
   local last = ES.db.history[key][3]
   log[#log+1] = "     baratas que siguen (último): " .. tostring(last.stuck)
   assert(last.sold == nil, "el historial no debe guardar ventas")
 end)
 
 step("crear panel", function() ES:ShowMainFrame() end)
-step("pintar mercado", function() ES:RenderResults() end)
-step("pintar mercado (3 días, todas las columnas)", function()
-  ES.db.topWindow = "3d"
-  for _, h in ipairs(CraftersJournalMainFrame.headers) do h._scripts.OnClick(h) h._scripts.OnClick(h) end
-end)
-step("tooltip fila mercado", function()
-  local row = CraftersJournalMainFrame.rows[1]
-  row._scripts.OnEnter(row)
-  log[#log+1] = "     fila1: " .. tostring(row.cells.name._text) .. " | subastas " .. tostring(row.cells.listings._text)
-    .. " | tendencia " .. tostring(row.cells.trend._text) .. " | mercado " .. tostring(row.cells.market._text)
-end)
-step("franja de 7 días y versión antigua guardada", function()
-  ES.db.topWindow = "all"; ES.db.topSortBy = { key = "sold", asc = false } -- de versiones anteriores
-  ES:RenderResults()
-  assert(ES.db.topSortBy.key == "listings", "no migró el orden antiguo")
-end)
 
 step("pestaÃ±a peleterÃ­a", function()
   ES:SelectPage("lw")
@@ -463,9 +446,8 @@ step("contabilidad: cada cambio de dinero, una vez y cuadrando", function()
   for k in pairs(B.pending) do B.pending[k] = nil end
   for k in pairs(B.recent) do B.recent[k] = nil end
   for k in pairs(B.seenMail) do B.seenMail[k] = nil end
-  B.session = nil
   B.Start()
-  assert(B.Data().moves[1] and B.Data().moves[1].m == 700 and B.session.start == 99300, "ajuste fuera de sesión")
+  assert(B.Data().moves[1] and B.Data().moves[1].m == 700, "ajuste fuera de sesión")
   local function Change(d) money = money + d return B.OnMoney() end
   -- Botín: sin causa, "otros"
   assert(Change(500).k == "other", "botín")
@@ -564,17 +546,20 @@ step("contabilidad: cada cambio de dinero, una vez y cuadrando", function()
   m = Change(-25)
   assert(m.k == "other" and m.n, "sin causa con el vendedor")
   -- Cuadre: los movimientos suman lo que cambió el dinero
-  local s, today = B.Session(), B.Today()
-  assert(s.total == s.net and s.net == money - 99300, string.format("sesión no cuadra: %d / %d", s.total, s.net))
-  assert(today.total == today.net, string.format("hoy no cuadra: %d / %d", today.total, today.net))
-  assert(s.totals.ahSale == 42750 and s.totals.sale == 60000 and s.totals.ahBuy == -1980, "totales por categoría")
-  B.Report()
-  B.Report("log")
+  local total, totals = 0, {}
+  for _, mv in ipairs(B.Data().moves) do
+    total = total + mv.m
+    totals[mv.k] = (totals[mv.k] or 0) + mv.m
+  end
+  assert(total == money - 99300, string.format("no cuadra: %d / %d", total, money - 99300))
+  local d
+  for _, day in pairs(B.Data().days) do d = day end -- (un solo día en la prueba)
+  assert(d and d.last - d.first == money - 99300, "el día no cuadra")
+  assert(totals.ahSale == 42750 and totals.sale == 60000 and totals.ahBuy == -1980, "totales por categoría")
   -- Patrón de los mensajes del juego (con caracteres especiales)
   assert(("Your auction of Elixir (x5) has expired."):match(B.Pattern("Your auction of %s has expired.")) == "Elixir (x5)", "patrón")
-  log[#log+1] = string.format("     %d movimientos, neto %s", #B.Data().moves, ES.Money(s.net))
+  log[#log+1] = string.format("     %d movimientos, neto %s", #B.Data().moves, ES.Money(total))
   ES.charData, GetMoney, MerchantFrame, C_Container, ES.db.sellSeen = saved.charData, saved.GetMoney, saved.MerchantFrame, saved.C_Container, saved.sellSeen
-  B.session = nil
 end)
 step("colección de recetas", function()
   local realSkill, realKnown = ES.GetProfessionSkill, ES.IsRecipeKnown
@@ -598,7 +583,7 @@ step("colección de recetas", function()
   for _, learnedPass in ipairs({ true, false }) do
     for _, pr in ipairs(ES.PROFESSIONS) do
       local has = ES.Data[pr.key] and ES:GetProfessionSkill(ES.Data[pr.key].skillLine) ~= nil
-      if ES:ProfessionVisible(pr) and ES.Data[pr.key] and has == learnedPass then want[#want + 1] = pr.key end
+      if ES.Data[pr.key] and has == learnedPass then want[#want + 1] = pr.key end
     end
   end
   assert(table.concat(porder, ",") == table.concat(want, ","), "orden de Patterns: " .. table.concat(porder, ","))
@@ -636,6 +621,14 @@ step("colección de recetas", function()
   for _, cb in ipairs(cf.filterPopup.checks) do cb._scripts.OnClick(cb) end
   log[#log+1] = "     botón con filtros activos: " .. tostring(cf.filterButton._text)
   for _, o in ipairs({ "level", "scroll", "profit", "cheapest" }) do ES.db.collection.sort = o ES:RenderCollection(cf) end
+  -- Beneficio solo al vendedor (Discord): ordena y pinta con él
+  ES.db.collection.vendorProfit, ES.db.collection.sort = true, "profit"
+  ES:RenderCollection(cf)
+  local market = ES.Planner:RecipeMarket(ES.Data.Leatherworking, {})
+  for _, e in ipairs(market) do
+    if e.profit then assert(e.profitVendor and e.profitVendor <= e.profit + 0.01, "beneficio al vendedor: " .. tostring(e.profitVendor)) break end
+  end
+  ES.db.collection.vendorProfit = nil
   ES:RenderCollection(cf)
   -- Restablecer
   ES.db.collection = nil
@@ -857,8 +850,8 @@ step("portada: tarjetas de profesiones", function()
   header._scripts.OnClick(header)
   assert(ES.db.othersCollapsed == false, "no recuerda que están desplegadas")
   log[#log+1] = "     atlas pedidos: " .. table.concat(atlasAsked, ", ")
-  -- Uno de fondo por tarjeta + el dibujo de las secundarias (cocina, primeros auxilios y pesca)
-  assert(#atlasAsked == ES.homePage.shownCards + 3, "atlas pedidos: " .. #atlasAsked)
+  -- Uno de fondo por tarjeta + el dibujo de las secundarias (cocina y primeros auxilios)
+  assert(#atlasAsked == ES.homePage.shownCards + 2, "atlas pedidos: " .. #atlasAsked)
   -- Escalar: arrastrar la esquina al 150% del tamaño amplía la ventana x1,5 en
   -- ancho y alto (en el simulacro: marco de 100x100 en (100,100), escala de UI 100)
   local f = CraftersJournalMainFrame
@@ -892,7 +885,7 @@ step("portada: tarjetas de profesiones", function()
   for _, learnedPass in ipairs({ true, false }) do
     for _, p in ipairs(ES.PROFESSIONS) do
       local has = ES.Data[p.key] and ES:GetProfessionSkill(ES.Data[p.key].skillLine) ~= nil
-      if ES:ProfessionVisible(p) and has == learnedPass then want[#want + 1] = p.key end
+      if has == learnedPass then want[#want + 1] = p.key end
     end
   end
   assert(table.concat(order, ",") == table.concat(want, ","), "orden de la portada: " .. table.concat(order, ","))
@@ -902,7 +895,7 @@ step("portada: tarjetas de profesiones", function()
   assert(tostring(lw.level._text):find("%d+|r / %d+"), "nivel no mostrado: " .. tostring(lw.level._text))
   -- Pestañas laterales: cada una abre su página y queda marcada
   local mf = ES:GetMainFrame()
-  assert(#mf.tabs == 8, "pestañas: " .. #mf.tabs)
+  assert(#mf.tabs == 6, "pestañas: " .. #mf.tabs)
   for _, tab in ipairs(mf.tabs) do
     tab._scripts.OnClick(tab)
     assert(ES.db.lastPage == tab.key, "la pestaña " .. tab.key .. " no abre su página")
@@ -947,7 +940,43 @@ step("portada: tarjetas de profesiones", function()
   -- (un paso de la ruta, no "Fabrica N×" de un material: esos se prueban aparte)
   for _, l in ipairs(page.lines) do if l.craftCount and not l.skipTip then craftLine = l break end end
   assert(craftLine, "con la opción por defecto, el clic en un paso debería fabricar")
-  craftLine.onClick() -- un solo clic: abre la receta y fabrica lo que falta
+  -- Ventana de la profesión cerrada: el primer clic solo la abre (fabricar ahí hacía
+  -- solo 1, y fabricar después desde un temporizador lo bloquea el juego). El aviso,
+  -- una vez aunque se pulse varias veces
+  local printed, savedPrint = {}, ES.Print
+  ES.Print = function(_, msg) printed[#printed + 1] = msg end
+  craftLine.onClick()
+  craftLine.onClick()
+  ES.Print = savedPrint
+  assert(opened == page.plan.steps[1].id and not crafted, "con la ventana cerrada debería solo abrir la receta")
+  assert(#printed == 1, "el aviso de pulsar otra vez se repite: " .. #printed)
+  -- Abierta y cargada (Forever no da numAvailable): el clic fabrica lo que falta
+  ProfessionsFrame = CreateFrame("Frame")
+  ProfessionsFrame:Show()
+  C_TradeSkillUI.GetRecipeInfo = function() return { learned = true } end
+  -- Sin materiales: no fabrica y dice cuál falta (antes, "Fabricando N" igualmente)
+  local savedCount = ES.ItemCount
+  ES.ItemCount = function() return 0 end
+  printed = {}
+  ES.Print = function(_, msg) printed[#printed + 1] = msg end
+  craftLine.onClick()
+  assert(not crafted and printed[1] and printed[1]:find("te falta"), "sin materiales: " .. tostring(printed[1]))
+  -- Materiales para 1: fabrica 1 y dice que falta para el resto
+  local r = page.plan.steps[1].recipe
+  local per = {}
+  for _, rq in ipairs(r.r) do per[rq[1]] = rq[2] end
+  ES.ItemCount = function(_, id) return per[id] or 0 end
+  printed = {}
+  craftLine.onClick()
+  if page.plan.steps[1].crafts > 1 then
+    assert(crafted and crafted[2] == 1 and printed[1]:find("de " .. page.plan.steps[1].crafts), "con material para 1: " .. tostring(printed[1]))
+  end
+  ES.ItemCount = function() return 9999 end
+  ES.Print = savedPrint
+  crafted, opened = nil, nil
+  craftLine.onClick()
+  ES.ItemCount = savedCount
+  ProfessionsFrame = nil
   assert(opened == page.plan.steps[1].id, "el clic no abrió la receta del paso")
   assert(crafted and crafted[1] == page.plan.steps[1].id and crafted[2] == page.plan.steps[1].crafts, "el clic no fabricó lo del paso")
   log[#log+1] = "     fabricar: " .. tostring(craftLine.title)
@@ -1020,19 +1049,28 @@ step("portada: tarjetas de profesiones", function()
   AuctionHouseFrame = { SelectBrowseResult = function(_, r) selected = r.itemKey end,
     CommoditiesBuyFrame = { IsShown = function() return true end,
       BuyDisplay = { SetQuantitySelected = function(_, q) qtySet = q end } } }
-  C_AuctionHouse = { MakeItemKey = function(id) return { itemID = id } end }
+  C_AuctionHouse = { MakeItemKey = function(id) return { itemID = id } end,
+    GetNumCommoditySearchResults = function() return 0 end }
   ES:OpenAuctionBuy(ahLine.item, 7)
-  assert(selected and selected.itemID == ahLine.item and qtySet == 7, "no abrió la compra con la cantidad puesta")
-  -- Solo 5 baratas (4s) y luego a 31s: pone 5, no 7; con un plan que acepta 31s, las 7
+  -- Sin resultados aún no pone nada (ponerla antes la hacía parpadear: Blizzard la reinicia)
+  assert(selected and selected.itemID == ahLine.item and qtySet == nil, "no abrió la compra, o puso cantidad sin resultados")
+  -- Llegan los resultados: solo 5 baratas (4s) y luego a 31s: pone 5, no 7
   local rows = { { unitPrice = 400, quantity = 3 }, { unitPrice = 450, quantity = 2 },
     { unitPrice = 3100, quantity = 50 } }
   C_AuctionHouse.GetNumCommoditySearchResults = function() return #rows end
   C_AuctionHouse.GetCommoditySearchResultInfo = function(_, i) return rows[i] end
-  ES:OpenAuctionBuy(ahLine.item, 7)
+  ES.AuctionState.applyBuy()
   assert(qtySet == 5, "debería poner solo las baratas, puso " .. tostring(qtySet))
+  -- Otro clic en el mismo material al momento: no vuelve a buscar
+  selected = nil
+  ES:OpenAuctionBuy(ahLine.item, 7)
+  assert(selected == nil, "un doble clic vuelve a lanzar la búsqueda")
+  -- Con un plan que acepta 31s, las 7
+  ES.AuctionState.buying = nil
   ES:OpenAuctionBuy(ahLine.item, 7, 3100)
   assert(qtySet == 7, "con el precio del plan por encima debería poner todas, puso " .. tostring(qtySet))
   rows[1].numOwnerItems = 3 -- las tuyas no cuentan
+  ES.AuctionState.buying = nil
   ES:OpenAuctionBuy(ahLine.item, 7)
   assert(qtySet == 2, "las propias no deberían contar como baratas, puso " .. tostring(qtySet))
   AuctionHouseFrame, C_AuctionHouse = savedAHF, savedCAH
@@ -1183,8 +1221,11 @@ step("portada: tarjetas de profesiones", function()
   MerchantFrame = CreateFrame("Frame")
   GetMoney = function() return 10000000 end
   C_MerchantFrame = { GetItemInfo = function() return { price = 300, stackCount = 3, numAvailable = -1, isPurchasable = true } end }
-  BuyMerchantItem = function(i, n) bought[#bought + 1] = n end
+  BuyMerchantItem = function(i, n) bought[#bought + 1] = n or 3 end -- sin cantidad: un lote (de 3)
   counts[buyItem] = 0
+  -- (ruta entera: buyItem es el material más caro de toda la ruta, no del tramo)
+  local phaseSaved = ES.db.prof[page.profKey].byPhase
+  ES.db.prof[page.profKey].byPhase = false
   ES.VendorShop:Refresh()
   local vp = CraftersJournalVendorPanel
   assert(vp and vp.rows[1].entry and vp.rows[1].entry.itemID == buyItem, "la ventana del vendedor no lista lo que falta")
@@ -1226,6 +1267,16 @@ step("portada: tarjetas de profesiones", function()
   while V.queue[1] and not V.queue[1].check do V:Pump() end
   assert(Bought() == 6, "lo que no llegó debería pedirse otra vez: " .. Bought())
   log[#log+1] = "     vendedor: con entrega lenta no compra de más; si no llega, lo vuelve a pedir"
+  -- Cliente clásico: BuyMerchantItem(i, n) cuenta n en lotes. Pedir 6 de uno que va
+  -- de 3 en 3 compraba 18; ahora, de lote en lote (sin cantidad): 6
+  V.queue, V.pumping = {}, nil
+  bought = {}
+  counts[buyItem] = 0
+  BuyMerchantItem = function(i, n) bought[#bought + 1] = (n or 1) * 3 end
+  V:Buy({ itemID = buyItem, qty = 6, batch = 3, price = 300, cost = 600 })
+  while V.queue[1] and not V.queue[1].check do V:Pump() end
+  assert(Bought() == 6, "con lotes de 3, pedir 6 debería comprar 6, no " .. Bought())
+  log[#log+1] = "     vendedor: por lotes compra lo que falta, también si el cliente cuenta en lotes"
   V.queue, V.pumping = {}, nil
   -- Lo que la vista Profit dice que vendas al vendedor, en la misma ventana, con "Vender todo"
   local savedBag, savedSell, savedOpen2 = ES.Ledger.BagCount, ES.Ledger.SellToVendor, ES.Ledger.MerchantOpen
@@ -1252,6 +1303,7 @@ step("portada: tarjetas de profesiones", function()
   ES.VendorShop.selling = nil
   ES.VendorShop.queue, ES.VendorShop.pumping = {}, nil
   MerchantFrame, C_MerchantFrame, BuyMerchantItem, GetMoney = nil, nil, nil, nil
+  ES.db.prof[page.profKey].byPhase = phaseSaved
   page.view = "route"
   GetMerchantNumItems, GetMerchantItemID, GetMerchantItemInfo = nil, nil, nil
   -- Portada: la tarjeta de la profesión con la ruta en curso se distingue
@@ -1340,30 +1392,9 @@ step("portada: tarjetas de profesiones", function()
   assert(ES.db.lastPage == "home", "Volver no regresó a la portada")
   GetProfessions, GetProfessionInfo = nil, nil
 end)
-step("cabecera: buscador e idioma", function()
+step("cabecera: título, escanear e idioma", function()
   local f = CraftersJournalMainFrame
   assert(f.title._text == "Crafter's Journal", "título: " .. tostring(f.title._text))
-  local box, list = f.globalSearch, f.searchResults
-  box._text = "pelet"
-  box._scripts.OnTextChanged(box)
-  assert(list.results[1] and list.results[1].kind == "prof" and list.results[1].profKey == "Leatherworking", "no encontró Peletería")
-  box._text = "armor kit"
-  box._scripts.OnTextChanged(box)
-  local recipe
-  for _, r in ipairs(list.results) do if r.kind == "recipe" and r.profKey == "Leatherworking" then recipe = r break end end
-  assert(recipe, "no encontró recetas de armor kit")
-  log[#log+1] = string.format("     'armor kit': %d resultados, 1º %s (%s)", #list.results, list.results[1].text, list.results[1].profKey)
-  -- Elegir una receta: abre su ficha en la Colección, con la lista filtrada por ella
-  local chosen = list.rows[1].result
-  list.rows[1]._scripts.OnClick(list.rows[1])
-  assert(ES.db.lastPage == "pattern:" .. chosen.profKey, "no abrió la colección: " .. tostring(ES.db.lastPage))
-  local cf = f.pages["pattern:" .. chosen.profKey].collectionFrame
-  assert(cf.search._text == chosen.recipe.name, "no filtró por la receta")
-  assert(cf.selectedID == chosen.id, "no eligió la receta")
-  -- Sin resultados: la fila no hace nada al pulsarla
-  box._text = "zzzzqq"
-  box._scripts.OnTextChanged(box)
-  list.rows[1]._scripts.OnClick(list.rows[1])
   -- Botón Escanear: durante el escaneo muestra el % de progreso y al acabar vuelve a "Escanear"
   local savedBusy = ES.Scanner.IsBusy
   ES.Scanner.IsBusy = function() return true end
@@ -1567,6 +1598,250 @@ step("icono menos fabricaciones: pesa cada fabricación al elegir", function()
   assert(ES.Planner.RouteScore(plan) - base == 10 * (100 - 5), "el peso no cuenta en la puntuación")
   page.fewerButton:GetScript("OnClick")(page.fewerButton)
   settings.fewerCrafts = saved
+end)
+step("ruta: el rango aprendido sale hecho", function()
+  -- Alquimia 63 con tope 75: la ruta pide Oficial; al aprenderlo (tope 150) se tacha
+  local page
+  for _, p in ipairs(ES.professionPages) do if p.profKey == "Leatherworking" then page = p end end
+  local savedPlan, savedFrom, savedDet = page.plan, page.from, page.detected
+  page.from, page.detected = 63, { rank = 63, cap = 75 }
+  local opts = ES:PlanOptions("Leatherworking", 63, 225, 75)
+  opts.owned = nil
+  page.plan = ES.Planner:Plan(ES.Data.Leatherworking, opts)
+  local function RankLine()
+    ES:RenderPlan(page)
+    for _, l in ipairs(page.lines) do
+      if l.rankCap == 150 then return l end
+    end
+  end
+  local l = RankLine()
+  assert(l and not l.done, "falta la fila de Oficial, o sale hecha sin aprenderla")
+  page.detected.cap = 150
+  l = RankLine()
+  assert(l and l.done, "Oficial aprendido no sale hecho: " .. tostring(l and l.sub))
+  page.plan, page.from, page.detected = savedPlan, savedFrom, savedDet
+end)
+step("comprar por tramos: tramo, margen, lista viva y avisos", function()
+  local saved = { RouteLock = ES.RouteLock, LockedPlan = ES.LockedPlan, GPS = ES.GetProfessionSkill,
+    ItemCount = ES.ItemCount, Print = ES.Print, charData = ES.charData, byPhase = ES.db.prof.Alchemy and ES.db.prof.Alchemy.byPhase }
+  ES.charData = { shopping = {}, books = { moves = {}, posts = {}, days = {}, partners = {} } }
+  local ok, err = pcall(function()
+  local P = ES.Planner
+  -- Ruta de prueba: A (1-3, materiales 100), B (3-5, también 100: se junta), C (5-7, pide 200)
+  local A, B, C = { name = "A" }, { name = "B" }, { name = "C" }
+  local plan = { from = 1, to = 7,
+    steps = { { from = 1, to = 3, recipe = A }, { from = 3, to = 5, recipe = B }, { from = 5, to = 7, recipe = C } },
+    pointNeed = { [1] = { [100] = 1 }, [2] = { [100] = 2 }, [3] = { [100] = 1 }, [4] = { [100] = 1 },
+      [5] = { [200] = 1 }, [6] = { [200] = 4 } },
+    pointChance = { [1] = 1, [2] = 0.5, [3] = 1, [4] = 1, [5] = 1, [6] = 0.25 },
+    shopping = { { itemID = 100, source = "ah", unit = 10 }, { itemID = 200, source = "vendor", unit = 5 } } }
+  local ph = P.Phase(plan, 1)
+  assert(ph.from == 1 and ph.to == 5 and #ph.steps == 2, "B no pide nada nuevo: se junta con A")
+  assert(P.Phase(plan, 5).to == 7 and not P.Phase(plan, 7), "tramo C / ruta acabada")
+  -- Naranja, justo; al 50%, con margen: 5 esperadas, varianza 2*2*0.5 = 2 -> 5 + 1,41 -> 7
+  local need = P.PhaseNeed(plan, 1)
+  assert(math.abs(need[100].expected - 5) < 1e-6 and need[100].target == 7, "margen: " .. need[100].target)
+  assert(P.PhaseNeed(plan, 1, 0)[100].target == 5, "sin margen, lo esperado")
+  assert(P.PhaseNeed(plan, 3)[100].target == 2, "desde el 3 solo quedan los naranjas")
+  -- Cómo vas: con 4 te falta 1 para lo esperado; con 6, lo justo; con 7, todo
+  local o = P.PhaseOutlook(plan, 1, function() return 4 end)
+  assert(not o.ok and o.short[100] == 1, "con 4 deberían faltar 1")
+  o = P.PhaseOutlook(plan, 1, function() return 6 end)
+  assert(o.ok and o.extra[100] == 1, "con 6, lo esperado sin margen")
+  -- Lista viva: con la ruta empezada sale el tramo y no la lista guardada de la ruta entera
+  local level, have, printed = 1, {}, {}
+  ES.db.prof.Alchemy = ES.db.prof.Alchemy or {}
+  ES.db.prof.Alchemy.byPhase = nil
+  ES.RouteLock = function(_, k) return k == "Alchemy" and { from = 1, to = 7 } or nil end
+  ES.LockedPlan = function(_, k) return k == "Alchemy" and plan or nil end
+  ES.GetProfessionSkill = function(_, line) if line == ES.Data.Alchemy.skillLine then return level, 150 end end
+  ES.ItemCount = function(_, id) return have[id] or 0 end
+  ES.Print = function(_, msg) printed[#printed + 1] = msg end
+  ES.Shopping.Add("route", "Ruta entera", { { itemID = 100, quantity = 50, unit = 10, source = "ah" } }, { key = "Alchemy" })
+  local st = ES.Shopping.Status()
+  local live, whole
+  for _, s in ipairs(st.lists) do
+    if s.list.live and s.list.key == "Alchemy" then live = s end
+    if s.list.kind == "route" and s.list.key == "Alchemy" then whole = s end
+  end
+  assert(live and not whole, "por tramos: la lista viva sustituye a la de la ruta entera")
+  assert(live.items[1].it.itemID == 100 and live.items[1].left == 7, "pide lo del tramo con margen")
+  have[100] = 3
+  st = ES.Shopping.Status()
+  for _, s in ipairs(st.lists) do if s.list.live then live = s end end
+  assert(live.items[1].left == 4 and live.items[1].bought == 3, "cuenta lo que llevas")
+  assert(ES.Shopping.NextToBuy(st) == 100, "Comprar siguiente usa el tramo")
+  ES.db.prof.Alchemy.byPhase = false
+  st = ES.Shopping.Status()
+  live, whole = nil, nil
+  for _, s in ipairs(st.lists) do
+    if s.list.live then live = s end
+    if s.list.kind == "route" and s.list.key == "Alchemy" then whole = s end
+  end
+  assert(not live and whole, "ruta entera: la lista guardada, sin tramo")
+  ES.db.prof.Alchemy.byPhase = nil
+  -- Avisos: el primero solo apunta el tramo; al pasar a C, tramo nuevo; con mala
+  -- suerte dentro del tramo (llevas algo, pero no da), "compra un poco más"
+  ES.phaseState.Alchemy = nil
+  ES:PhaseNotices("Alchemy")
+  assert(#printed == 0, "al empezar no debería avisar: " .. tostring(printed[1]))
+  level, have[200] = 5, 0
+  ES:PhaseNotices("Alchemy")
+  assert(printed[1] and printed[1]:find("C"), "falta el aviso de tramo nuevo: " .. tostring(printed[1]))
+  level, have[200] = 6, 2 -- quedan ~4 de media en el punto 6, llevas 2
+  ES:PhaseNotices("Alchemy")
+  assert(printed[2] and printed[2]:find("2"), "falta el aviso de que te faltan: " .. tostring(printed[2]))
+  ES:PhaseNotices("Alchemy")
+  assert(#printed == 2, "el aviso se repite")
+  end)
+  -- Restaurar siempre (si no, un fallo aquí arrastra a las pruebas siguientes)
+  ES.RouteLock, ES.LockedPlan, ES.GetProfessionSkill = saved.RouteLock, saved.LockedPlan, saved.GPS
+  ES.ItemCount, ES.Print, ES.charData = saved.ItemCount, saved.Print, saved.charData
+  ES.db.prof.Alchemy.byPhase = saved.byPhase
+  ES.phaseState.Alchemy = nil
+  if not ok then error(err, 0) end
+end)
+step("ruta: receta en la bolsa, clic para aprenderla (botón seguro)", function()
+  local row = ES.UI.CreateRow(CreateFrame("Frame"))
+  ES.UI.StyleRow(row, { title = "Aprender receta: X", icon = 134400, useItem = 12345 })
+  local b = row.useButton
+  assert(b and b._shown ~= false and b.itemID == 12345, "falta el botón que usa el pergamino")
+  assert(b:GetAttribute("type") == "item" and b:GetAttribute("item") == "item:12345", "el botón no usa el objeto")
+  ES.UI.StyleRow(row, { title = "Otra fila", icon = 134400 })
+  assert(b._shown == false, "la fila reutilizada sigue usando el pergamino")
+end)
+step("vender parte de una pila: se parte y se vende lo justo", function()
+  -- 17 Elixir of Ogre Strength en una pila, hay que vender 12: antes no vendía ninguno
+  local ID = 3391
+  local bag0 = { { ID, 17 }, false, false }
+  local used, splitTo, timers = {}, nil, {}
+  local cursor
+  local saved = { CC = C_Container, open = ES.Ledger.MerchantOpen, after = C_Timer.After }
+  C_Container = {
+    GetContainerNumSlots = function(b) return b == 0 and 3 or 0 end,
+    GetContainerItemID = function(b, s) local e = b == 0 and bag0[s] return e and e[1] or nil end,
+    GetContainerItemInfo = function(b, s) local e = b == 0 and bag0[s] return e and { stackCount = e[2] } or nil end,
+    GetContainerNumFreeSlots = function(b) return b == 0 and 2 or 0, 0 end,
+    UseContainerItem = function(b, s) used[#used + 1] = { s, bag0[s] and bag0[s][2] } bag0[s] = false end,
+    SplitContainerItem = function(b, s, n) bag0[s][2] = bag0[s][2] - n cursor = { bag0[s][1], n } end,
+    PickupContainerItem = function(b, s) bag0[s] = cursor cursor = nil splitTo = s end,
+  }
+  ES.Ledger.MerchantOpen = function() return true end
+  C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+  local ok, err = pcall(function()
+    local sold = ES.Ledger:SellToVendor(ID, 12)
+    assert(sold == 12 and splitTo == 2 and bag0[1][2] == 5, "no partió la pila: " .. tostring(sold))
+    for _, fn in ipairs(timers) do fn() end
+    assert(#used == 1 and used[1][1] == 2 and used[1][2] == 12, "no vendió la pila de 12")
+    -- Sin hueco libre: avisa en vez de no hacer nada
+    bag0 = { { ID, 17 }, { 1, 1 }, { 2, 1 } }
+    used = {}
+    C_Container.GetContainerNumFreeSlots = function() return 0, 0 end
+    local printed, savedPrint = {}, ES.Print
+    ES.Print = function(_, m) printed[#printed + 1] = m end
+    sold = ES.Ledger:SellToVendor(ID, 12)
+    ES.Print = savedPrint
+    assert(sold == 0 and #used == 0 and printed[1] and printed[1]:find("hueco"), "sin hueco debería avisar: " .. tostring(printed[1]))
+  end)
+  C_Container, ES.Ledger.MerchantOpen, C_Timer.After = saved.CC, saved.open, saved.after
+  if not ok then error(err, 0) end
+end)
+step("flechas para pasar de profesión (Subir profesiones y Colección)", function()
+  local f = ES:GetMainFrame()
+  local savedSkill = ES.GetProfessionSkill
+  -- Tienes Alquimia: va primera, luego el resto en el orden de siempre
+  ES.GetProfessionSkill = function(_, line) if line == ES.Data.Alchemy.skillLine then return 100, 150 end end
+  local ok, err = pcall(function()
+    ES:SelectPage("home")
+    assert(f.prevPage._shown == false and f.nextPage._shown == false, "en la portada no hay flechas")
+    ES:SelectPage("Alchemy")
+    assert(f.prevPage._shown and f.nextPage._shown, "dentro de una profesión salen las flechas")
+    local list = ES:SiblingPages("Alchemy")
+    assert(list[1] == "Alchemy" and #list > 2, "tus profesiones primero: " .. tostring(list[1]))
+    f.nextPage._scripts.OnClick(f.nextPage)
+    assert(ES.db.lastPage == list[2], "la flecha siguiente no pasó a " .. tostring(list[2]))
+    f.prevPage._scripts.OnClick(f.prevPage)
+    f.prevPage._scripts.OnClick(f.prevPage)
+    assert(ES.db.lastPage == list[#list], "desde la primera, la anterior da la vuelta: " .. tostring(ES.db.lastPage))
+    -- En la colección, entre las colecciones
+    ES:SelectPage("pattern:Alchemy")
+    f.nextPage._scripts.OnClick(f.nextPage)
+    assert(tostring(ES.db.lastPage):match("^pattern:") and ES.db.lastPage ~= "pattern:Alchemy", "en la colección: " .. tostring(ES.db.lastPage))
+  end)
+  ES.GetProfessionSkill = savedSkill
+  ES:SelectPage("home")
+  if not ok then error(err, 0) end
+end)
+step("tooltip del objeto al pasar por su icono", function()
+  local row = ES.UI.CreateRow(CreateFrame("Frame"))
+  ES.UI.StyleRow(row, { title = "45× Sweet Nectar", icon = 134400, item = 2318 })
+  assert(row.iconHover._shown ~= false, "el icono de un objeto debería tener tooltip")
+  local link
+  local savedSet = GameTooltip.SetHyperlink
+  GameTooltip.SetHyperlink = function(_, l) link = l end
+  row.iconHover._scripts.OnEnter(row.iconHover)
+  GameTooltip.SetHyperlink = savedSet
+  assert(link == "item:2318", "no enseña el tooltip del objeto: " .. tostring(link))
+  ES.UI.StyleRow(row, { title = "Total", total = true })
+  assert(row.iconHover._shown == false, "una fila sin objeto no debería tener tooltip de icono")
+end)
+step("ruta: los materiales fabricados por el camino también dan puntos", function()
+  -- Discord: 63 Rough Dynamite pedían 63 Rough Blasting Powder, que ya subían puntos
+  local CB = ES.Planner.CraftBonus
+  local eng = { data = ES.Data.Engineering }
+  local powder = { { kind = "craft", recipe = 3918, qty = 2, item = 4357 } } -- Rough Blasting Powder
+  assert(math.abs(CB(eng, powder, 10) - 2) < 1e-6, "en naranja, cada pólvora da un punto")
+  local yellow = CB(eng, powder, 30)
+  assert(yellow > 0 and yellow < 2, "en amarillo/verde, menos: " .. yellow)
+  assert(CB(eng, powder, 40) == 0, "en gris, nada")
+  assert(CB(eng, { { kind = "ah", item = 4357, qty = 2 } }, 10) == 0, "comprada no da puntos")
+  -- Las "intermediate" (Cured Thick Hide) y las conversiones no dan puntos
+  local ctx = { data = { recipes = { [1] = { intermediate = true, t = { 1, 175, 175, 175 }, out = { 9, 1 } } } } }
+  assert(CB(ctx, { { kind = "craft", recipe = 1, qty = 10 } }, 50) == 0, "un intermedio marcado no da puntos")
+end)
+step("parar de fabricar al llegar al tope o al final de la ruta", function()
+  local saved = { GPS = ES.GetProfessionSkill, T = C_TradeSkillUI, Print = ES.Print, RouteLock = ES.RouteLock }
+  local rank, cap, stopped, printed = 148, 150, 0, {}
+  ES.GetProfessionSkill = function(_, line) if line == ES.Data.Alchemy.skillLine then return rank, cap end end
+  ES.RouteLock = function() return nil end
+  C_TradeSkillUI = { GetRecipeRepeatCount = function() return 5 end, StopRecipeRepeat = function() stopped = stopped + 1 end }
+  ES.Print = function(_, m) printed[#printed + 1] = m end
+  local ok, err = pcall(function()
+    ES.lastRanks = {}
+    ES:CheckCraftStop() -- (punto de partida)
+    rank = 149
+    ES:CheckCraftStop()
+    assert(stopped == 0, "a 149 de 150 no debería parar")
+    rank = 150
+    ES:CheckCraftStop()
+    assert(stopped == 1 and printed[1] and printed[1]:find("tope"), "al llegar al tope debería parar: " .. tostring(printed[1]))
+    -- Final de la ruta (antes del tope)
+    rank, cap, printed = 99, 225, {}
+    ES.lastRanks = {}
+    ES.RouteLock = function(_, k) return k == "Alchemy" and { from = 1, to = 100 } or nil end
+    ES:CheckCraftStop()
+    rank = 100
+    ES:CheckCraftStop()
+    assert(stopped == 2 and printed[1]:find("final de la ruta"), "al acabar la ruta debería parar")
+    -- Sin fabricación en serie: nada que parar ni avisar
+    C_TradeSkillUI.GetRecipeRepeatCount = function() return 0 end
+    rank, printed = 101, {}
+    ES.RouteLock = function(_, k) return k == "Alchemy" and { from = 1, to = 101 } or nil end
+    ES:CheckCraftStop()
+    assert(stopped == 2 and #printed == 0, "sin nada en marcha no debería avisar")
+  end)
+  ES.GetProfessionSkill, C_TradeSkillUI, ES.Print, ES.RouteLock = saved.GPS, saved.T, saved.Print, saved.RouteLock
+  ES.lastRanks = {}
+  if not ok then error(err, 0) end
+end)
+step("ruta parada: con lo que llevas se puede intentar el punto siguiente", function()
+  -- Herrería 60 sin AH, 2 Rough Stone y 4 Copper Bar (Discord): ningún punto
+  -- seguro, pero Rough Grinding Stone al 62% sí se puede probar
+  local data, yes = ES.Data.Blacksmithing, function() return true end
+  local t = ES.Planner.Attempt(data, 60, { [2835] = 2, [2840] = 4 }, yes)
+  assert(t and t.recipe.name and t.crafts == 1 and math.abs(t.prob - 0.625) < 0.01, "no propone intentarlo")
+  assert(not ES.Planner.Attempt(data, 60, { [2835] = 1 }, yes), "con 1 piedra no cabe ninguna")
+  assert(not ES.Planner.Attempt(data, 60, { [2835] = 2, [2840] = 4 }, function() return false end), "solo recetas que sabes")
 end)
 step("máximo 300: el objetivo llega hasta 300", function()
   assert(ES.MAX_SKILL == 300, "el máximo debería ser 300")
@@ -1868,80 +2143,19 @@ step("inventario: lo que daría desencantar (solo informativo)", function()
   ES.GetProfessionSkill, GetSpellInfo, ES.Market.Signals = savedSkill, savedSpell, savedSig
   ES:SelectPage("home")
 end)
-step("flipping: gangas de la AH", function()
-  local CHEAP, DROP, SAME, AVOID = 2318, 2319, 4234, 4304
-  local savedScans, savedVendor, savedRef, savedSig = ES.db.scans, ES.VendorSellPrice, ES.Market.ReferencePrice, ES.Market.Signals
-  local VENDOR = { [CHEAP] = 100, [DROP] = 20, [SAME] = 20, [AVOID] = 20 }
-  ES.VendorSellPrice = function(_, id) return VENDOR[id] end
-  ES.db.scans = { [ES:RealmKey()] = { time = time() - 300, items = {
-    [CHEAP] = { minUnit = 40, ladder = { 40, 4, 90, 2, 300, 10 } },     -- 6 por debajo del vendedor
-    [DROP] = { minUnit = 500, ladder = { 500, 3, 700, 2, 1000, 20 } },  -- normalmente 1000: -50%
-    [SAME] = { minUnit = 950, ladder = { 950, 10 } },                    -- precio normal
-    [AVOID] = { minUnit = 300, ladder = { 300, 5 } },                    -- -70% pero alertas: evitar
-  } } }
-  local REF = { [DROP] = 1000, [SAME] = 1000, [AVOID] = 1000 }
-  ES.Market.ReferencePrice = function(_, id) if REF[id] then return REF[id], 3, 0 end end
-  ES.Market.Signals = function(_, id) return { verdict = id == AVOID and "avoid" or "good" } end
-  local list = ES.Flipping:List()
-  local by = {}
-  for _, o in ipairs(list) do by[o.itemID] = o end
-  assert(by[CHEAP] and by[CHEAP].kind == "vendor" and by[CHEAP].units == 6 and by[CHEAP].profit == 600 - 340,
-    "por debajo del vendedor: " .. tostring(by[CHEAP] and by[CHEAP].profit))
-  assert(by[DROP] and by[DROP].kind == "drop" and by[DROP].units == 5, "ha bajado un 50%: las 5 baratas")
-  assert(not by[SAME], "a su precio normal no es una ganga")
-  assert(not by[AVOID], "con alertas de evitar no se propone")
-  ES:SelectPage("flipping")
-  local page = ES.flippingPage
-  page._shown = true
-  ES:RenderFlipping()
-  log[#log+1] = "     flipping: " .. tostring(page.stats.count._text) .. " oportunidades · " .. tostring(page.stats.profit._text)
-  assert(page.stats.count._text == "2", "oportunidades: " .. tostring(page.stats.count._text))
-  ES.db.scans, ES.VendorSellPrice, ES.Market.ReferencePrice, ES.Market.Signals = savedScans, savedVendor, savedRef, savedSig
-  ES:SelectPage("home")
-end)
-step("versión publicada: sin las pestañas en desarrollo", function()
-  -- En el repositorio es copia de desarrollo; el empaquetador comenta el bloque @debug@
-  assert(ES.DEV_BUILD == true and ES.DEV == true, "en desarrollo ES.DEV_BUILD y ES.DEV deberían ser true")
-  local src
-  for i, n in ipairs(SOURCE_NAMES) do if n == "Core.lua" then src = SOURCES[i] end end
-  assert(src:find("%-%-@debug@\nES.DEV_BUILD = true\n%-%-@end%-debug@"), "falta el bloque @debug@ de ES.DEV_BUILD")
-  -- Como en la publicada: Subastas, Flipping y la Pesca no se abren; Ganar dinero sí
-  ES.DEV = false
+step("sin modo desarrollo: ni Subastas, ni Flipping, ni Pesca, ni buscador", function()
+  assert(ES.DEV == nil and ES.DEV_BUILD == nil, "queda el modo desarrollo")
+  local f = ES:GetMainFrame()
+  assert(#f.tabs == 6, "pestañas: " .. #f.tabs) -- portada, ganar dinero, inventario, calculadora, lista de compra y colección
+  assert(not f.globalSearch, "queda el buscador de la cabecera")
+  assert(not ES.optionsPanel.devCheck, "queda el interruptor de vista de jugador")
+  -- Lo guardado de versiones anteriores (la última página) vuelve a la portada
   for _, key in ipairs({ "ah", "flipping", "Fishing", "pattern:Fishing" }) do
     ES:SelectPage(key)
-    assert(ES.db.lastPage == "home", key .. " no debería abrirse en la versión publicada")
+    assert(ES.db.lastPage == "home", key .. " no debería abrirse")
   end
-  ES:SelectPage("money")
-  assert(ES.db.lastPage == "money", "Ganar dinero debería abrirse en la versión publicada")
-  ES:SelectPage("home")
-  ES.DEV = true
-end)
-step("interruptor de desarrollo: vista de jugador", function()
-  ES:ShowMainFrame("home")
-  local f = ES:GetMainFrame()
-  assert(not f.devToggle, "el interruptor ya no va en la cabecera (sale en las capturas)")
-  -- Está en Opciones > AddOns > Crafter's Journal
-  local panel = ES.optionsPanel
-  assert(panel and panel.devCheck, "en la copia de desarrollo el panel de opciones debería tener el interruptor")
-  panel._scripts.OnShow(panel)
-  assert(not panel.devCheck:GetChecked(), "en modo DEV la casilla debería estar desmarcada")
-  log[#log+1] = "     interruptor: " .. tostring(panel.devCheck.label._text)
-  panel.devCheck:SetChecked(true)
-  panel.devCheck._scripts.OnClick(panel.devCheck)
-  -- Vista de jugador: ventana nueva sin las pestañas, el buscador ni la Pesca
-  local g = ES:GetMainFrame()
-  assert(ES.DEV == false and ES.db.userPreview == true, "no pasó a vista de jugador")
-  assert(#g.tabs == 6, "pestañas en vista de jugador: " .. #g.tabs) -- portada, ganar dinero, inventario, calculadora, lista de compra y colección
-  ES:SelectPage("home")
-  for _, c in ipairs(ES.homePage.cards) do
-    if c._shown ~= false then assert(c.key ~= "Fishing", "la Pesca no debería verse") end
-  end
-  assert(ES.homePage.shownCards == #ES.PROFESSIONS - 1, "tarjetas en vista de jugador: " .. ES.homePage.shownCards)
-  log[#log+1] = "     vista de jugador: " .. #g.tabs .. " pestañas"
-  -- Y vuelta al modo desarrollo
-  panel.devCheck:SetChecked(false)
-  panel.devCheck._scripts.OnClick(panel.devCheck)
-  assert(ES.DEV == true and not ES.db.userPreview and #ES:GetMainFrame().tabs == 8, "no volvió al modo desarrollo")
+  for _, p in ipairs(ES.PROFESSIONS) do assert(p.key ~= "Fishing", "la Pesca sigue en la lista") end
+  assert(not ES.Data.Fishing, "quedan los datos de la Pesca")
 end)
 step("ruta: la segunda mejor receta de cada paso y por qué es peor", function()
   local page
@@ -2117,6 +2331,15 @@ step("calculadora: desglose en crudo, precios a mano y cálculos guardados", fun
   assert(math.abs((rt.profitTrade - rt.profitAH) - rt.revenue * rt.cutRate) < 0.01, "la diferencia es la comisión")
   assert(not page.duration._shown, "sin duración al vender por el chat")
   log[#log+1] = "     calculadora chat: " .. tostring(page.profitCompare._text)
+  -- Al vendedor (Discord): su precio, sin comisión ni depósito
+  local bv = page.channel.buttons[3]
+  bv._scripts.OnClick(bv)
+  bv._scripts.OnEnter(bv)
+  local rv = Calc:Compute(c)
+  assert(c.channel == "vendor" and rv.cut == 0 and rv.deposit == 0 and rv.sale == ES:VendorSellPrice(rv.outID),
+    "al vendedor: su precio, sin comisión ni depósito")
+  assert(rv.profitVendor and math.abs(rv.profit - rv.profitVendor) < 0.01, "beneficio al vendedor")
+  assert(tostring(page.profitCompare._text):find("Vendedor"), "la comparación incluye al vendedor: " .. tostring(page.profitCompare._text))
   page.channel.buttons[1]._scripts.OnClick(page.channel.buttons[1])
   assert(c.channel == "ah", "vuelve a la AH")
   log[#log+1] = "     calculadora: " .. tostring(page.title._text) .. " · beneficio " .. tostring(page.profitLine.value._text)
@@ -2356,30 +2579,14 @@ step("instructor: aprende los precios reales", function()
   assert(filters.available == 1 and not filters.unavailable and not filters.used, "los filtros deberían quedar como estaban")
   GetTrainerServiceTypeFilter, SetTrainerServiceTypeFilter, GetNumTrainerServices = nil, nil, realCount
   assert(changed == 2, "debería haber leído 2 recetas: " .. tostring(changed))
-  -- Cuánto se ha comprobado de cada profesión (/cj instructor)
-  local cov
-  for _, c in ipairs(ES.Ledger:TrainerCoverage()) do if c.prof == "Alchemy" then cov = c end end
-  assert(cov and cov.seen == 2 and cov.diff == 2 and cov.total > 2, "cobertura de Alquimia: " .. tostring(cov and cov.seen))
   local seen = ES.db.trainerFees[1249633]
   assert(seen and seen.cost == 135 and seen.skill == 40, "no guardó el precio del ácido")
   cost, source = ES.Planner.LearnCost(ctx, acid)
   assert(cost == 135 and source == "trainer", "no usa el precio visto: " .. tostring(cost))
   assert(ES.Planner.LearnSkill(acid, {}) == 40, "no usa el nivel visto")
   assert(ES.Planner.LearnCost(ctx, mana) == 100, "la poción de maná debería costar lo visto (100)")
-  -- Lo distinto de los datos, para copiar a tools/forever/trainer_fees.csv
-  local rows = ES.Ledger:TrainerDiffs()
-  local text = table.concat(rows, "\n")
-  log[#log+1] = "     instructor: " .. text:gsub("\n", "\n     instructor: ")
-  assert(text:find("^2331,Minor Mana Potion,100,25,") and text:find("\n1249633,Sulfuric Acid,135,40,"), "diferencias: " .. text)
-  -- Con reputación el instructor rebaja: el CSV lleva el precio base
+  -- Con reputación el instructor rebaja: el precio base es el de todos
   assert(ES.Ledger.BaseCost({ cost = 135, rep = 6 }) == 150, "precio base con Honorable")
-  -- El comando lo imprime y lo deja en SavedVariables
-  local printed = 0
-  local savedPrint = print
-  print = function(s) if tostring(s):find("^%d+,") then printed = printed + 1 end end
-  SlashCmdList.CRAFTERSJOURNAL("instructor")
-  print = savedPrint
-  assert(printed == 2 and #ES.db.trainerFeesCSV == 2, "/cj instructor no listó las diferencias")
   -- Ruta fijada: el precio real del instructor también la corrige (mismas recetas)
   local lw = ES.Data.Leatherworking
   local hideID, from -- una receta de instructor de pago de nivel bajo (en los datos)
@@ -2399,7 +2606,11 @@ step("instructor: aprende los precios reales", function()
   local fee = lw.recipes[hideID].fee
   services = { { name = lw.recipes[hideID].nameEN or lw.recipes[hideID].name, kind = "available", cost = fee - 100, skill = from } }
   GetTrainerServiceSkillLine = function() return ES:ProfLabel("Leatherworking") end
+  -- (sin repintar las páginas: la de Peletería tiene otro objetivo y soltaría esta ruta de prueba)
+  local savedRefresh = ES.RefreshProfessionPages
+  ES.RefreshProfessionPages = function() end
   ES.Ledger:ReadTrainer()
+  ES.RefreshProfessionPages = savedRefresh
   local after = ES:LockedPlan("Leatherworking")
   assert(after ~= before and math.abs((before.fees - after.fees) - 100) < 1,
     string.format("la ruta fijada no usó el precio del instructor: %d -> %d (pasos %d, para en %s, fee %s)", before.fees, after.fees, #before.steps, tostring(before.stoppedAt), tostring(before.steps[1] and before.steps[1].fee)))
@@ -2409,31 +2620,9 @@ step("instructor: aprende los precios reales", function()
   ES.IsRecipeKnown = savedKnown
   ES.lockedPlans.Leatherworking = nil
   acid.fee, acid.train, acid.trainer = saved[1], saved[2], saved[3]
-  ES.db.trainerFees, ES.db.trainerFeesCSV = nil, nil
+  ES.db.trainerFees = nil
   GetNumTrainerServices, GetTrainerServiceInfo, GetTrainerServiceSkillLine, GetTrainerServiceCost = nil, nil, nil, nil
   GetTrainerServiceSkillReq, GetTrainerServiceItemLink, UnitReaction = nil, nil, nil
-end)
-step("pesca: guía por tramos", function()
-  -- Página propia: tramos con cómo conseguir el rango y las zonas; marca el tuyo
-  local page = ES:GetMainFrame().pages.Fishing
-  assert(page and ES.fishingPage == page, "no hay página de Pesca")
-  ES:SelectPage("Fishing")
-  page._scripts.OnShow(page)
-  local sections, zones = 0, 0
-  for _, l in ipairs(page.lines) do
-    if l.section then sections = sections + 1 elseif l.icon == "Interface\\Icons\\INV_Misc_Map_01" then zones = zones + 1 end
-  end
-  log[#log+1] = string.format("     pesca: %d tramos, %d zonas · %s", sections, zones, tostring(page.lines[1].section))
-  assert(sections == 4 and zones > 20, "guía incompleta")
-  assert(tostring(page.lines[1].section):find("1%-75"), "el primer tramo debería ser 1-75")
-  -- Las filas con camino (instructor, libro, Nat Pagle) se pueden pulsar
-  for i, l in ipairs(page.lines) do if l.go then page.rows[i]._scripts.OnClick(page.rows[i]) end end
-  -- Tramo según el nivel
-  assert(ES.FishingStep(ES.Data.Fishing, 160).rank == "expert", "tramo de 160")
-  -- La colección de Pesca: las mejoras de campamento
-  local known, total = ES.Collection:Progress("Fishing")
-  assert(total == 3, "mejoras de campamento: " .. total)
-  ES:SelectPage("home")
 end)
 step("recetas y objetos en español", function()
   -- Addon en español: las recetas toman su nombre en español (y el buscador encuentra las dos)
@@ -2482,5 +2671,25 @@ step("estado escaneo sin AH", function() ES.Scanner:Start() end)
 return table.concat(log, "\n")
 """)
 print(out)
+
+# Caracteres que la fuente de WoW no tiene (salen como ▯): ✕, →, ←, − (menos
+# tipográfico)... En los textos del addon, solo ASCII, Latin-1 y los de Windows-1252
+# que sí dibuja (…, comillas tipográficas, guiones largos). Los comentarios no cuentan
+ALLOWED_EXTRA = set("…’‘“”–—€")
+TOKEN = re.compile(r'--\[(=*)\[.*?\]\1\]|--[^\n]*|\[(=*)\[.*?\]\2\]|"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'', re.S)
+bad = []
+for f in sorted(ADDON.rglob("*.lua")):
+    text = f.read_text(encoding="utf-8")
+    for m in TOKEN.finditer(text):
+        tok = m.group(0)
+        if tok.startswith("--"):
+            continue
+        for ch in tok:
+            if ord(ch) > 0xFF and ch not in ALLOWED_EXTRA:
+                line = text.count("\n", 0, m.start()) + 1
+                bad.append(f"{f.relative_to(ADDON)}:{line}: {ch!r} (U+{ord(ch):04X})")
+                break
+print(("FAIL caracteres sin glifo en la fuente de WoW:\n  " + "\n  ".join(bad[:20])) if bad
+      else "OK   textos sin caracteres que la fuente de WoW no dibuja")
 
 

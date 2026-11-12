@@ -9,6 +9,8 @@ local L = ES.L
 local Calc = ES.Calc
 local GREY, ORANGE, GOLD = "|cff999999", "|cffff9933", "|cffffd100"
 local LIST_W = 250
+local BUTTON_W = 160 -- los tres botones de abajo, en una fila
+local FOOTER_H = 10 + 22 + 6 -- alto de esa fila (margen, botón, hueco): las notas acaban encima
 local ROW_H = 30      -- filas de material: casillas de 20 px con aire arriba y abajo
 local LINE_H = 26     -- líneas de resumen (materiales, venta, comisión, depósito)
 local MAX_RESULTS = 8
@@ -116,7 +118,7 @@ local function SearchRecipes(query)
   local out = {}
   for _, prof in ipairs(ES.PROFESSIONS) do
     local data = ES.Data[prof.key]
-    if data and data.recipes and not data.guide then
+    if data and data.recipes then
       for id, r in pairs(data.recipes) do
         if not r.conversion and ((r.name or ""):lower():find(query, 1, true) or (r.nameEN or ""):lower():find(query, 1, true)) then
           out[#out + 1] = { prof = prof.key, id = id, recipe = r, known = ES:IsRecipeKnown(id) }
@@ -444,11 +446,14 @@ local function CreateSheet(page)
   page.depositLine = SummaryLine(p)
   -- Dónde se vende: AH · Chat de comercio (sin comisión ni depósito)
   page.channel = Segmented(page.cutLine, Calc.CHANNELS, 70, function(channel)
-    return channel == "ah" and L["AH"] or L["Chat de comercio"]
+    return channel == "ah" and L["AH"] or channel == "vendor" and L["Vendedor"] or L["Chat de comercio"]
   end, function(c, channel) c.channel = channel end, function(channel)
     if channel == "ah" then
       GameTooltip:AddLine(L["Vender en la Casa de Subastas"])
       GameTooltip:AddLine(L["Se descuenta la comisión de la AH y se pide depósito."], 0.8, 0.8, 0.8, true)
+    elseif channel == "vendor" then
+      GameTooltip:AddLine(L["Vender al vendedor"])
+      GameTooltip:AddLine(L["Al precio que paga el vendedor: venta segura, sin comisión ni depósito."], 0.8, 0.8, 0.8, true)
     else
       GameTooltip:AddLine(L["Vender por el chat de comercio"])
       GameTooltip:AddLine(L["Cara a cara (comercio): sin comisión de la AH ni depósito. Mira abajo la diferencia con la AH."], 0.8, 0.8, 0.8, true)
@@ -471,7 +476,7 @@ local function CreateSheet(page)
   page.note:SetJustifyH("LEFT")
 
   page.reset = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
-  page.reset:SetSize(170, 22)
+  page.reset:SetSize(BUTTON_W, 22)
   page.reset:SetPoint("BOTTOMRIGHT", -12, 10)
   page.reset:SetText(L["Precios automáticos"])
   page.reset:SetScript("OnClick", function()
@@ -488,8 +493,9 @@ local function CreateSheet(page)
 
   -- Los materiales de este cálculo a la Lista de compra (ShoppingUI.lua)
   page.addShopping = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
-  page.addShopping:SetSize(170, 22)
-  page.addShopping:SetPoint("BOTTOMRIGHT", page.reset, "TOPRIGHT", 0, 4)
+  page.addShopping:SetSize(BUTTON_W, 22)
+  -- (los tres botones en una fila abajo: las notas acaban encima, ver FOOTER_H)
+  page.addShopping:SetPoint("RIGHT", page.reset, "LEFT", -8, 0)
   page.addShopping:SetText(L["Añadir a la lista de compra"])
   page.addShopping:SetScript("OnClick", function()
     local c = Calc:Selected()
@@ -512,8 +518,8 @@ local function CreateSheet(page)
 
   -- Con Auctionator instalado: los materiales de este cálculo a su pestaña Shopping
   page.auctionator = CreateFrame("Button", nil, p, "UIPanelButtonTemplate")
-  page.auctionator:SetSize(170, 22)
-  page.auctionator:SetPoint("RIGHT", page.reset, "LEFT", -8, 0)
+  page.auctionator:SetSize(BUTTON_W, 22)
+  page.auctionator:SetPoint("RIGHT", page.addShopping, "LEFT", -8, 0)
   page.auctionator:SetText(L["Buscar en Auctionator"])
   page.auctionator:SetScript("OnClick", function()
     local items = ES.CalculatorShoppingItems()
@@ -576,7 +582,7 @@ function ES:CreateCalculatorPage(page)
   sub:SetJustifyH("LEFT")
   CreateSearch(page, head)
 
-  page.listPanel = UI.Panel(page, 0.07, 0.05, 0.03, 0.9)
+  page.listPanel = UI.Panel(page, UI.BROWN.list[1], UI.BROWN.list[2], UI.BROWN.list[3], UI.BROWN.list[4])
   page.listPanel:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -8)
   page.listPanel:SetPoint("BOTTOMLEFT", UI.PAD, UI.PAD)
   page.listPanel:SetWidth(LIST_W)
@@ -586,7 +592,7 @@ function ES:CreateCalculatorPage(page)
   page.listEmpty:SetPoint("RIGHT", -12, 0)
   page.listEmpty:SetJustifyH("LEFT")
 
-  page.sheet = UI.Panel(page, 0.07, 0.05, 0.03, 0.9)
+  page.sheet = UI.Panel(page, UI.BROWN.list[1], UI.BROWN.list[2], UI.BROWN.list[3], UI.BROWN.list[4])
   page.sheet:SetPoint("TOPLEFT", page.listPanel, "TOPRIGHT", 8, 0)
   page.sheet:SetPoint("BOTTOMRIGHT", -UI.PAD, UI.PAD)
   CreateSheet(page)
@@ -700,6 +706,7 @@ function ES:RenderCalculator()
 
   Place(page.cutLine)
   page.cutLine.label:SetText(res.channel == "trade" and res.canChoose and L["Comisión (chat: ninguna)"]
+    or res.channel == "vendor" and L["Comisión (vendedor: ninguna)"]
     or string.format(L["Comisión de la AH (%d%%)"], math.floor(res.cutRate * 100 + 0.5)))
   page.cutLine.value:SetText(res.cut > 0 and Signed(res.cut) or (GREY .. "—|r"))
   page.channel:SetSelected(res.channel)
@@ -714,9 +721,10 @@ function ES:RenderCalculator()
   page.profitLine.label:SetText(L["Beneficio"])
   page.profitLine.value:SetText(Signed(-res.profit))
   -- AH frente a chat de comercio: lo que te ahorras de comisión
-  if res.canChoose and res.profitTrade ~= res.profitAH then
+  if res.canChoose and (res.profitTrade ~= res.profitAH or res.profitVendor) then
     page.profitCompare:SetText(string.format(L["AH %s  ·  Chat %s  (%s de comisión)"],
-      Signed(-res.profitAH), Signed(-res.profitTrade), ES.Money(res.profitTrade - res.profitAH)))
+      Signed(-res.profitAH), Signed(-res.profitTrade), ES.Money(res.profitTrade - res.profitAH))
+      .. (res.profitVendor and ("  ·  " .. string.format(L["Vendedor %s"], Signed(-res.profitVendor))) or ""))
     page.profitCompare:ClearAllPoints()
     page.profitCompare:SetPoint("TOPLEFT", 6 + COL_NAME, y + 2)
     page.profitCompare:SetPoint("RIGHT", -20, 0)
@@ -738,10 +746,13 @@ function ES:RenderCalculator()
   end
   if res.missing then notes[#notes + 1] = ORANGE .. L["Algún material no tiene precio (ni en el escaneo ni en el vendedor): escríbelo para que cuente."] .. "|r" end
   if res.discount > 0 then
-    notes[#notes + 1] = string.format(L["Precios de vendedor con el descuento de tu reputación con %s (−%d%%)."], res.city or "", math.floor(res.discount * 100 + 0.5))
+    notes[#notes + 1] = string.format(L["Precios de vendedor con el descuento de tu reputación con %s (-%d%%)."], res.city or "", math.floor(res.discount * 100 + 0.5))
   end
+  -- Las notas van del beneficio hasta la fila de botones, nunca debajo de ellos: si
+  -- no caben, se recortan (antes se metían por detrás de los botones)
   page.note:ClearAllPoints()
   page.note:SetPoint("TOPLEFT", 14, y - 6)
-  page.note:SetPoint("RIGHT", -14, 0)
+  page.note:SetPoint("BOTTOMRIGHT", -14, FOOTER_H)
+  page.note:SetJustifyV("TOP")
   page.note:SetText(table.concat(notes, "\n"))
 end

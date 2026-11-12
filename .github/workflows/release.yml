@@ -4,9 +4,8 @@
 #   CF_API_KEY: token de la API de CurseForge (https://authors.curseforge.com/account/api-tokens)
 # y en CraftersJournal.toc la línea  ## X-Curse-Project-ID: <número del proyecto>
 #
-# El empaquetador (BigWigsMods/packager) arma el zip según .pkgmeta, comenta los
-# bloques --@debug@ (la versión de los jugadores, sin el modo desarrollo) y lo sube
-# con las notas de CHANGELOG.md. La versión de juego es la de WoW Forever (1.60.1).
+# El empaquetador (BigWigsMods/packager) arma el zip según .pkgmeta y lo sube con
+# las notas de CHANGELOG.md. La versión de juego es la de WoW Forever (1.60.1).
 name: Publicar en CurseForge
 
 on:

@@ -3,7 +3,7 @@ local L = ES.L
 
 -- Comprar en la Casa de Subastas: buscar un objeto, o abrir la compra de un material
 -- con la cantidad puesta (solo las unidades baratas). Lo usan la pestaña Lista de
--- compra (ShoppingUI.lua), la vista Materiales de cada ruta y Flipping.
+-- compra (ShoppingUI.lua) y la vista Materiales de cada ruta.
 -- No compra ni vende nada solo: el clic de Comprar ahora de Blizzard es tuyo.
 -- Y el botón "Lista de compra" sobre la AH, que enseña u oculta el panel pequeño.
 
@@ -99,11 +99,16 @@ local function CheapQuantity(itemID, qty, okUnit)
   return qty, t
 end
 
--- Cantidad en la página de compra de materiales de la AH moderna (la de Blizzard)
+-- Cantidad en la página de compra de materiales de la AH moderna (la de Blizzard).
+-- Si ya está puesta, no se toca (volver a ponerla la hacía parpadear)
 local function SetBuyQuantity(qty)
   local buy = AuctionHouseFrame and AuctionHouseFrame.CommoditiesBuyFrame
   local display = buy and (buy.BuyDisplay or (buy.GetBuyDisplay and buy:GetBuyDisplay()))
   if not (display and buy:IsShown()) then return false end
+  if display.GetQuantitySelected then
+    local ok, cur = pcall(display.GetQuantitySelected, display)
+    if ok and cur == qty then return true end
+  end
   if display.SetQuantitySelected then
     return pcall(display.SetQuantitySelected, display, qty)
   end
@@ -118,23 +123,39 @@ end
 -- Si solo una parte está barata, pone solo esa parte (ver CHEAP_BAND) y lo dice en
 -- el chat: compras por tandas y nadie te deja pagando el precio caro.
 -- `okUnit` (opcional): precio por unidad que sigue siendo aceptable.
+local RESULTS_WAIT, RESULTS_RETRIES = 3, 2 -- s esperando resultados antes de volver a pedirlos
+local REPEAT_GAP = 1 -- s: un segundo clic en el mismo material no vuelve a buscar
+
+local function Select(f, A, itemID)
+  return pcall(function()
+    f:SelectBrowseResult({ itemKey = A.MakeItemKey(itemID), minPrice = 0, totalQuantity = 0, containsOwnerItem = false })
+  end)
+end
+
 function ES:OpenAuctionBuy(itemID, qty, okUnit)
   local A, f = C_AuctionHouse, AuctionHouseFrame
   if not (A and A.MakeItemKey and f and f.SelectBrowseResult and f.CommoditiesBuyFrame) then
     return self:SearchAuction(itemID)
   end
-  local ok = pcall(function()
-    f:SelectBrowseResult({ itemKey = A.MakeItemKey(itemID), minPrice = 0, totalQuantity = 0, containsOwnerItem = false })
-  end)
+  -- Doble clic (o "Comprar siguiente" otra vez) con la búsqueda aún en marcha: cada
+  -- búsqueda nueva pisaba la anterior y el servidor dejaba la AH en "Buscando..."
+  local now = GetTime and GetTime() or 0
+  local b0 = state.buying
+  if b0 and b0.i == itemID and b0.q == qty and now - (b0.at or -99) < REPEAT_GAP then return end
+  local ok = Select(f, A, itemID)
   if not ok or not f.CommoditiesBuyFrame:IsShown() then return self:SearchAuction(itemID) end
   state.searching = itemID
-  state.buying = { i = itemID, q = qty, ok = okUnit }
-  -- Los resultados llegan un momento después: se pone la cantidad en cuanto se pueda
-  -- (y otra vez al llegar, en COMMODITY_SEARCH_RESULTS_UPDATED)
+  local buying = { i = itemID, q = qty, ok = okUnit, at = now }
+  state.buying = buying
+  -- La cantidad se pone cuando llegan los resultados (COMMODITY_SEARCH_RESULTS_UPDATED,
+  -- después del manejador de Blizzard, que la reinicia). Antes se ponía también al
+  -- momento y a los 0,4 y 1,2 s: sin resultados ponía todo, Blizzard la devolvía a 1
+  -- y la cantidad parpadeaba
   local warned
   local function Apply()
-    local b = state.buying
-    if not b or b.i ~= itemID then return end
+    if state.buying ~= buying then return end
+    if not ES:CommodityTiers(itemID, okUnit) then return end -- aún sin resultados
+    buying.got = true
     local n, t = CheapQuantity(itemID, qty, okUnit)
     SetBuyQuantity(n)
     if n < qty and not warned then
@@ -144,9 +165,19 @@ function ES:OpenAuctionBuy(itemID, qty, okUnit)
     end
   end
   state.applyBuy = Apply
-  Apply()
-  C_Timer.After(0.4, Apply)
-  C_Timer.After(1.2, Apply)
+  Apply() -- (si ya estaban, de una búsqueda anterior del mismo material)
+  -- Sin resultados al rato (el servidor descartó la búsqueda): se vuelve a pedir, como
+  -- al ir atrás y adelante a mano
+  local function Watch(tries)
+    C_Timer.After(RESULTS_WAIT, function()
+      if state.buying ~= buying or buying.got or not f.CommoditiesBuyFrame:IsShown() then return end
+      Apply()
+      if buying.got or tries >= RESULTS_RETRIES then return end
+      Select(f, A, itemID)
+      Watch(tries + 1)
+    end)
+  end
+  Watch(0)
 end
 
 -- Al llegar los resultados del material abierto: recortar la cantidad (después del

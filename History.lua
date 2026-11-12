@@ -28,13 +28,6 @@ local STUCK_BAND = 1.10       -- "las más baratas": hasta un 10% por encima del
 local HISTORY_MAX_AGE = 7 * 86400
 local HISTORY_MAX = 200
 
--- Franjas para la tendencia de precio
-History.WINDOWS = ES.Localize({
-  { key = "24h", label = "24 h",   seconds = 86400 },
-  { key = "3d",  label = "3 días", seconds = 3 * 86400 },
-  { key = "7d",  label = "7 días", seconds = 7 * 86400 },
-}, "label")
-
 -- Solo seguimos los objetos de profesiones (materiales, fabricados, pergaminos)
 -- para que los datos guardados no crezcan demasiado
 local tracked
@@ -171,38 +164,6 @@ function History:Summary()
     if entry.elapsed and entry.elapsed > 0 then comparisons = comparisons + 1 end
   end
   return #history, comparisons, history[1] and history[1].time
-end
-
--- Precio de referencia (mediana; el mínimo en fotos antiguas sin mediana) y
--- subastas de un objeto en el escaneo más antiguo de la ventana
-function History:OldestSnapshot(itemID, window)
-  local now = time()
-  local needle = ";" .. itemID .. ":(%d+):(%d+):?(%d*)" -- id:mín:subastas[:mediana[:unidades]]
-  for _, entry in ipairs(self:Entries()) do
-    if entry.snap and now - entry.time < window then
-      local m, l, med = entry.snap:match(needle)
-      if m then return tonumber(med) or tonumber(m), tonumber(l), entry.time end
-    end
-  end
-  return nil
-end
-
--- Evolución de un objeto: { {time, median, listings, quantity}, ... }
--- (las fotos antiguas no tienen mediana: se usa el mínimo; ni unidades: nil)
-function History:PriceHistory(itemID, window)
-  local now = time()
-  local needle = ";" .. itemID .. ":(%d+):(%d+):?(%d*):?(%d*)"
-  local points = {}
-  for _, entry in ipairs(self:Entries()) do
-    if entry.snap and now - entry.time < (window or HISTORY_MAX_AGE) then
-      local m, l, med, q = entry.snap:match(needle)
-      if m then
-        points[#points + 1] = { time = entry.time, median = tonumber(med) or tonumber(m),
-          listings = tonumber(l), quantity = tonumber(q) }
-      end
-    end
-  end
-  return points
 end
 
 ---------------------------------------------------------------------------

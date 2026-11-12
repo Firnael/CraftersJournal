@@ -8,7 +8,8 @@ local L = ES.L
 -- al vendedor y llevas encima, con "Vender todo". Solo compra o vende cuando
 -- pulsas (fila o botón).
 --
--- Comprar en Forever: cada compra pide un número de objetos (como mucho una pila);
+-- Comprar en Forever: cada compra pide un número de objetos (como mucho una pila; lo
+-- que se vende por lotes, un lote por compra);
 -- el servidor ignora las compras que llegan muy seguidas, así que van de una en
 -- una con BUY_GAP de separación y al final se comprueba lo que ha llegado.
 
@@ -18,7 +19,8 @@ ES.VendorShop = Vendor
 local BUY_GAP = 0.35
 local MAX_WAITS = 5 -- comprobaciones (de 1 s) esperando a que llegue lo comprado
 local ROW_H, MAX_ROWS = 34, 12
-local WIDTH = 270
+local WIDTH = 300
+local COST_W = 74 -- columna del precio a la derecha de cada fila (hasta "99g 99s 99c")
 
 local function Ledger() return ES.Ledger end
 
@@ -40,6 +42,17 @@ local function Plans()
       if page.profKey == key then plan = page.plan end
     end
     plan = plan or (ES.homePlanCache[key] and ES.homePlanCache[key].plan)
+    -- Sin abrir el addon en esta sesión aún no hay ruta calculada: se pide (repartida
+    -- entre fotogramas) y la ventana sale al acabar. Si no, no salía hasta abrirlo
+    if not plan and ES.Data[key] and ES.RequestPlan then
+      local rank, maxRank = ES:GetProfessionSkill(ES.Data[key].skillLine)
+      local from, to = rank or 1, ES:ProfessionTarget(key)
+      if from < to then
+        plan = ES:RequestPlan(key, from, to, rank and maxRank or nil, function()
+          if MerchantFrame and MerchantFrame:IsShown() then Vendor:Refresh() end
+        end, "vendor")
+      end
+    end
     if plan and plan.pointNeed then plans[1] = { key = key, plan = plan } end
   end
   return plans
@@ -51,8 +64,16 @@ local function Needs()
   local need = {}
   for _, p in ipairs(Plans()) do
     local rank = ES:GetProfessionSkill(ES.Data[p.key].skillLine)
-    for itemID, q in pairs(ES.Planner.NeedFrom(p.plan, math.max(p.plan.from, rank or p.plan.from))) do
-      need[itemID] = (need[itemID] or 0) + q
+    local level = math.max(p.plan.from, rank or p.plan.from)
+    if ES.Shopping.ByPhase(p.key) then
+      -- Por tramos: solo el tramo en el que estás, con su margen (Planner.PhaseNeed)
+      for itemID, n in pairs(ES.Planner.PhaseNeed(p.plan, level)) do
+        need[itemID] = (need[itemID] or 0) + n.target
+      end
+    else
+      for itemID, q in pairs(ES.Planner.NeedFrom(p.plan, level)) do
+        need[itemID] = (need[itemID] or 0) + q
+      end
     end
   end
   -- Lo intermedio que ya has fabricado (Bolt of Silk Cloth, Cured Light Hide...) y
@@ -174,19 +195,23 @@ local function FindIndex(itemID)
   end
 end
 
--- Lo más que se puede pedir en una compra: lo que deja el vendedor (o una pila), en lotes enteros
+-- Lo más que se puede pedir en una compra: lo que deja el vendedor (o una pila), en lotes enteros.
+-- Lo que se vende por lotes, de lote en lote: BuyMerchantItem(i, n) cuenta n en lotes en
+-- el clásico (pedir 20 de uno que va de 5 en 5 compraba 100); sin cantidad, compra un lote
 local function PerCall(itemID, batch)
+  if batch > 1 then return batch end
   local i = FindIndex(itemID)
   local most = math.max((i and GetMerchantItemMaxStack and GetMerchantItemMaxStack(i)) or 1, StackSize(itemID))
   return math.max(math.floor(most / batch) * batch, batch)
 end
 
--- Pone en la cola `qty` unidades en compras de como mucho `perCall`
-local function Enqueue(queue, itemID, qty, perCall, at)
+-- Pone en la cola `qty` unidades en compras de como mucho `perCall` (lotes de `batch`)
+local function Enqueue(queue, itemID, qty, batch, at)
+  local perCall = PerCall(itemID, batch)
   local calls = {}
   while qty > 0 do
     local n = math.min(qty, perCall)
-    calls[#calls + 1] = { itemID = itemID, n = n }
+    calls[#calls + 1] = { itemID = itemID, n = n, batch = batch }
     qty = qty - n
   end
   for k = #calls, 1, -1 do table.insert(queue, at or (#queue + 1), calls[k]) end
@@ -215,7 +240,7 @@ function Vendor:Pump()
       if FindIndex(q.itemID) then
         short = math.ceil(short / q.batch) * q.batch
         table.insert(self.queue, 1, { itemID = q.itemID, check = q.check, tries = q.tries + 1, batch = q.batch })
-        Enqueue(self.queue, q.itemID, short, PerCall(q.itemID, q.batch), 1) -- en tandas, delante de la comprobación
+        Enqueue(self.queue, q.itemID, short, q.batch, 1) -- en tandas, delante de la comprobación
       end
     elseif short > 0 then
       ES:Print(string.format(L["El vendedor no vendió %d de %s (sin existencias, sin oro o sin sitio en las bolsas)."],
@@ -223,7 +248,10 @@ function Vendor:Pump()
     end
   else
     local i = FindIndex(q.itemID)
-    if i then BuyMerchantItem(i, q.n) end
+    -- (por lotes: sin cantidad, un lote; ver PerCall)
+    if i then
+      if q.batch > 1 then BuyMerchantItem(i) else BuyMerchantItem(i, q.n) end
+    end
   end
   C_Timer.After(q.check and 1.0 or BUY_GAP, function() Vendor:Pump() end)
 end
@@ -233,7 +261,7 @@ function Vendor:Buy(entry)
   -- Ya se está comprando (p. ej. "Comprar todo" y luego un clic en su fila): no dos veces
   for _, q in ipairs(self.queue) do if q.itemID == entry.itemID then return end end
   local target = ES:ItemCount(entry.itemID) + entry.qty
-  Enqueue(self.queue, entry.itemID, entry.qty, PerCall(entry.itemID, entry.batch))
+  Enqueue(self.queue, entry.itemID, entry.qty, entry.batch)
   self.queue[#self.queue + 1] = { itemID = entry.itemID, check = target, tries = 0, batch = entry.batch }
   if not self.pumping then self:Pump() end
 end
@@ -282,12 +310,15 @@ end
 local function CreatePanel()
   local f = CreateFrame("Frame", "CraftersJournalVendorPanel", MerchantFrame or UIParent, "BackdropTemplate")
   f:SetWidth(WIDTH)
+  -- Paleta común: el fondo de Subir profesiones (antes, el fondo oscuro de diálogo)
   f:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 14,
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
     insets = { left = 3, right = 3, top = 3, bottom = 3 },
   })
-  f:SetBackdropBorderColor(0.68, 0.52, 0.20, 1)
+  local G = ES.UI.BROWN.group
+  f:SetBackdropColor(G[1], G[2], G[3], 0.99)
+  f:SetBackdropBorderColor(0.52, 0.38, 0.17, 1)
   f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   f.title:SetPoint("TOPLEFT", 12, -10)
   f.sub = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -306,15 +337,23 @@ local function CreatePanel()
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetSize(26, 26)
     row.icon:SetPoint("LEFT", 2, 0)
+    -- Precio arriba a la derecha, en la línea del nombre: el nombre acaba antes de
+    -- él y "Tienes 0/163 · compras 165 × 4c · en lotes de 5" tiene todo el ancho
+    -- (antes el precio iba centrado y ese texto se metía debajo)
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.name:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, -1)
-    row.name:SetPoint("RIGHT", -70, 0)
+    row.name:SetPoint("RIGHT", row, "RIGHT", -COST_W, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
+    row.cost = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    row.cost:SetPoint("TOP", row.name, "TOP", 0, 0)
+    row.cost:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    row.cost:SetJustifyH("RIGHT")
     row.qty = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     row.qty:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 1)
-    row.cost = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.cost:SetPoint("RIGHT", -4, 0)
+    row.qty:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    row.qty:SetJustifyH("LEFT")
+    row.qty:SetWordWrap(false)
     row:SetScript("OnClick", RowClick)
     row:SetScript("OnEnter", RowEnter)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -370,8 +409,11 @@ function Vendor:Refresh()
     or #list == 0 and L["Para vender al vendedor, de tus rutas:"]
     or missing > 0 and L["De tu lista de la compra, este vendedor tiene:"]
     or L["Ya tienes todo lo que te hace falta de este vendedor."])
-  -- Filas: lo que comprar y, debajo, lo que vender (entre las dos, como mucho MAX_ROWS)
-  local y = -40
+  -- Filas: lo que comprar y, debajo, lo que vender (entre las dos, como mucho MAX_ROWS).
+  -- Empiezan bajo el título y el subtítulo según lo que midan (en dos líneas, el
+  -- subtítulo se montaba encima de la primera fila)
+  local function H(fs) return math.min(tonumber(fs:GetStringHeight()) or 12, 40) end
+  local y = -(10 + H(panel.title) + 3 + H(panel.sub) + 8)
   -- (con algo que vender, al menos SELL_ROWS filas para ello: una lista de compra
   -- larga no tapa la sección de vender ni su botón)
   local shownBuy = math.min(#list, MAX_ROWS - math.min(#sell, SELL_ROWS))

@@ -1,12 +1,10 @@
 local _, ES = ...
 local L = ES.L
 
--- Cabecera del panel: buscador (profesiones y recetas) a la izquierda, título
--- en el centro, selector de idioma a la derecha y botón de cerrar.
+-- Cabecera del panel: Informar a la izquierda, título en el centro, selector de
+-- idioma a la derecha y botón de cerrar.
 
 local GOLD = { 0.96, 0.79, 0.25 }
-local MAX_RESULTS = 8
-
 
 local function SetBackdrop(frame, edgeSize, inset)
   frame:SetBackdrop({
@@ -15,189 +13,6 @@ local function SetBackdrop(frame, edgeSize, inset)
     tile = true, tileSize = 16, edgeSize = edgeSize,
     insets = { left = inset, right = inset, top = inset, bottom = inset },
   })
-end
-
----------------------------------------------------------------------------
--- Búsqueda
----------------------------------------------------------------------------
--- Profesiones (por su nombre) y recetas que fabrican algo (por el nombre de la
--- receta o del objeto, si el juego ya lo tiene cargado)
-local function Search(query)
-  local results = {}
-  query = query:lower()
-  for _, prof in ipairs(ES.PROFESSIONS) do
-    local label = ES:ProfLabel(prof.key)
-    if ES.Data[prof.key] and (label:lower():find(query, 1, true) or prof.key:lower():find(query, 1, true)) then
-      results[#results + 1] = { kind = "prof", profKey = prof.key, text = label, icon = prof.icon }
-    end
-  end
-  for _, prof in ipairs(ES.PROFESSIONS) do
-    local data = ES.Data[prof.key]
-    for id, r in pairs(data and data.recipes or {}) do
-      if #results >= 60 then break end
-      if r.out and not r.intermediate and not r.conversion then
-        local itemName, _, texture = ES:GetItemData(r.out[1])
-        if (r.name or ""):lower():find(query, 1, true) or (r.nameEN or ""):lower():find(query, 1, true)
-          or (itemName and itemName:lower():find(query, 1, true)) then
-          results[#results + 1] = { kind = "recipe", profKey = prof.key, recipe = r, id = id,
-            text = itemName or r.name, icon = texture or prof.icon, level = r.train or 1 }
-        end
-      end
-    end
-  end
-  table.sort(results, function(a, b)
-    if a.kind ~= b.kind then return a.kind == "prof" end
-    if a.profKey ~= b.profKey then return a.profKey < b.profKey end
-    return (a.level or 0) < (b.level or 0)
-  end)
-  return results
-end
-
--- Abre la profesión del resultado; si es una receta, su ficha en la Colección
-function ES:OpenSearchResult(result)
-  if result.kind ~= "recipe" then
-    self:SelectPage(result.profKey)
-    return
-  end
-  local f = self:GetMainFrame()
-  local page = f.pages["pattern:" .. result.profKey]
-  if not page then return end
-  local cf = page.collectionFrame
-  cf.selectedID, cf.selected = result.id, nil
-  self:SelectPage("pattern:" .. result.profKey)
-  cf.search:SetText(result.recipe.name or "") -- la lista, filtrada por ella
-  if cf.data then self:RenderCollection(cf) end
-end
-
-local function CreateSearch(f)
-  local box = CreateFrame("EditBox", nil, f, "BackdropTemplate")
-  f.globalSearch = box
-  box:SetSize(265, 26)
-  box:SetPoint("TOPLEFT", 18, -14)
-  box:SetAutoFocus(false)
-  box:SetMaxLetters(60)
-  box:SetFontObject("GameFontHighlight")
-  box:SetTextInsets(27, 22, 0, 0)
-  SetBackdrop(box, 10, 3)
-  box:SetBackdropColor(0.045, 0.043, 0.040, 0.98)
-  box:SetBackdropBorderColor(0.34, 0.31, 0.27, 1)
-
-  local icon = box:CreateTexture(nil, "ARTWORK")
-  icon:SetSize(14, 14)
-  icon:SetPoint("LEFT", 7, 0)
-  icon:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
-  icon:SetVertexColor(0.72, 0.70, 0.66)
-
-  local placeholder = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-  placeholder:SetPoint("LEFT", 28, 0)
-  placeholder:SetTextColor(0.48, 0.47, 0.44)
-  placeholder:SetText(L["Buscar profesiones, recetas..."])
-
-  local clear = CreateFrame("Button", nil, box)
-  clear:SetSize(16, 16)
-  clear:SetPoint("RIGHT", -5, 0)
-  clear:SetNormalTexture("Interface\\Buttons\\UI-StopButton")
-  clear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
-  clear:Hide()
-
-  -- Lista de resultados bajo el buscador
-  local list = CreateFrame("Frame", nil, f, "BackdropTemplate")
-  f.searchResults = list
-  list:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -3)
-  list:SetWidth(340)
-  list:SetFrameStrata("TOOLTIP")
-  SetBackdrop(list, 10, 3)
-  list:SetBackdropColor(0.045, 0.042, 0.037, 0.995)
-  list:SetBackdropBorderColor(0.48, 0.40, 0.27, 1)
-  list:Hide()
-  list.rows, list.results = {}, {}
-
-  local function Choose(result)
-    list:Hide()
-    box:SetText("")
-    box:ClearFocus()
-    ES:OpenSearchResult(result)
-  end
-
-  local function Row(i)
-    local row = list.rows[i]
-    if row then return row end
-    row = CreateFrame("Button", nil, list)
-    row:SetHeight(22)
-    row:SetPoint("TOPLEFT", 5, -5 - (i - 1) * 22)
-    row:SetPoint("TOPRIGHT", -5, -5 - (i - 1) * 22)
-    row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
-    row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(18, 18)
-    row.icon:SetPoint("LEFT", 4, 0)
-    row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    row.text:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
-    row.text:SetJustifyH("LEFT")
-    row.sub = row:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    row.sub:SetPoint("RIGHT", -6, 0)
-    row.sub:SetJustifyH("RIGHT")
-    row:SetScript("OnClick", function(self) if self.result then Choose(self.result) end end)
-    list.rows[i] = row
-    return row
-  end
-
-  local function Refresh()
-    local text = strtrim(box:GetText() or "")
-    placeholder:SetShown(text == "")
-    clear:SetShown(text ~= "")
-    if text:len() < 2 then list:Hide() return end
-    local results = Search(text)
-    list.results = results
-    local shown = math.min(MAX_RESULTS, #results)
-    for i = 1, shown do
-      local r, row = results[i], Row(i)
-      row.result = r
-      row.icon:SetTexture(r.icon or ES.ICON)
-      if r.kind == "prof" then
-        row.text:SetText(r.text)
-        row.text:SetTextColor(unpack(GOLD))
-        row.sub:SetText(L["Profesión"])
-      else
-        row.text:SetText(r.text)
-        row.text:SetTextColor(1, 1, 1)
-        row.sub:SetText(string.format("%s · %d", ES:ProfLabel(r.profKey), r.level))
-      end
-      row:Show()
-    end
-    for i = shown + 1, #list.rows do list.rows[i]:Hide() end
-    if shown == 0 then
-      local row = Row(1)
-      row.result = nil
-      row.icon:SetTexture(nil)
-      row.text:SetText(L["Sin resultados"])
-      row.text:SetTextColor(0.5, 0.5, 0.5)
-      row.sub:SetText("")
-      row:Show()
-      shown = 1
-    end
-    list:SetHeight(10 + shown * 22)
-    list:Show()
-  end
-
-  box:SetScript("OnTextChanged", Refresh)
-  box:SetScript("OnEnterPressed", function(self)
-    local first = list.results[1]
-    if list:IsShown() and first then Choose(first) else self:ClearFocus() end
-  end)
-  box:SetScript("OnEscapePressed", function(self)
-    self:SetText("")
-    self:ClearFocus()
-    list:Hide()
-  end)
-  box:SetScript("OnEditFocusLost", function()
-    -- Dejar tiempo a que llegue el clic en un resultado antes de cerrar la lista
-    C_Timer.After(0.2, function() if not box:HasFocus() then list:Hide() end end)
-  end)
-  clear:SetScript("OnClick", function()
-    box:SetText("")
-    list:Hide()
-  end)
 end
 
 ---------------------------------------------------------------------------
@@ -444,16 +259,10 @@ function ES:CreateHeader(f)
     ES:UpdateLastScan()
   end)
 
-  CreateSearch(f)
-  if not ES.DEV then f.globalSearch:Hide() end -- buscador: solo en modo desarrollo (no en la 1.0)
-  CreateLanguage(f) -- el interruptor de desarrollo está en Opciones > AddOns (Options.lua)
+  CreateLanguage(f)
   CreateReport(f)
-  -- El buscador (solo DEV) pasa a la derecha de Informar, algo más estrecho
-  f.globalSearch:ClearAllPoints()
-  f.globalSearch:SetPoint("LEFT", f.reportButton, "RIGHT", 8, 0)
-  f.globalSearch:SetWidth(180)
 
-  local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+  local close =CreateFrame("Button", nil, f, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -3, -3)
   f.closeButton = close
 end

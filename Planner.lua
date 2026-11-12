@@ -122,6 +122,89 @@ function Planner.NeedFrom(plan, level)
   return need
 end
 
+---------------------------------------------------------------------------
+-- Comprar por tramos: en vez de toda la ruta de golpe, lo del tramo en el que
+-- estás, con un colchón donde la suerte cuenta (amarillo y verde). Al acabar el
+-- tramo, el siguiente. La lista es viva: lo que falta = lo del tramo - lo que llevas
+---------------------------------------------------------------------------
+Planner.PHASE_Z = 1 -- colchón: 1 desviación (te llega ~8 de cada 10 veces); 0 = lo esperado
+
+-- Materiales que pide un nivel (las claves de pointNeed)
+local function PointItems(plan, s)
+  local set = {}
+  for itemID in pairs(plan.pointNeed and plan.pointNeed[s] or {}) do set[itemID] = true end
+  return set
+end
+
+-- Tramo en el que estás: { from, to, steps = { pasos } } o nil (ruta acabada). Es el
+-- paso de tu nivel; los siguientes se juntan si no piden ningún material nuevo
+-- (Copper Bracers y luego Copper Chain Pants: una sola visita a la AH)
+function Planner.Phase(plan, level)
+  local steps = plan and plan.steps or {}
+  local first
+  for i, st in ipairs(steps) do
+    if level < st.to then first = i break end
+  end
+  if not first then return nil end
+  local phase = { from = math.max(level, steps[first].from), to = steps[first].to, steps = { steps[first] } }
+  local items = {}
+  for s = steps[first].from, steps[first].to - 1 do
+    for itemID in pairs(PointItems(plan, s)) do items[itemID] = true end
+  end
+  for i = first + 1, #steps do
+    local st, new = steps[i], false
+    for s = st.from, st.to - 1 do
+      for itemID in pairs(PointItems(plan, s)) do if not items[itemID] then new = true end end
+    end
+    if new or st.from ~= phase.to then break end
+    phase.to = st.to
+    phase.steps[#phase.steps + 1] = st
+  end
+  return phase
+end
+
+-- Lo que pide el tramo desde tu nivel: { [itemID] = { expected, target } }. target
+-- lleva el colchón: en un punto con probabilidad p, las fabricaciones son aleatorias
+-- (media 1/p, varianza (1-p)/p²); un material que pide q de media en ese punto
+-- varía q²(1-p). Naranja (p = 1): lo justo
+function Planner.PhaseNeed(plan, level, z)
+  local phase = Planner.Phase(plan, level)
+  if not phase then return {}, nil end
+  z = z or Planner.PHASE_Z
+  local acc = {}
+  for s = phase.from, phase.to - 1 do
+    local p = plan.pointChance and plan.pointChance[s] or 1
+    for itemID, q in pairs(plan.pointNeed and plan.pointNeed[s] or {}) do
+      local a = acc[itemID] or { expected = 0, var = 0 }
+      acc[itemID] = a
+      a.expected = a.expected + q
+      a.var = a.var + q * q * (1 - p)
+    end
+  end
+  local out = {}
+  for itemID, a in pairs(acc) do
+    local target = math.ceil(a.expected + z * math.sqrt(a.var) - 0.001)
+    if target > 0 then out[itemID] = { expected = a.expected, target = target } end
+  end
+  return out, phase
+end
+
+-- Cómo vas en el tramo con lo que llevas (have(itemID) = unidades):
+-- { phase, short = { [itemID] = cuántas faltan para lo esperado }, extra = { [itemID]
+--   = cuántas faltan hasta el colchón }, ok (llega a lo esperado) }
+function Planner.PhaseOutlook(plan, level, have)
+  local need, phase = Planner.PhaseNeed(plan, level)
+  if not phase then return nil end
+  local res = { phase = phase, short = {}, extra = {}, ok = true }
+  for itemID, n in pairs(need) do
+    local h = have(itemID) or 0
+    local exp = math.ceil(n.expected - 0.001)
+    if h < exp then res.short[itemID], res.ok = exp - h, false end
+    if h < n.target then res.extra[itemID] = n.target - h end
+  end
+  return res
+end
+
 -- Fabricaciones totales de un plan
 function Planner.TotalCrafts(plan)
   local n = 0
@@ -137,6 +220,37 @@ function Planner.Chance(t, skill)
   if skill < yellow then return 1 end
   if skill >= grey then return 0 end
   return (grey - skill) / (grey - yellow)
+end
+
+-- Donde la ruta se para (no hay materiales para un punto entero: Rough Grinding
+-- Stone al 62% pide 1,6 fabricaciones y llevas piedra para 1), lo que puedes
+-- intentar con lo que llevas: la receta que sabes con más probabilidad de subir
+-- a skill + 1. owned = { [itemID] = unidades }; isKnown(id) dice si la sabes.
+-- Devuelve { id, recipe, crafts, chance, prob } o nil
+function Planner.Attempt(data, skill, owned, isKnown)
+  local best
+  for id, r in pairs(data.recipes) do
+    local chance = not r.intermediate and not r.conversion and Planner.Chance(r.t, skill) or 0
+    local tool = r.tool and ES.Data.Tools and ES.Data.Tools[r.tool]
+    if chance > 0 and (r.t[1] or 1) <= skill and (not tool or (owned[tool.item] or 0) > 0) and isKnown(id) then
+      -- Fabricaciones que caben: lo que vende un vendedor no limita
+      local fit
+      for _, rq in ipairs(r.r) do
+        if not ES.Data.VendorPrices[rq[1]] then
+          local n = math.floor((owned[rq[1]] or 0) / rq[2])
+          fit = fit and math.min(fit, n) or n
+        end
+      end
+      local crafts = math.min(fit or 0, math.ceil(1 / chance - 0.001))
+      if crafts >= 1 then
+        local prob = 1 - (1 - chance) ^ crafts
+        if not best or prob > best.prob + EPS or (math.abs(prob - best.prob) <= EPS and crafts < best.crafts) then
+          best = { id = id, recipe = r, crafts = crafts, chance = chance, prob = prob }
+        end
+      end
+    end
+  end
+  return best
 end
 
 -- Precio del instructor y nivel al que enseña la receta: lo visto en el juego
@@ -686,6 +800,23 @@ end
 -- Lo que cuesta un punto de una receta en un nivel (sin el peso por fabricación):
 -- { neto, fabricaciones } o false. Se guarda en el contexto: las variantes del
 -- camino (sin tal receta, con tal tramo fijo) reutilizan los mismos costes
+-- Puntos que dan de media los materiales que se fabrican para un punto (Rough
+-- Blasting Powder para la Rough Dynamite, Light Leather de chatarras...): son recetas
+-- normales y, si aún no están en gris, suben la profesión (Discord: 63 de dinamita
+-- pedían 63 de pólvora, que ya llevaban a 51). Las marcadas "intermediate" (Cured
+-- Thick Hide) y las conversiones no dan puntos
+local function CraftBonus(ctx, actions, s)
+  local g = 0
+  for _, a in ipairs(actions or {}) do
+    local ir = a.kind == "craft" and a.recipe and ctx.data.recipes[a.recipe]
+    if ir and not ir.intermediate and not ir.conversion and ir.t and (ir.t[1] or 1) <= s then
+      g = g + a.qty / ((ir.out and ir.out[2]) or 1) * Planner.Chance(ir.t, s)
+    end
+  end
+  return g
+end
+Planner.CraftBonus = CraftBonus
+
 local function PointCost(ctx, rc, s)
   local row = ctx.gpsCost[rc.id]
   if not row then row = {} ctx.gpsCost[rc.id] = row end
@@ -695,8 +826,11 @@ local function PointCost(ctx, rc, s)
     local chance = Planner.Chance(rc.r.t, s)
     if chance > 0 then
       local crafts = 1 / chance
-      local cost = RecipeCost(ctx, rc.r, crafts, {})
+      local cost, _, _, actions = RecipeCost(ctx, rc.r, crafts, {})
       if cost then
+        -- Puntos de los materiales que se fabrican por el camino: con ellos, cada
+        -- punto de la ruta cuesta 1/(1 + g) de lo que costaría sin ellos
+        local g = CraftBonus(ctx, actions, s)
         -- Lo fabricado que la ruta necesita después (Light Leather, Handful of
         -- Copper Bolts) vale lo que costaría conseguirlo, no lo del vendedor
         -- (ctx.needValue, ver PlanGPS). Como al elegir punto a punto (ver Plan):
@@ -706,7 +840,7 @@ local function PointCost(ctx, rc, s)
         if need then value = math.max(value, crafts * rc.sale.qty * need) end
         local net = cost - value
         if net < 0 then net = net / crafts + CRAFT_COST * (crafts - 1) end
-        v = { net, crafts }
+        v = { net / (1 + g), crafts / (1 + g) }
       end
     end
     row[s] = v
@@ -1457,8 +1591,19 @@ function Planner:Plan(data, opts)
   local ownedQty = {} -- [itemID] = unidades que se usan de tus bolsas/banco
   local perPoint = {}
   local lastWhy
+  -- Puntos de media que ya han dado los materiales fabricados por el camino (ver
+  -- CraftBonus): al llegar a uno entero, ese nivel no pide fabricar nada
+  local carry, lastBest = 0, nil
 
   for s = opts.from, opts.to - 1 do
+    if carry >= 1 - EPS and lastBest then
+      -- Punto ya ganado con lo intermedio: sin fabricaciones ni materiales, en el
+      -- paso de la receta anterior
+      carry = carry - 1
+      perPoint[#perPoint + 1] = { id = lastBest.id, crafts = 0, chance = lastBest.chance, cost = 0, value = 0,
+        reagents = {}, need = {}, blocked = {}, skill = s, free = true }
+      plan.choice[s] = lastBest.id
+    else
     local best
     local why = {}
     local blocked = {} -- recetas que se podrían usar pero les falta el precio de algún material
@@ -1509,11 +1654,14 @@ function Planner:Plan(data, opts)
               score = score + inf.learnCost / feeSpan
             end
             if toolCost then score = score + toolCost / span end
+            -- Lo fabricado por el camino también sube puntos: el punto sale más barato
+            local bonus = CraftBonus(ctx, actions, s)
+            score = score / (1 + bonus)
             if not best or score < best.score then
               best = {
                 id = id, score = score, crafts = crafts, chance = chance, cost = cost, value = value,
                 reagents = reagents, extra = extra, actions = actions,
-                tool = tool, toolCost = toolCost or 0, feeSpan = feeSpan,
+                tool = tool, toolCost = toolCost or 0, feeSpan = feeSpan, bonus = bonus,
               }
             end
           end
@@ -1598,11 +1746,17 @@ function Planner:Plan(data, opts)
     perPoint[#perPoint + 1] = best
     best.skill = s
     plan.choice[s] = best.id
+    lastBest, carry = best, carry + (best.bonus or 0)
+    end
   end
 
   -- [nivel] = { [itemID] = unidades } que pide ese punto (ver arriba)
-  plan.pointNeed = {}
-  for _, p in ipairs(perPoint) do plan.pointNeed[p.skill] = p.need end
+  plan.pointNeed, plan.pointChance = {}, {}
+  plan.freePoints = 0 -- puntos que dan los materiales fabricados por el camino (ver CraftBonus)
+  for _, p in ipairs(perPoint) do
+    plan.pointNeed[p.skill], plan.pointChance[p.skill] = p.need, p.chance
+    if p.free then plan.freePoints = plan.freePoints + 1 end
+  end
 
   -- Recetas de pago: entre cuántos puntos se repartió su precio y cuántos se usaron
   plan.feeUse = {}
@@ -1966,6 +2120,8 @@ function Planner:RecipeMarket(data, opts)
           if e.ahNet and e.ahNet > best then best, e.sellWhere = e.ahNet, "ah" end
           e.profit = best * qty - cost
           e.margin = cost > 0 and e.profit / cost or nil
+          -- Solo al vendedor (venta segura): para la opción de la Colección
+          e.profitVendor = e.vendor * qty - cost
         end
         list[#list + 1] = e
       end
@@ -1986,7 +2142,6 @@ local LOCAL_NAMES = {
   [202] = { "Engineering", "Ingeniería", "Ingenieria" },
   [185] = { "Cooking", "Cocina" },
   [129] = { "First Aid", "Primeros auxilios" },
-  [356] = { "Fishing", "Pesca" },
 }
 
 function ES:GetProfessionSkill(skillLine)

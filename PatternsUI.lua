@@ -52,7 +52,7 @@ function ES:RenderPatterns()
   local entries = {}
   for order, prof in ipairs(ES.PROFESSIONS) do
     local data = ES.Data[prof.key]
-    if data and ES:ProfessionVisible(prof) then
+    if data then
       local known, total = ES.Collection:Progress(prof.key)
       entries[#entries + 1] = { prof = prof, order = order, known = known, total = total,
         learned = ES:GetProfessionSkill(data.skillLine) ~= nil }

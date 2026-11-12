@@ -61,11 +61,12 @@ function Calc.Hours(c)
   return 24
 end
 
--- Por dónde se vende: "ah" (comisión y depósito) o "trade" (chat de comercio, cara a
--- cara: sin comisión ni depósito). Por defecto, la AH
-Calc.CHANNELS = { "ah", "trade" }
+-- Por dónde se vende: "ah" (comisión y depósito), "trade" (chat de comercio, cara a
+-- cara: sin comisión ni depósito) o "vendor" (al precio del vendedor: venta segura,
+-- sin comisión ni depósito). Por defecto, la AH
+Calc.CHANNELS = { "ah", "trade", "vendor" }
 function Calc.Channel(c)
-  return c.channel == "trade" and "trade" or "ah"
+  return (c.channel == "trade" or c.channel == "vendor") and c.channel or "ah"
 end
 
 -- Depósito mínimo por subasta en Forever: 1s, aunque el porcentaje dé menos (Wowhead,
@@ -256,28 +257,37 @@ function Calc:Compute(c)
       end
     end
   end
-  res.revenue = (res.sale or 0) * res.outN
+  res.vendorSale = res.outID and ES:VendorSellPrice(res.outID) or nil
+  res.vendorRevenue = (res.vendorSale or 0) * res.outN
   res.cut, res.cutRate, res.deposit = 0, 0, 0
   res.hours = Calc.Hours(c)
   res.depositPct = Calc.DepositPct(res.hours)
   res.channel = Calc.Channel(c)
-  -- Se puede elegir AH o chat de comercio salvo si se vende al vendedor
+  -- Se puede elegir AH, chat o vendedor salvo si solo se puede vender al vendedor
+  -- (sin subastas ni precio a mano)
   res.canChoose = res.outID ~= nil and res.saleSource ~= "vendor"
+  if not res.canChoose and res.channel ~= "ah" then res.channel = "ah" end
+  -- Al vendedor: su precio, sin comisión ni depósito (la casilla sigue mandando en AH y chat)
+  res.ahSale, res.ahSaleSource = res.sale, res.saleSource
+  if res.channel == "vendor" then res.sale, res.saleSource = res.vendorSale, "vendor" end
+  res.revenue = (res.sale or 0) * res.outN
+  local ahRevenue = (res.ahSale or 0) * res.outN
   local ahCut = 0
   if res.canChoose then
     -- En la AH: comisión sobre la venta y depósito según la duración (2/8/24 h: 5/20/60%
     -- del precio de vendedor, la fórmula de Classic). El depósito se devuelve si se
     -- vende: no resta del beneficio, solo se arriesga
     local perUnit, cut = ES.Planner.AuctionCosts(ES:VendorSellPrice(res.outID) or 0, { hours = res.hours, neutral = ES:IsNeutralAH() })
-    res.cutRate, ahCut = cut, res.revenue * cut
+    res.cutRate, ahCut = cut, ahRevenue * cut
     if res.channel == "ah" then
       res.cut = ahCut
       res.deposit, res.listings = Calc.Deposit(perUnit, res.outN, Calc.StackSize(res.outID))
     end
   end
-  -- Los dos beneficios, para comparar: en la AH y por el chat de comercio (sin comisión)
-  res.profitAH = res.revenue - ahCut - res.cost
-  res.profitTrade = res.revenue - res.cost
+  -- Los tres beneficios, para comparar: en la AH, por el chat (sin comisión) y al vendedor
+  res.profitAH = ahRevenue - ahCut - res.cost
+  res.profitTrade = ahRevenue - res.cost
+  res.profitVendor = res.vendorSale and (res.vendorRevenue - res.cost) or nil
   res.profit = res.revenue - res.cut - res.cost
   return res
 end

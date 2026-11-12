@@ -13,8 +13,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ADDON = HERE.parent
 WAGO = HERE / "wago"
-PROFS = ["Leatherworking", "Enchanting", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Cooking", "FirstAid",
-         "Fishing"]
+PROFS = ["Leatherworking", "Enchanting", "Tailoring", "Blacksmithing", "Alchemy", "Engineering", "Cooking", "FirstAid"]
 
 
 def read(name):

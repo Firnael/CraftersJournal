@@ -58,7 +58,6 @@ local function SetStatus(text)
     ES:ScanLog("estado: " .. text) -- sin el contador de cada segundo
   end
   Scanner.statusText = text
-  ES:OnScanStatus(text)
 end
 
 function Scanner:IsBusy()
