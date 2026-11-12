@@ -565,7 +565,14 @@ ES.Locales.en = {
   ["Descarga todas las subastas y muestra el análisis."] = "Downloads all auctions and shows the analysis.",
 
   -- Earn / EarnUI / ganar dinero
-  ["Se vende al vendedor: venta segura."] = "Sold to the vendor: a sure sale.",
+  ["Se vende al vendedor: venta segura, sin límite de ventas."] = "Sold to the vendor: a sure sale, with no limit on sales.",
+  ["Hasta aquí: más allá, los materiales que quedan en la AH salen tan caros que la siguiente ya no compensa."] = "Stops here: past this point, the materials left on the AH cost so much that the next craft isn't worth it.",
+  ["Hasta aquí: no quedan más materiales a la venta en la AH."] = "Stops here: there are no more materials for sale on the AH.",
+  ["Tope de %d fabricaciones: con más aún daría beneficio."] = "Capped at %d crafts: more would still make a profit.",
+  ["Cada línea del vendedor se calcula por separado: si dos usan los mismos materiales, haz una."] = "Each vendor line is worked out on its own: if two use the same materials, do one of them.",
+  ["Clic: añadir sus materiales a la lista de compra."] = "Click: add its materials to the shopping list.",
+  ["Ganar dinero: %d× %s"] = "Make Money: %d× %s",
+  ["Venta segura al vendedor"] = "Sure sale to the vendor",
   ["Hasta el %d%% de lo que hay a la venta (%d)."] = "Up to %d%% of what's for sale (%d).",
   ["No hay ninguno a la venta: unos pocos para probar."] = "None for sale: a few to test.",
   ["Alertas de mercado dudosas: unos pocos para probar."] = "Doubtful market alerts: a few to test.",

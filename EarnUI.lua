@@ -2,7 +2,7 @@ local _, ES = ...
 local L = ES.L
 
 -- Página "Ganar dinero": qué fabricar hoy con las recetas que sabes (Earn.lua),
--- el lote recomendado y lo descartado
+-- el lote recomendado, lo que se vende al vendedor (aparte) y lo descartado
 -- por las alertas de mercado.
 
 local GREEN, GREY, ORANGE = "|cff40ff40", "|cff999999", "|cffff9933"
@@ -42,6 +42,13 @@ local function IdeaTooltip(idea)
       GameTooltip:AddLine(string.format(L["Fabrica %d: %s"], idea.crafts, idea.why or ""), 1, 0.82, 0, true)
       if idea.why2 then GameTooltip:AddLine(idea.why2, 0.6, 1, 0.6, true) end
       if idea.fewer then GameTooltip:AddLine(L["Menos de las que caben: con más, los materiales salen más caros y ya no compensa."], 1, 0.6, 0.2, true) end
+      if idea.limit == "margin" then
+        GameTooltip:AddLine(L["Hasta aquí: más allá, los materiales que quedan en la AH salen tan caros que la siguiente ya no compensa."], 0.8, 0.8, 0.8, true)
+      elseif idea.limit == "supply" then
+        GameTooltip:AddLine(L["Hasta aquí: no quedan más materiales a la venta en la AH."], 0.8, 0.8, 0.8, true)
+      elseif idea.limit == "max" then
+        GameTooltip:AddLine(string.format(L["Tope de %d fabricaciones: con más aún daría beneficio."], idea.crafts), 0.8, 0.8, 0.8, true)
+      end
       if idea.crafts > 0 then
         GameTooltip:AddDoubleLine(L["Inviertes"], ES.Money(idea.invest), unpack(W))
         GameTooltip:AddDoubleLine(L["Beneficio si se venden todas"], GREEN .. "+" .. ES.Money(idea.profit) .. "|r", unpack(W))
@@ -52,6 +59,11 @@ local function IdeaTooltip(idea)
       end
     end
     if idea.sellWhere == "ah" then ES.Market.AddToTooltip(e.itemID) end
+    if idea.shopping then
+      GameTooltip:AddLine(" ")
+      GameTooltip:AddLine(L["Cada línea del vendedor se calcula por separado: si dos usan los mismos materiales, haz una."], 0.6, 0.6, 0.6, true)
+      GameTooltip:AddLine(L["Clic: añadir sus materiales a la lista de compra."], 0.6, 0.6, 0.6, true)
+    end
     GameTooltip:Show()
   end
 end
@@ -73,8 +85,17 @@ local function IdeaLine(idea, dim)
     return { icon = texture or 134400, title = string.format(L["Ya tienes %d× %s"], idea.have, name or e.recipe.name),
       sub = sub, value = GREEN .. L["anúncialas"] .. "|r", item = e.itemID, tooltip = IdeaTooltip(idea) }
   end
+  local onClick
+  if idea.shopping then
+    -- Venta al vendedor: cada línea, su propia lista de compra (una por receta y día)
+    onClick = function()
+      local day = date and date("%d/%m") or ""
+      ES:AddToShopping("money", string.format(L["Ganar dinero: %d× %s"], idea.crafts, name or e.recipe.name), idea.shopping,
+        { key = e.id .. ":" .. day, minusBags = true })
+    end
+  end
   return { icon = texture or 134400, title = string.format("%d× %s", idea.crafts, name or e.recipe.name), sub = sub,
-    value = ES.UI.Signed(-idea.profit), item = e.itemID, tooltip = IdeaTooltip(idea) }
+    value = ES.UI.Signed(-idea.profit), item = e.itemID, tooltip = IdeaTooltip(idea), onClick = onClick }
 end
 
 function ES:CreateEarnPage(page)
@@ -231,6 +252,11 @@ function ES:RenderEarn()
     lines[#lines + 1] = { total = true, title = L["Total del lote"],
       sub = L["Para comprar sus materiales: Añadir a la lista de compra (arriba)."],
       value = Signed(-res.profit) }
+  end
+  -- Venta al vendedor: segura, sin límite de ventas, aparte del lote
+  if #res.vendor > 0 then
+    lines[#lines + 1] = { section = L["Venta segura al vendedor"] }
+    for i = 1, math.min(#res.vendor, MORE_IDEAS) do lines[#lines + 1] = IdeaLine(res.vendor[i]) end
   end
   -- Las que no entraron en el lote (no siempre las siguientes: una puede quedarse fuera
   -- porque las anteriores ya compran sus materiales, y entonces quizá ya no llegue al mínimo)

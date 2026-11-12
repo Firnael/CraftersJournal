@@ -389,6 +389,7 @@ step("ganar dinero (sin correo)", function()
     assert(ES.Earn.LineValue(idea) >= 50000, "idea por debajo del mínimo: " .. idea.e.recipe.name)
   end
   for _, idea in ipairs(few.batch) do assert(ES.Earn.LineValue(idea) >= 50000, "lote por debajo del mínimo") end
+  for _, idea in ipairs(few.vendor) do assert(ES.Earn.LineValue(idea) >= 50000, "vendedor por debajo del mínimo") end
   assert(#few.ideas <= #all.ideas and (few.hidden > 0 or #few.ideas == #all.ideas), "el mínimo no ocultó nada")
   log[#log+1] = string.format("     mínimo 5g: %d de %d ideas (%d ocultas)", #few.ideas, #all.ideas, few.hidden)
   ES:SelectPage("money")
@@ -398,6 +399,23 @@ step("ganar dinero (sin correo)", function()
   ES.Earn:Clear()
   local res = ES.Earn:Ideas()
   assert(res.known > 0, "no detecta recetas conocidas")
+  -- Venta al vendedor: aparte del lote, sin tope de 20, cada una hasta que la siguiente no compense
+  for _, idea in ipairs(res.batch) do assert(idea.sellWhere ~= "vendor", "el lote no debería llevar ventas al vendedor") end
+  for _, idea in ipairs(res.vendor) do
+    assert(idea.sellWhere == "vendor" and not idea.inBatch and idea.crafts > 0 and idea.profit > 0 and idea.limit,
+      "línea del vendedor mal: " .. idea.e.recipe.name)
+    if idea.limit == "margin" then
+      -- La siguiente ya no deja el margen mínimo
+      local n = idea.crafts
+      local cost = ES.Planner.RecipeCost(idea.ctx, idea.e.recipe, n + 1, {})
+      local marginal = cost - idea.invest
+      assert(idea.sale - marginal < math.max(5, 0.1 * marginal), "la siguiente aún compensaba: " .. idea.e.recipe.name)
+    end
+  end
+  if res.vendor[1] then
+    local v = res.vendor[1]
+    log[#log+1] = string.format("     vendedor: %d líneas; la mejor %dx %s +%s (tope: %s)", #res.vendor, v.crafts, v.e.recipe.name, ES.Money(v.profit), v.limit)
+  end
   log[#log+1] = string.format("     %d conocidas, %d ideas, %d evitar, lote %d: invierte %s gana %s, %d materiales",
     res.known, #res.ideas, #res.avoided, #res.batch, ES.Money(res.invest), ES.Money(res.profit), #res.shopping)
   for i = 1, math.min(3, #res.batch) do
