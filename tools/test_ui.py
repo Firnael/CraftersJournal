@@ -321,14 +321,21 @@ step("lista de compra", function()
   assert(#SH.Lists() == 2 and SH.Lists()[2].title == "Ruta 2", "la ruta se duplicó")
   -- Pestaña: abierta desde la AH, con Comprar siguiente
   ES.IsAuctionHouseOpen = function() return true end
-  -- Al abrir la AH: la ventana grande se esconde y sale el panel pequeño con la misma lista
+  -- (en estas pruebas IsShown siempre dice que sí: la ventana grande mira _shown)
+  local mf = ES:GetMainFrame()
+  mf.IsShown = function(self) return self._shown ~= false end
+  -- Con la ventana grande abierta, abrir la AH no la cierra (ni sale el panel pequeño)
   ES:ShowMainFrame("home")
   ES.db.shopMiniHidden = nil
   ES:SetupAuctionPanel(AuctionFrame)
-  -- (en estas pruebas IsShown siempre dice que sí: se mira _shown)
   local mini = ES.ShoppingMini()
-  assert(mini and mini._shown, "al abrir la AH: falta el panel pequeño")
-  assert(ES:GetMainFrame()._shown == false, "al abrir la AH, la ventana grande debería esconderse")
+  assert(mf._shown ~= false, "con el addon abierto, abrir la AH no debería cerrarlo")
+  assert(mini and mini._shown == false, "con el addon abierto no debería salir también el panel pequeño")
+  -- Con la ventana grande cerrada: sale el panel pequeño con la misma lista
+  ES:HideMainFrame()
+  ES:SetupAuctionPanel(AuctionFrame)
+  assert(mini._shown, "al abrir la AH con el addon cerrado: falta el panel pequeño")
+  mf.IsShown = nil
   assert(mini.progress > 0 and mini.progress < 1 and mini.rows[1] and mini.rows[1]._shown, "panel pequeño sin la lista")
   -- "Ver completa": la pestaña grande en su lugar del pequeño
   ES:OpenShoppingAtAuction(AuctionFrame)
@@ -969,6 +976,24 @@ step("portada: tarjetas de profesiones", function()
   C_AuctionHouse.GetCommoditySearchResultInfo = function(_, i) return rows[i] end
   ES.AuctionState.applyBuy()
   assert(qtySet == 5, "debería poner solo las baratas, puso " .. tostring(qtySet))
+  -- Blizzard vuelve a poner 1 justo después (al refrescar la compra): se vuelve a poner
+  do
+    local display = AuctionHouseFrame.CommoditiesBuyFrame.BuyDisplay
+    display.GetQuantitySelected = function() return qtySet end
+    local timers, savedAfter = {}, C_Timer.After
+    C_Timer.After = function(_, fn) timers[#timers + 1] = fn end
+    ES.AuctionState.buying.holding = nil
+    ES.AuctionState.applyBuy()
+    qtySet = 1 -- (Blizzard la reinicia)
+    for _ = 1, 3 do
+      local run = timers
+      timers = {}
+      for _, fn in ipairs(run) do fn() end
+    end
+    C_Timer.After = savedAfter
+    display.GetQuantitySelected = nil
+    assert(qtySet == 5, "Blizzard la dejó en 1 y no se volvió a poner: " .. tostring(qtySet))
+  end
   -- Otro clic en el mismo material al momento: no vuelve a buscar
   selected = nil
   ES:OpenAuctionBuy(ahLine.item, 7)
@@ -2186,6 +2211,84 @@ step("recetas de especialización: solo si la tienes", function()
   assert(spit and spit.gone, "Spitfire Bracers debería estar marcada como que no se consigue en Forever")
   ES.Planner.Annotate(ES.Data.Leatherworking)
   assert(ES.Planner.LearnSkill(spit, { includeScrolls = true }) == nil, "la ruta no debería poder usar un patrón que no se consigue")
+end)
+step("lista de la compra: cuenta lo que hicieron pasos anteriores", function()
+  -- (Light Leather del paso 1-26 que gastan las Embossed Leather Pants: si ya no las
+  -- llevas, la lista te las pide; antes daba por hecho que las tenías)
+  local P = ES.Planner
+  local opts = ES:PlanOptions("Leatherworking", 1, 150, nil)
+  opts.owned = nil
+  local plan = P:Plan(ES.Data.Leatherworking, opts)
+  local level, item
+  for s = plan.from + 1, plan.reached - 1 do
+    for id, u in pairs(plan.pointUse[s] or {}) do
+      if (u.stock or 0) > 0 and not (plan.pointNeed[s] and plan.pointNeed[s][id]) then level, item = s, id end
+    end
+    if level then break end
+  end
+  assert(level, "la ruta de prueba debería gastar algo hecho en un paso anterior")
+  local need = P.NeedFrom(plan, level)
+  assert((need[item] or 0) > 0, "la lista no cuenta " .. tostring(ES:DataItemName(item)) .. " hecho en un paso anterior")
+  local pn = P.PhaseNeed(plan, level)
+  assert(pn[item] and pn[item].target > 0, "la lista del tramo no cuenta lo hecho en un paso anterior")
+  log[#log+1] = string.format("     a %d la lista pide %d %s hechos antes (frente a tus bolsas)", level, math.ceil(need[item]), tostring(ES:DataItemName(item)))
+  -- Solo lo que de verdad hicieron los pasos ya pasados (no lo de pasos por venir)
+  local made = 0
+  for s = plan.from, level - 1 do
+    local r = ES.Data.Leatherworking.recipes[plan.choice[s]]
+    if r and r.out and r.out[1] == item then made = made + r.out[2] / plan.pointChance[s] end
+  end
+  for _, st in ipairs(plan.steps) do
+    if st.to <= level and st.ahead and st.recipe.out[1] == item then
+      for _, a in ipairs(st.ahead) do made = made + a.quantity end
+    end
+  end
+  assert(need[item] <= made + 1, string.format("la lista pide %d hechos antes y solo se hicieron %d", need[item], made))
+end)
+step("lista por tramos: fabricaciones enteras", function()
+  -- (15 Light Leather no dan para 2 Light Leather Pants, que piden 10: la lista pide 20)
+  -- En todas las profesiones, por tramos y con la ruta entera: un material que solo gasta
+  -- una receta (con la misma cantidad) va en múltiplos de lo que pide cada fabricación
+  local P = ES.Planner
+  local checked = 0
+  local function Check(plan, need, from, to, what)
+    local per = {}
+    for s = from, to - 1 do
+      local r = ES.Data[plan.profKey].recipes[plan.choice[s]]
+      local direct = {}
+      for _, rq in ipairs(r and r.r or {}) do
+        direct[rq[1]] = true
+        local cur = per[rq[1]]
+        if cur == nil then per[rq[1]] = rq[2] elseif cur ~= rq[2] then per[rq[1]] = false end
+      end
+      -- (también lo gasta un intermedio de esa receta: esa parte va por unidades)
+      for itemID in pairs(plan.pointNeed[s] or {}) do
+        if not direct[itemID] then per[itemID] = false end
+      end
+    end
+    for itemID, n in pairs(need) do
+      local target = type(n) == "table" and n.target or n
+      local each = per[itemID]
+      if each and each > 1 then
+        assert(target % each == 0, string.format("%s %s desde %d: pide %d %s, que no son fabricaciones enteras (de %d en %d)",
+          plan.profKey, what, from, target, ES:DataItemName(itemID) or itemID, each, each))
+        checked = checked + 1
+      end
+    end
+  end
+  for _, prof in ipairs({ "Leatherworking", "Tailoring", "Blacksmithing", "Engineering", "Alchemy", "Enchanting", "Cooking", "FirstAid" }) do
+    local opts = ES:PlanOptions(prof, 1, 300, nil)
+    opts.owned = nil
+    local plan = P:Plan(ES.Data[prof], opts)
+    plan.profKey = prof
+    for _, st in ipairs(plan.steps) do
+      local need, phase = P.PhaseNeed(plan, st.from)
+      if phase then Check(plan, need, phase.from, phase.batchTo or phase.to, "tramo") end
+      Check(plan, P.NeedFrom(plan, st.from), st.from, plan.reached, "ruta entera")
+    end
+  end
+  assert(checked > 0, "ningún material de más de 1 por fabricación en las rutas de prueba")
+  log[#log+1] = "     " .. checked .. " materiales comprobados en fabricaciones enteras (8 profesiones)"
 end)
 step("comandos /es", function()
   SlashCmdList.CRAFTERSJOURNAL("") SlashCmdList.CRAFTERSJOURNAL("cancel")

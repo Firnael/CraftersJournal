@@ -126,6 +126,7 @@ end
 local RESULTS_WAIT, RESULTS_RETRIES = 2, 4 -- s esperando resultados antes de volver a pedirlos
 local REPEAT_GAP = 1 -- s: un segundo clic en el mismo material no vuelve a buscar
 local BACK_GAP = 0.2 -- s entre volver a la lista y abrir otra vez el material
+local HOLD_GAP, HOLD_TICKS = 0.1, 20 -- la cantidad se vigila 2 s tras ponerla (ver Hold)
 
 local function Select(f, A, itemID)
   return pcall(function()
@@ -169,12 +170,24 @@ function ES:OpenAuctionBuy(itemID, qty, okUnit)
   -- momento y a los 0,4 y 1,2 s: sin resultados ponía todo, Blizzard la devolvía a 1
   -- y la cantidad parpadeaba
   local warned
+  -- Blizzard puede volver a poner 1 al refrescar la ventana de compra justo después
+  -- (Discord: "se queda en 1"): durante HOLD_TICKS × HOLD_GAP s se comprueba y se
+  -- vuelve a poner. Pasado ese rato no se toca (si la cambias tú, se queda la tuya)
+  local function Hold(n, ticks)
+    if ticks <= 0 or state.buying ~= buying or not f.CommoditiesBuyFrame:IsShown() then return end
+    SetBuyQuantity(n) -- (no hace nada si ya está puesta)
+    C_Timer.After(HOLD_GAP, function() Hold(n, ticks - 1) end)
+  end
   local function Apply()
     if state.buying ~= buying then return end
     if not ES:CommodityTiers(itemID, okUnit) then return end -- aún sin resultados
     buying.got = true
     local n, t = CheapQuantity(itemID, qty, okUnit)
     SetBuyQuantity(n)
+    if not buying.holding then
+      buying.holding = true
+      C_Timer.After(HOLD_GAP, function() Hold(n, HOLD_TICKS) end)
+    end
     if n < qty and not warned then
       warned = true
       ES:Print(string.format(L["%s: solo %d a %s o menos; puesto %d de %d (el resto, desde %s). Compra y vuelve a pulsar."],

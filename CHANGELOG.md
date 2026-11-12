@@ -1,5 +1,15 @@
 # Crafter's Journal
 
+## Unreleased
+
+- **Buying from the Shopping list keeps the quantity.** The Auction House could reset it to 1 right after Crafter's Journal set it; it's now set again for a couple of seconds after the results arrive.
+- **Shopping lists ask for whole crafts.** Each material is split between the recipes that use it and rounded up to what each craft takes, in stage lists and whole-route lists alike: 20 Light Leather for two Light Leather Pants (10 each), not 15.
+
+- **Opening the Auction House no longer closes Crafter's Journal.** If its window is open, it stays open next to the Auction House; the compact shopping list only shows when the window was closed (or when you close it).
+
+- **The shopping list counts what your earlier steps made.** Materials a step crafted for later steps (the Light Leather of the Light Leather step, used by Embossed Leather Pants) used to be assumed in your bags; if you had sold or used them, you ran short halfway through the step. The list now asks for them and checks your bags, like any other material.
+- **Ingredient steps only craft ahead what still gives points.** Extra crafts for later steps go in the ingredient's own step only while it would still give skill-ups when the later step starts; otherwise they're crafted when that step starts, as preparation, instead of all at once 100 levels earlier.
+
 ## 0.41.0
 
 ### Routes you can actually follow

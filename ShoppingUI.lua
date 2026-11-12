@@ -407,10 +407,20 @@ RenderMini = function(st, lines, ahOpen)
   mini.content:SetHeight(math.max(1, y))
 end
 
--- Al abrir la AH: el panel pequeño (salvo que lo cerraras) y la ventana grande, fuera
+-- Al abrir la AH: si tenías la ventana grande abierta, se queda (al lado de la AH) y no
+-- sale el panel pequeño (dos listas a la vez sobran); antes se cerraba siempre y
+-- perdías lo que estabas mirando. Si estaba cerrada, el panel pequeño (salvo que lo
+-- cerraras)
 function ES:SetupShoppingMini(ahFrame)
   if not mini then mini = CreateMini(ahFrame) end
-  ES:HideMainFrame()
+  local main = CraftersJournalMainFrame
+  if main and main:IsShown() then
+    main:ClearAllPoints()
+    main:SetPoint("TOPLEFT", ahFrame, "TOPRIGHT", 4, 0) -- (se queda dentro de la pantalla: SetClampedToScreen)
+    mini:Hide()
+    ES:MiniOnMainHide() -- (y al cerrarla, con la AH abierta, sale el panel pequeño)
+    return
+  end
   mini:SetShown(not ES.db.shopMiniHidden)
   ES:RenderShopping()
 end
@@ -429,13 +439,18 @@ end
 function ES:ShowFullShopping()
   if mini and mini:IsShown() then
     mini:Hide()
-    local main = self:GetMainFrame()
-    if not main.cjMiniHook then
-      main.cjMiniHook = true
-      main:HookScript("OnHide", function()
-        if ES:IsAuctionHouseOpen() and mini and not ES.db.shopMiniHidden then mini:Show() end
-      end)
-    end
+    self:MiniOnMainHide()
+  end
+end
+
+-- Al cerrar la ventana grande con la AH abierta, vuelve el panel pequeño
+function ES:MiniOnMainHide()
+  local main = self:GetMainFrame()
+  if not main.cjMiniHook then
+    main.cjMiniHook = true
+    main:HookScript("OnHide", function()
+      if ES:IsAuctionHouseOpen() and mini and not ES.db.shopMiniHidden then mini:Show() ES:RenderShopping() end
+    end)
   end
 end
 

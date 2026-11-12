@@ -51,8 +51,9 @@ local function Audit(prof, from, to, owned, forced, label)
   -- Ghostweave Hood): eso es lo que hacen las guías
   for i = 2, #p.steps - 1 do
     local a, b, c = p.steps[i - 1], p.steps[i], p.steps[i + 1]
+    -- (aviso: el planificador solo lo deja si ahorra más de 20s o un 3%: es comodidad, no un error)
     if a.id == c.id and b.to - b.from <= 5 and not b.ahead then
-      E("SALTO: %s %d-%d en medio de %s", b.recipe.name, b.from, b.to, a.recipe.name)
+      W("SALTO: %s %d-%d en medio de %s", b.recipe.name, b.from, b.to, a.recipe.name)
     end
   end
   local at = from

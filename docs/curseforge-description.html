@@ -22,17 +22,27 @@
 
 <h2>📈 Cheapest leveling routes</h2>
 <ul>
-  <li><strong>Step-by-step route</strong> from your current skill to the cap for <strong>Alchemy, Blacksmithing, Enchanting, Engineering, Leatherworking, Tailoring, Cooking and First Aid</strong>.</li>
+  <li><strong>Step-by-step route</strong> for <strong>Alchemy, Blacksmithing, Enchanting, Engineering, Leatherworking, Tailoring, Cooking and First Aid</strong>, up to the end of your current rank (150, 225 or 300) or any target you choose.</li>
   <li>Built on <strong>real Auction House prices</strong> from your own scans — not guesses.</li>
   <li>Shows <strong>what to craft, how many times, and what each step costs</strong>, plus what you get back by selling the results.</li>
-  <li><strong>Uses what you already have</strong>: turn on "use bags and bank" and the route spends your own materials before buying anything.</li>
-  <li><strong>Shopping list</strong> with everything you need to buy, split between the Auction House and vendors.</li>
-  <li>Smooth and lag-free: routes are calculated in the background.</li>
+  <li><strong>Routes you can actually follow</strong>: every step has its materials ready before it starts. Ingredient steps craft everything later steps need, like the leveling guides do ("Rough Blasting Powder 6-40 · +22 for Rough Dynamite").</li>
+  <li><strong>Uses what you already have</strong>: the route spends your own materials before buying anything.</li>
+  <li><strong>"Fewer crafts" mode</strong>: pay a little more to avoid dozens of crafts of a green recipe.</li>
+  <li><strong>Click a step to craft</strong> what's left of it.</li>
+  <li>Smooth and lag-free: routes are calculated in the background, with a progress bar.</li>
+</ul>
+
+<h2>🏁 Start a route and follow it</h2>
+<ul>
+  <li><strong>Start route</strong> locks it: buying materials never changes the route or its cost, and finished steps are ticked off as you level.</li>
+  <li><strong>The Shopping list fills itself</strong> with what the current stage needs. When a recipe turns green, it asks for <strong>small batches</strong> (about 20 crafts at a time) instead of the whole stage, so good luck doesn't leave you with leftover materials.</li>
+  <li>If a <strong>clearly better route</strong> shows up from your level, a row above the route tells you what you'd save and which steps change: one click to switch, or keep yours.</li>
 </ul>
 
 <h2>🧭 Trainers, vendors and waypoints</h2>
 <ul>
-  <li><strong>Trainers by rank</strong>: every step sends you to a trainer who really teaches that rank in Forever.</li>
+  <li><strong>Data from WoW Forever's own trainers</strong>: learn levels, costs and who teaches each recipe. "Train" takes you to a trainer who really has it (Forever moved some recipes to other ranks).</li>
+  <li>Recipes and patterns Forever doesn't have are left out, and <strong>specialization recipes</strong> (Goblin, Gnomish, Armorsmith, Dragonscale) are only used if you have that specialization.</li>
   <li><strong>One click to set a waypoint</strong> to the nearest trainer, recipe vendor or quest giver (works with TomTom and Shortest Path, or the game's own map pin).</li>
 </ul>
 
@@ -53,10 +63,19 @@
   <li>Only shows recipes <strong>your faction</strong> can learn.</li>
 </ul>
 
-<h2>🛒 At the Auction House</h2>
+<h2>🛒 Shopping, Auction House and vendors</h2>
 <ul>
+  <li><strong>One Shopping list</strong> for everything you want to buy (routes, Make Money, the calculator), with progress and what's already in your bags counted.</li>
+  <li>At the Auction House a <strong>compact panel</strong> shows the same list: click a material and Blizzard's purchase opens with the quantity set, <strong>only the cheap part</strong> so nobody leaves you paying the expensive listings.</li>
+  <li>At a vendor, a window <strong>buys your route's reagents</strong> and sells what the route says to sell, with one button.</li>
   <li><strong>Scan the Auction House</strong> from the addon (the server allows one full scan every 15 minutes; a countdown shows when you can scan again).</li>
-  <li>A <strong>shopping panel</strong> next to the Auction House searches the materials your route needs, one by one.</li>
+</ul>
+
+<h2>💰 More tools</h2>
+<ul>
+  <li><strong>Make Money</strong>: what you can craft and sell for a profit today, with a minimum profit filter.</li>
+  <li><strong>Calculator</strong>: the cost and profit of any recipe, with your own prices or Auctionator's.</li>
+  <li><strong>Inventory</strong>: what to sell from your bags, where (vendor or AH) and for how much, keeping what your started routes need.</li>
 </ul>
 
 <h2>🌍 English and Español</h2>
@@ -81,6 +100,6 @@
 <p>WoW Forever is still in beta and so is this addon. Recipe sources for some brand-new Forever recipes aren't known yet and will be added as they're discovered. <strong>Found a wrong trainer, a missing recipe source or a bug?</strong> Leave a comment or open an issue on <a href="https://github.com/brunobasas/CraftersJournal">GitHub</a> — it really helps.</p>
 
 <h2>Data sources</h2>
-<p>Recipe and item data come from the WoW Forever client tables (wago.tools); trainer, vendor, quest and drop data from CMaNGOS and QuestieDB; Merchant's Favor recipes from community guides.</p>
+<p>Recipe and item data come from the WoW Forever client tables (wago.tools); Forever trainer and recipe vendor data from My Forever Recipe Book; quest, drop and NPC data from QuestieDB and CMaNGOS; Merchant's Favor recipes from community guides. Leveling routes are checked against the wow-professions.com Forever guides.</p>
 </body>
 </html>

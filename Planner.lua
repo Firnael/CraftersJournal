@@ -109,13 +109,117 @@ function Planner.Smooth(data, opts, plan)
 end
 
 -- Unidades de cada material que pide la ruta desde el nivel `level` hasta el final
-function Planner.NeedFrom(plan, level)
-  local need = {}
-  for s, items in pairs(plan.pointNeed or {}) do
-    if s >= level then
-      for itemID, q in pairs(items) do need[itemID] = (need[itemID] or 0) + q end
+-- Lo que la ruta gasta de lo fabricado en sus propios pasos (Light Leather del paso de
+-- Light Leather para las Embossed Leather Pants) no se compra, pero hay que llevarlo.
+-- La lista de la compra lo cuenta frente a tus bolsas: si lo vendiste o lo gastaste, te
+-- lo pide (antes daba por hecho que lo llevabas y faltaban 21 a mitad de paso).
+-- Solo lo que ya hicieron los pasos que has pasado y aún no se ha gastado: lo de pasos
+-- por venir lo fabricarás tú. { [itemID] = unidades } para los niveles de `level` a `to`
+local function MadeNeed(plan, level, to)
+  local recipes = plan.ctx and plan.ctx.data and plan.ctx.data.recipes
+  if not (recipes and plan.choice and plan.pointUse) then return {} end
+  local left = {} -- lo hecho antes de `level` menos lo gastado antes de `level`
+  for s = plan.from or 1, level - 1 do
+    local r = plan.choice[s] and recipes[plan.choice[s]]
+    local p = plan.pointChance and plan.pointChance[s]
+    if r and r.out and p and p > 0 then left[r.out[1]] = (left[r.out[1]] or 0) + r.out[2] / p end
+    for itemID, u in pairs(plan.pointUse[s] or {}) do
+      left[itemID] = (left[itemID] or 0) - (u.stock or 0) - (u.ahead or 0)
     end
   end
+  for _, st in ipairs(plan.steps or {}) do -- (lo fabricado de más en pasos ya pasados)
+    if st.to <= level and st.ahead and st.recipe.out then
+      local o = st.recipe.out
+      for _, a in ipairs(st.ahead) do left[o[1]] = (left[o[1]] or 0) + a.quantity end
+    end
+  end
+  local use = {}
+  for s = level, to - 1 do
+    for itemID, u in pairs(plan.pointUse[s] or {}) do
+      local q = (u.stock or 0) + (u.ahead or 0)
+      if q > 0 then use[itemID] = (use[itemID] or 0) + q end
+    end
+  end
+  local need = {}
+  for itemID, q in pairs(use) do
+    local n = math.min(q, left[itemID] or 0)
+    if n > 0 then need[itemID] = n end
+  end
+  return need
+end
+
+-- Lo que piden los niveles de `from` a `to`: { [itemID] = { expected, target } }.
+-- target lleva el colchón (z desviaciones; en los niveles green(s), sin colchón) y va
+-- en fabricaciones enteras: no se hace media receta (15 Light Leather no dan para 2
+-- Light Leather Pants, que piden 10 cada una: 20). Cada material se reparte entre las
+-- recetas que lo gastan y la parte de cada una se redondea a lo que pide por
+-- fabricación (si lo gastan dos recetas con cantidades distintas, cada una la suya).
+-- Lo que no es material directo de la receta (lo de un intermedio), a la unidad
+local function DirectQty(r, itemID)
+  for _, rq in ipairs(r and r.r or {}) do
+    if rq[1] == itemID then return rq[2] end
+  end
+end
+
+local function Need(plan, from, to, z, green)
+  local recipes = plan.ctx and plan.ctx.data and plan.ctx.data.recipes or {}
+  local acc = {} -- [itemID] = { expected, var, shares = { [receta] = { q, per } }, other, first }
+  local function Item(itemID)
+    local a = acc[itemID]
+    if not a then a = { expected = 0, var = 0, shares = {}, other = 0 } acc[itemID] = a end
+    return a
+  end
+  local function Share(a, id, per, q)
+    local sh = a.shares[id]
+    if not sh then sh = { q = 0, per = per } a.shares[id] = sh end
+    sh.q = sh.q + q
+    a.first = a.first or id
+  end
+  for s = from, to - 1 do
+    local id = plan.choice and plan.choice[s]
+    local r = id and recipes[id]
+    local p = plan.pointChance and plan.pointChance[s] or 1
+    local g = green and green(s)
+    for itemID, q in pairs(plan.pointNeed and plan.pointNeed[s] or {}) do
+      local a = Item(itemID)
+      a.expected = a.expected + q
+      if not g then a.var = a.var + q * q * (1 - p) end -- (en verde, sin colchón)
+      local per = DirectQty(r, itemID)
+      if per then Share(a, id, per, q) else a.other = a.other + q end
+    end
+  end
+  -- (y lo que hicieron pasos ya pasados: tienes que llevarlo; ver MadeNeed), con la
+  -- primera receta del tramo que lo gasta
+  local made = MadeNeed(plan, from, to)
+  for itemID, q in pairs(made) do
+    local a = Item(itemID)
+    a.expected = a.expected + q
+    for s = from, to - 1 do
+      local id = plan.choice and plan.choice[s]
+      local per = id and DirectQty(recipes[id], itemID)
+      if per then Share(a, id, per, q) q = 0 break end
+    end
+    a.other = a.other + q
+  end
+  local out = {}
+  for itemID, a in pairs(acc) do
+    -- El colchón, con la primera receta que lo gasta (es la que fabricas antes)
+    local margin = z * math.sqrt(a.var)
+    if a.first then a.shares[a.first].q = a.shares[a.first].q + margin else a.other = a.other + margin end
+    local target = math.ceil(a.other - 0.001)
+    for _, sh in pairs(a.shares) do
+      target = target + math.ceil(sh.q / sh.per - 0.001) * sh.per
+    end
+    if target > 0 then out[itemID] = { expected = a.expected, target = target } end
+  end
+  return out
+end
+
+-- Lo que pide la ruta desde tu nivel hasta el final: { [itemID] = unidades }, en
+-- fabricaciones enteras (ver Need)
+function Planner.NeedFrom(plan, level)
+  local need = {}
+  for itemID, n in pairs(Need(plan, level, plan.reached or plan.to or level, 0)) do need[itemID] = n.target end
   return need
 end
 
@@ -184,31 +288,20 @@ function Planner.PhaseNeed(plan, level, z)
   local phase = Planner.Phase(plan, level)
   if not phase then return {}, nil end
   z = z or Planner.PHASE_Z
-  local acc = {}
+  -- Hasta dónde: el tramo, o en verde la tanda (unas BATCH_CRAFTS fabricaciones)
   local batch -- fabricaciones de la tanda en verde
   phase.batchTo = nil
   for s = phase.from, phase.to - 1 do
-    local p = plan.pointChance and plan.pointChance[s] or 1
-    local green = GreenPoint(plan, s)
-    if green then
+    if GreenPoint(plan, s) then
       if batch and batch >= Planner.BATCH_CRAFTS then
         phase.batchTo = s
         break
       end
+      local p = plan.pointChance and plan.pointChance[s] or 1
       batch = (batch or 0) + (p > 0 and 1 / p or 0)
     end
-    for itemID, q in pairs(plan.pointNeed and plan.pointNeed[s] or {}) do
-      local a = acc[itemID] or { expected = 0, var = 0 }
-      acc[itemID] = a
-      a.expected = a.expected + q
-      if not green then a.var = a.var + q * q * (1 - p) end -- (en verde, sin colchón)
-    end
   end
-  local out = {}
-  for itemID, a in pairs(acc) do
-    local target = math.ceil(a.expected + z * math.sqrt(a.var) - 0.001)
-    if target > 0 then out[itemID] = { expected = a.expected, target = target } end
-  end
+  local out = Need(plan, phase.from, phase.batchTo or phase.to, z, function(s) return GreenPoint(plan, s) end)
   return out, phase
 end
 
@@ -615,9 +708,12 @@ local function Acquire(ctx, itemID, qty, depth, extra, actions, why, skip)
       -- paso con esa receta (ctx.made), lo que falta se fabrica de más en él (ahead).
       -- Sí como preparación: lo intermedio que no da puntos (Cured Thick Hide,
       -- conversiones) y lo que ya está en gris
-      -- (aunque a este nivel ya esté en gris: se hace todo junto en su paso, como
-      -- los tornillos de las bombas, y no a mitad del paso que los usa)
-      if ctx.skill and ctx.made and ctx.made[rid] then
+      -- Solo si al empezar el paso que lo usa aún daría puntos (ctx.stepStart): si no, a
+      -- mitad de ese paso pediría fabricar algo que sube puntos (los tornillos de las
+      -- bombas). Si ya está en gris al empezarlo, se fabrica ahí como preparación, no
+      -- todo de golpe en un paso de hace 100 niveles (el Light Leather de las botas)
+      if ctx.skill and ctx.made and ctx.made[rid]
+        and Planner.Chance(r.t, ctx.stepStart or ctx.skill) > 0 then
         ahead = rid
       elseif ctx.skill and not r.intermediate and not r.conversion and Planner.Chance(r.t, ctx.skill) > 0 then
         total = nil
@@ -697,7 +793,9 @@ local function RecipeCost(ctx, recipe, crafts, why)
     -- De dónde sale este material (puede ser una mezcla: inventario + AH...)
     local kinds = {}
     for i = first, #actions do
-      if actions[i].item == rq[1] then kinds[actions[i].kind] = true end
+      -- (lo fabricado de más en un paso anterior no lo fabrica este paso: "ahead")
+      local a = actions[i]
+      if a.item == rq[1] then kinds[a.ahead and "ahead" or a.kind] = true end
     end
     reagents[#reagents + 1] = { item = rq[1], qty = rq[2] * crafts, cost = cost, kinds = kinds }
   end
@@ -1785,6 +1883,14 @@ function Planner:Plan(data, opts)
     local best
     local why = {}
     ctx.skill = s -- (lo que aún da puntos a este nivel no se fabrica como preparación, ver Acquire)
+    -- Primer nivel del paso de este nivel (ruta fijada: donde empieza la receta elegida;
+    -- si no, el nivel anterior es de otra receta o de la misma, según lo elegido)
+    local f = opts.forced
+    if f and f[s] then
+      ctx.stepStart = (s > opts.from and f[s - 1] == f[s]) and ctx.stepStart or s
+    else
+      ctx.stepStart = (lastBest and plan.choice[s - 1] == lastBest.id and ctx.stepStart) or s
+    end
     local blocked = {} -- recetas que se podrían usar pero les falta el precio de algún material
     -- Ruta fijada (ver arriba): en ese punto solo vale la receta ya elegida; donde
     -- la ruta sin bolsas se paraba, lo tuyo puede permitir seguir con cualquiera
@@ -1952,7 +2058,7 @@ function Planner:Plan(data, opts)
     end
   end
 
-  ctx.skill = nil -- (fuera del recorrido punto a punto: sin nivel)
+  ctx.skill, ctx.stepStart = nil, nil -- (fuera del recorrido punto a punto: sin nivel)
 
   -- [nivel] = { [itemID] = unidades } que pide ese punto (ver arriba)
   plan.pointNeed, plan.pointChance, plan.pointUse = {}, {}, {}
