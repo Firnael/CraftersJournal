@@ -93,9 +93,14 @@ local function Where(e, s, short)
   local WP = ES.Waypoints
   s = s or e.mainSource
   if not s then return L["Fuente desconocida"] end
-  if s.kind == "trainer" then return L["Instructor"] .. (s.cost and s.cost > 0 and (" · " .. ES.Money(s.cost)) or "") end
+  if s.kind == "trainer" then
+    return L["Instructor"] .. (s.cost and s.cost > 0 and (" · " .. ES.Money(s.cost)) or "")
+      .. (e.recipe.spec and (" · " .. string.format(L["solo con la especialización %s"], e.recipe.spec)) or "")
+  end
   if s.kind == "basic" then return L["Se aprende sola al tener la profesión"] end
-  if s.gone then return L["En Forever no la enseña ningún instructor"] end
+  if s.gone then
+    return e.recipe.scroll and L["En Forever no se consigue (nadie vende su receta)"] or L["En Forever no la enseña ningún instructor"]
+  end
   if s.kind == "quest" then
     -- En amarillo y con el "!" de misión, para distinguirlas de un vistazo
     return ES.QuestIconMarkup(14) .. " " .. QUEST .. L["Misión: "] .. s.quest.name

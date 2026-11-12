@@ -1,42 +1,36 @@
 # Crafter's Journal
 
-## Unreleased
+## 0.41.0
 
-- **Green skill-ups are bought in batches.** When a step goes green (few skill-ups per craft, lots of luck either way), the stage shopping list no longer asks for the whole stage plus a safety margin: it asks for about 20 crafts' worth, and the next batch once you use it up (with a chat notice). Heavy Dynamite from 135: 44 Heavy Blasting Powder instead of 118 up front.
-
-- **A route's tool row is marked done once you have the tool**, whether you bought it or crafted it yourself (the Arclight Spanner stayed pending after crafting it).
-
-- **Trainer and vendor data now matches WoW Forever.** Learn levels, trainer costs and who teaches each recipe come from Forever's own trainers (Bronze Warhammer at 100, Green Iron Leggings for 50s), so "Train" rows take you to a trainer that really teaches the recipe (Green Iron Leggings is only taught by Expert trainers such as Bengus Deepforge). Recipes no Forever trainer teaches (The Shatterer, Troll's Blood Elixir…) are no longer used, recipe vendors new in Forever are included, and patterns Forever doesn't sell (Spitfire, Ironvine…) no longer send you to a vendor.
-
-- **Routes no longer ask you to learn trainer recipes that Forever's trainers don't teach.** When you open a trainer, Crafter's Journal reads its whole list: if its own rank's trainer doesn't have a recipe, its "Train" row sends you to the next rank's trainer (Forever moved some, like Green Iron Leggings, to the Expert trainer); if a higher trainer you've visited doesn't have it either, it's left out of routes and a started route that needed it is recalculated from your level. Once you've seen a recipe at a trainer, its "Train" row takes you to that trainer.
-
-- **Buying from the AH no longer gets stuck on "Searching...".** When the server drops the search, Crafter's Journal now goes back and opens the material again by itself (what you had to do by hand with Back), and a new click on a stuck material does the same.
-
-- **The vendor window (buy your route's reagents, sell what the route says to sell) now always shows when you open a vendor.** Depending on your other addons it could miss the moment the vendor opened and only appeared after you sold something by hand.
-
-- **Routes never ask for a step you can't make yet.** A step that starts with materials made in the previous step (the powder for Rough Dynamite) no longer runs out halfway with "craft 108 more at 40": whatever the step needs is crafted before it starts, or the route makes the ingredient step longer instead. Materials already made by the route are always used before crafting more of the same.
+### Routes you can actually follow
+- **Routes never ask for a step you can't make yet.** A step that starts with materials made in the previous step (the powder for Rough Dynamite) no longer runs out halfway with "craft 108 more at 40": whatever the step needs is ready before it starts. Materials already made by the route are always used before crafting more of the same.
 - **Ingredient steps make everything later steps need, like the leveling guides do.** "Rough Blasting Powder 6-40 · 86 crafts · +22 for Rough Dynamite": the extra crafts happen in the powder step (the step gets longer with the points they give), so the dynamite step starts with all its powder in your bags. Clicking the step crafts the extra too.
+- **No more back-and-forth steps.** A recipe used for a few points in the middle of another one (A, then B for 3 points, then A again) is dropped when it barely saves anything.
+- **Specialization recipes only if you have the specialization.** Goblin, Gnomish, Armorsmith and Dragonscale recipes are only used by characters with that specialization; the Recipes tab says so.
 
-- **The Shopping list tab now sits right under Level professions.**
-- **The Auction House icon is gone.** Routes can always buy on the AH; the "route without AH" mode is removed.
-- **No more options panel.** Clicking a route step always crafts what's left for that step (the "Craft when clicking a route step" option is gone).
-- **The route's shopping list fills itself.** The top row of the Materials view says what the Shopping list has for a started route: the current stage (with a margin) or the whole route. Click it to switch; the Shopping list tab glows and you hear coins. There's no "Add to shopping list" button for routes any more; old route lists are removed once.
-- **Progress while the route is calculated.** "Calculating the route…" now shows a percentage and a progress bar on the profession page, and a percentage on the profession cards.
-- **Faster routes by default: the target is your level + 150.** Long routes take much longer to work out, so by default each profession aims 150 points above your current level (up to 300), and the target moves up with you. Type another target to keep it.
-- **No more money tracking.** The addon no longer records every change in your gold, and the popup asking how to count a trade or a mail with money is gone. Shopping lists now count what you carry in your bags. What a vendor really pays for an item is still learned when you sell.
-- **"Buy all" at the vendor no longer buys several times what you need.** For materials a vendor sells in lots (5 at a time, for example), the game counts the purchase amount in lots, not items: asking for 20 bought 20 lots, 100 items. Lots are now bought one at a time, so you get exactly what's missing.
-- **New Shopping list tab.** One shopping list for everything you want to buy. You add materials to it with an "Add to shopping list" button in Make Money (today's batch), in the calculator (the selected calculation) and in each route (top line of its Materials view, formerly called Shopping list). Each one is a section with its own progress and a ✕ to remove it; each material also has its own ✕ to drop just that one. Nothing gets in on its own. A list keeps its amounts as they were when added, and what you carry in your bags counts toward it.
-- **Buy from the Shopping list.** With the Auction House open, clicking a material (or "Buy next") opens Blizzard's purchase with the quantity already set; you confirm it with Buy Now. A progress bar shows how many materials you've bought.
-- **A compact Shopping list at the Auction House.** When you open the Auction House, the big Crafter's Journal window hides and a small panel with the same list shows up next to it: sections, progress bar, click to buy, "Buy next" and the ✕ on each material. "Full view" opens the tab instead. The "Shopping list (N)" button above the Auction House shows or hides it, and says how many materials are still to buy; if you close it, it stays closed next time.
-- **Make Money: the shopping list includes the materials of what you craft along the way.** For Enchanted Mageweave Pouch, the Bolt of Mageweave you craft yourself was left out, and so was the Mageweave Cloth to make it. Now the list has everything you actually buy.
-- **The old shopping panel next to the Auction House** (with its route / Make Money modes and its Sell section) is replaced by the compact Shopping list; to list what you crafted, use the Inventory tab.
+### Trainer and vendor data from WoW Forever
+- **Learn levels, trainer costs and who teaches each recipe now match Forever** (Bronze Warhammer at 100, Green Iron Leggings for 50s). "Train" rows take you to a trainer that really teaches the recipe: Green Iron Leggings is only taught by Expert trainers such as Bengus Deepforge.
+- **Recipes Forever doesn't have are no longer used.** Trainer recipes no Forever trainer teaches (The Shatterer…) and patterns nobody sells in Forever (Spitfire, Ironvine, Season of Discovery leftovers…) show as such in the Recipes tab. Recipe vendors new in Forever are included.
+- **What you see at a trainer counts.** Opening a trainer reads its whole list: a recipe its own rank's trainer doesn't have sends you to the next rank's trainer, and once you've seen a recipe at a trainer, its "Train" row takes you there.
 
-- **AH purchases now only fill the cheap part.** When you click a material to buy, the quantity is capped to the units listed close to the cheapest price (up to 20% more, or up to the plan's price). If you need more than that, the chat tells you how many were set and what the rest costs, and the shopping list shows "only N cheap". Buying in smaller batches means that when another player grabs the cheap ones first, you lose one batch instead of paying the expensive price for everything.
+### Started routes
+- **"Recalculate route" is now "Leave route"**, and it needs a second click. A started route only changes when you decide.
+- **"There's a better route from your level."** When you open a profession with a started route, Crafter's Journal checks once, in the background and only while the addon is open, whether a clearly better route exists from your level (at least 50s or 10% cheaper, or one that goes further). If so, a row above the route says what you'd save and which steps change: click it to switch, or ✕ to keep yours.
+- **A route's tool row is marked done once you have the tool**, whether you bought it or crafted it yourself.
 
-- **Make Money: minimum profit.** A new button in the header sets the least a line has to make across all its suggested crafts (no minimum, 10s, 50s, 1g, 5g or 20g; 10s by default). Recipes below it don't enter the batch or the other options, and materials to sell worth less are hidden too. The status line says how many were hidden. Click to raise it, right-click to lower it.
-- **Make Money: "More options" no longer skips or repeats recipes.** When a recipe was left out of the batch because earlier ones already bought its materials, the list after the batch showed the wrong ones.
-- **The addon now keeps track of your money.** Every change to your character's gold is recorded with what caused it: AH purchases, sales and deposits, vendor purchases and sales, repairs, trainers, trades and mail. Anything it can't explain counts as "Other" (loot, quests...), so the totals always add up to your real gold. AH sales are read from the invoice of each mail when you take its money; nothing else from your mailbox is read or saved. When a trade or a player's mail brings or takes money, the addon asks whether to count it as a sale or a purchase (or always the same with that player). The Shopping list uses it to know what you've bought, and it's the groundwork for a Sales tab and for Make Money to learn what you actually sell.
-- **Cleanup: no more unfinished features in the code.** The development mode is gone, and with it the Auctions and Flipping tabs, the search box in the header and Fishing, which only the development copy showed. The debug commands are gone too (`/cj icon`, `/cj tab`, `/cj trainer`, `/cj books`); `/cj scan`, `/cj cancel`, `/cj minimap` and `/cj errors` stay. Real trainer prices are still read when you open a trainer.
+### Shopping
+- **Green skill-ups are bought in batches.** When a step goes green, the stage shopping list asks for about 20 crafts' worth instead of the whole stage plus a margin, and the next batch once you use it up (with a chat notice). Heavy Dynamite from 135: 44 Heavy Blasting Powder instead of 118 up front.
+- **The route's shopping list fills itself.** The top row of the Materials view says what the Shopping list has for a started route: the current stage or the whole route. Click it to switch; the Shopping list tab glows.
+- **New Shopping list tab, right under Level professions.** One list for everything you want to buy, with progress, a ✕ per material and per section, and what's in your bags counted. With the Auction House open, clicking a material (or "Buy next") opens Blizzard's purchase with the quantity set; at the Auction House a compact panel shows the same list.
+- **AH purchases only fill the cheap part** (up to 20% above the cheapest, or the plan's price); the chat says what the rest costs.
+- **Buying from the AH no longer gets stuck on "Searching...".**
+- **The vendor window always shows when you open a vendor**, and "Buy all" no longer buys several times what you need for items sold in lots.
+
+### Other
+- **The default target is the end of your current cap: 150, 225 or 300** (it was your level + 150, so 151, 152…). A target you type yourself is kept.
+- **Progress while the route is calculated:** a percentage and a progress bar.
+- **Make Money:** minimum profit button, the shopping list includes what you craft along the way, and "More options" no longer skips or repeats recipes.
+- **Removed:** the options panel (clicking a route step always crafts), the Auction House icon (routes can always buy on the AH), money tracking, and the unfinished development features and debug commands. `/cj scan`, `/cj cancel`, `/cj minimap` and `/cj errors` stay.
 
 ## 0.40.0
 

@@ -314,6 +314,8 @@ function Planner.LearnSkill(recipe, opts)
   local fee, train = Fee(recipe)
   if Known(recipe) then return train or 1 end -- ya la sabes: siempre disponible
   if recipe.gone then return nil end -- Forever no la enseña (ver tools/gen_profession.py)
+  -- De especialización (Goblin, Armorsmith...): solo si la tienes
+  if recipe.spec and not (ES.HasSpecialization and ES:HasSpecialization(recipe.spec)) then return nil end
   -- Ningún instructor visto la enseña (Forever la quitó; ver Ledger:ReadTrainer)
   if recipe.id and ES.db and ES.db.trainerMissing and ES.db.trainerMissing[recipe.id] == "gone" then return nil end
   if recipe.rep and not ES:RepMet(recipe.rep) then return nil end -- te falta reputación
@@ -797,6 +799,7 @@ end
 -- sus recetas y cambiando fabricar ↔ comprar. Gana la de menor Planner.RouteScore.
 Planner.USE_GPS = true         -- el planificador del addon (false: el antiguo, solo para tools/route_qa.py)
 local GPS_STEP_COST = 100      -- cobre por cada receta nueva en la ruta (pocos pasos)
+local ZIGZAG_STEPS, ZIGZAG_MIN, ZIGZAG_PCT = 5, 2000, 0.03 -- saltos A-B-A de hasta 5 puntos: fuera si cuesta < 20s o 3% más
 local GPS_AHEAD_ROUNDS = 4      -- veces que se alarga un paso con lo que fabrica de más (ver Walk)
 local UNFOLLOWABLE_COST = 10000000 -- ruta que no se puede seguir (ver plan.unfollowable): solo si no hay otra
 local GPS_ROUNDS = 4           -- vueltas con los precios de la mejor ruta hasta ahora
@@ -1480,6 +1483,29 @@ function Planner.PlanGPS(data, opts)
     return found
   end
   if IngredientFirst() then Polish() end
+
+  -- Sin saltos: una receta unos pocos puntos en medio de otra (A, B 3 puntos, A otra
+  -- vez: Bolt of Runecloth 210-215 dentro de Red Mageweave Headband) no tiene sentido
+  -- para el jugador. Se prueba sin el salto (esos puntos, con A) y se queda si apenas
+  -- cuesta más (ZIGZAG_MIN o ZIGZAG_PCT)
+  for _ = 1, 4 do
+    local changed = false
+    local steps = best.steps
+    for i = 2, #steps - 1 do
+      local a, b, c = steps[i - 1], steps[i], steps[i + 1]
+      if a.id == c.id and b.to - b.from <= ZIGZAG_STEPS then
+        local choice = Copy(best.choice)
+        for s = b.from, b.to - 1 do choice[s] = a.id end
+        local q = Walk(choice, best.ctx.via)
+        local allowed = math.max(ZIGZAG_MIN, ZIGZAG_PCT * math.abs(Score(best)))
+        if q and q.reached >= best.reached and not q.unfollowable and Score(q) <= Score(best) + allowed then
+          best, changed = q, true
+          break
+        end
+      end
+    end
+    if not changed then break end
+  end
 
   -- La elegida, recorrida una vez con toda la información (las recetas que no se
   -- pudieron usar por falta de precio, para el tooltip de cada paso): mismo resultado

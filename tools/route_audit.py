@@ -45,6 +45,16 @@ local function Audit(prof, from, to, owned, forced, label)
   local function E(...) errs[#errs+1] = string.format(...) end
   local function W(...) warns[#warns+1] = string.format(...) end
   -- ORDEN
+  -- SALTO: una receta unos pocos puntos en medio de otra (A, B 3 puntos, A otra vez):
+  -- para el jugador no tiene sentido cambiar de receta y volver. Salvo que B fabrique
+  -- para pasos siguientes mientras aún da puntos (Bolt of Runecloth 210-215 para
+  -- Ghostweave Hood): eso es lo que hacen las guías
+  for i = 2, #p.steps - 1 do
+    local a, b, c = p.steps[i - 1], p.steps[i], p.steps[i + 1]
+    if a.id == c.id and b.to - b.from <= 5 and not b.ahead then
+      E("SALTO: %s %d-%d en medio de %s", b.recipe.name, b.from, b.to, a.recipe.name)
+    end
+  end
   local at = from
   for _, st in ipairs(p.steps) do
     if st.from ~= at then E("ORDEN: %s %d-%d (esperaba empezar en %d)", st.recipe.name, st.from, st.to, at) end
@@ -182,14 +192,46 @@ local GUIDES = {
   { "Blacksmithing", 1, 150, {
     { 1, 25, 2660 }, { 25, 50, 3320 }, { 50, 70, 3326 }, { 70, 75, 3323 }, { 75, 95, 2666 },
     { 95, 100, 2672 }, { 100, 112, 3337 }, { 112, 125, 2672 }, { 125, 140, 2742 }, { 140, 150, 9985 } } },
+  { "Engineering", 150, 300, {
+    { 150, 160, 3953 }, { 160, 175, 3955 }, { 175, 194, 12585 }, { 194, 195, 12590 }, { 195, 200, 12589 },
+    { 200, 215, 12591 }, { 215, 238, 12599 }, { 238, 250, 12619 }, { 250, 260, 19788 }, { 260, 285, 19791 },
+    { 285, 300, 19795 } } },
+  { "Alchemy", 150, 300, {
+    { 150, 165, 7845 }, { 165, 195, 3452 }, { 195, 230, 7259 }, { 230, 265, 11465 }, { 265, 300, 17554 } } },
+  { "Leatherworking", 1, 150, {
+    { 1, 30, 2881 }, { 30, 55, 3816 }, { 55, 75, 3756 }, { 75, 80, 20648 }, { 80, 90, 3817 }, { 90, 100, 3763 },
+    { 100, 115, 9068 }, { 115, 125, 3766 }, { 125, 130, 20649 }, { 130, 143, 3818 }, { 143, 150, 3764 } } },
+  { "Leatherworking", 150, 300, {
+    { 150, 155, 3764 }, { 155, 170, 7151 }, { 170, 185, 7156 }, { 185, 195, 6661 }, { 195, 205, 10507 },
+    { 205, 235, 10548 }, { 235, 265, 19049 }, { 265, 300, 19082 } } },
+  { "Tailoring", 1, 150, {
+    { 1, 30, 2963 }, { 30, 55, 8776 }, { 55, 80, 2964 }, { 80, 95, 2402 }, { 95, 100, 3848 }, { 100, 120, 3839 },
+    { 120, 140, 3852 }, { 140, 150, 3865 } } },
+  { "Tailoring", 150, 265, {
+    { 150, 170, 8791 }, { 170, 190, 8799 }, { 190, 200, 12049 }, { 200, 205, 12074 }, { 205, 215, 18401 },
+    { 215, 225, 12065 }, { 225, 240, 18402 }, { 240, 265, 18417 } } },
+  { "Enchanting", 1, 150, {
+    { 1, 2, 7421 }, { 2, 20, 7418 }, { 20, 70, 7420 }, { 70, 109, 7426 }, { 109, 110, 7795 }, { 110, 150, 7793 } } },
+  { "Enchanting", 150, 300, {
+    { 150, 151, 13628 }, { 151, 165, 25125 }, { 165, 200, 13637 }, { 200, 201, 13702 }, { 201, 220, 25126 },
+    { 220, 225, 13746 }, { 225, 250, 13815 }, { 250, 265, 25127 }, { 265, 294, 20017 }, { 294, 295, 20051 },
+    { 295, 300, 20015 } } },
 }
 local function Guides()
   local Score = Planner.RouteScore
   for _, g in ipairs(GUIDES) do
-    local choice = {}
-    for _, rg in ipairs(g[4]) do for s = rg[1], rg[2] - 1 do choice[s] = rg[3] end end
+    -- (si en Forever una receta se aprende más tarde de lo que dice la guía, su paso
+    -- empieza ahí y el anterior sigue hasta entonces)
+    local choice, prev = {}, nil
+    local gopts = ES:PlanOptions(g[1], g[2], g[3], nil)
+    for _, rg in ipairs(g[4]) do
+      local r = ES.Data[g[1]].recipes[rg[3]]
+      local learn = r and Planner.LearnSkill(r, gopts) or rg[1]
+      for s = rg[1], rg[2] - 1 do choice[s] = (s < learn and prev) or rg[3] end
+      prev = rg[3]
+    end
     local ours = Audit(g[1], g[2], g[3], nil)
-    local guide, gErrs = Audit(g[1], g[2], g[3], nil, choice, "  guía " .. g[1])
+    local guide, gErrs = Audit(g[1], g[2], g[3], nil, choice, string.format("  guía %s %d-%d", g[1], g[2], g[3]))
     local so, sg = Score(ours), Score(guide)
     if guide.reached ~= g[3] then
       P("    (la guía no llega con nuestros datos: se para en %s)", tostring(guide.stoppedAt))

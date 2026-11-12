@@ -208,15 +208,19 @@ ES.UI = { Label = Label, CheckBox = CheckBox, ItemLabel = ItemLabel, Panel = Pan
   ScrollIndicator = ScrollIndicator,
   BROWN = BROWN, GroupPanel = GroupPanel, PAD = PAD, CardHead = CardHead, ListPanel = ListPanel }
 
--- Objetivo de una profesión (editable en su detalle). Por defecto, tu nivel + 150
--- (hasta el máximo): una ruta más corta se calcula mucho antes, y sube contigo (no se
--- guarda: solo se guarda el que escribes). Lo usan la tarjeta de la portada y el
--- detalle, para que el coste coincida.
-ES.DEFAULT_TARGET_SPAN = 150
+-- Objetivo de una profesión (editable en su detalle). Por defecto, el final del tope
+-- en el que estás: 150 si tienes menos de 150, 225 hasta 224 y si no 300 (antes era tu
+-- nivel + 150: salía 151, 152...). Una ruta más corta se calcula mucho antes, y sube
+-- contigo (no se guarda: solo se guarda el que escribes). Lo usan la tarjeta de la
+-- portada y el detalle, para que el coste coincida.
+ES.DEFAULT_TARGETS = { 150, 225, 300 }
 function ES:DefaultTarget(profKey)
   local data = ES.Data[profKey]
-  local rank = data and data.skillLine and self:GetProfessionSkill(data.skillLine)
-  return math.min(MAX_SKILL, (rank or 1) + ES.DEFAULT_TARGET_SPAN)
+  local rank = data and data.skillLine and self:GetProfessionSkill(data.skillLine) or 1
+  for _, t in ipairs(ES.DEFAULT_TARGETS) do
+    if rank < t then return t end
+  end
+  return MAX_SKILL
 end
 function ES:ProfessionTarget(profKey)
   local settings = self.db.prof and self.db.prof[profKey] or {}
@@ -1671,7 +1675,7 @@ function ES:CalculatePlan(page)
   end
   page.toBox:SetText(to)
   page.lastTarget = to
-  -- Solo se guarda si no es el de por defecto (tu nivel + 150): así este sube contigo
+  -- Solo se guarda si no es el de por defecto (el final de tu tope): así este sube contigo
   local settings = self.db.prof[page.profKey]
   if settings.target or to ~= self:DefaultTarget(page.profKey) then settings.target = to end
   page.calculating = nil

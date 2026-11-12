@@ -228,6 +228,15 @@ function ES:IsRecipeKnown(spellID)
   return false
 end
 
+-- Especializaciones (recipe.spec): el hechizo que se aprende al elegirla
+local SPEC_SPELLS = {
+  Armorsmith = 9788, Weaponsmith = 9787, Gnomish = 20219, Goblin = 20222,
+  Dragonscale = 10656, Elemental = 10658, Tribal = 10660,
+}
+function ES:HasSpecialization(spec)
+  return self:IsRecipeKnown(SPEC_SPELLS[spec])
+end
+
 ---------------------------------------------------------------------------
 -- Reputación (recetas que piden un nivel con una facción: rep = { facción, nivel })
 ---------------------------------------------------------------------------
@@ -435,6 +444,16 @@ local function LoadCharacterData()
       if type(settings) == "table" and settings.target == 300 and not settings.lock then settings.target = nil end
     end
     c.target150 = true
+  end
+  -- El objetivo por defecto pasó de tu nivel + 150 (151, 152...) al final de tu tope
+  -- (150, 225 o 300). Los guardados que no son uno de esos salían de ese nivel + 150
+  -- (al subir, el anterior se quedaba guardado): fuera, una vez (sin tocar rutas empezadas)
+  if not c.targetCaps then
+    for _, settings in pairs(c.prof) do
+      local t = type(settings) == "table" and settings.target
+      if t and not settings.lock and t ~= 150 and t ~= 225 and t ~= 300 then settings.target = nil end
+    end
+    c.targetCaps = true
   end
   c.books = nil -- (la contabilidad del dinero ya no existe: fuera lo que guardó)
   db.tabs = nil -- (orden y pestañas ocultas: se quitó de Opciones)

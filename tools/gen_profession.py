@@ -83,6 +83,28 @@ FOREVER_SELL = HERE / "forever" / "sell_prices.csv"
 MERCHANTS_FAVOR = HERE / "forever" / "merchants_favor.csv"
 
 
+# Instructores de especialización (subtítulo en QuestieDB): sus recetas solo las
+# aprende quien tiene esa especialización (ES:HasSpecialization, con su hechizo)
+SPEC_SUBNAMES = {
+    "Armor Crafter": "Armorsmith", "Armorsmith": "Armorsmith",
+    "Weapon Crafter": "Weaponsmith", "Weaponsmith": "Weaponsmith",
+    "Master Gnome Engineer": "Gnomish", "Master Goblin Engineer": "Goblin",
+    "Master Dragonscale Leatherworker": "Dragonscale", "Master Elemental Leatherworker": "Elemental",
+    "Master Tribal Leatherworker": "Tribal",
+}
+_npc_spec = {}
+
+
+def npc_spec(npc):
+    """Especialización que enseña un instructor, o None"""
+    if npc not in _npc_spec:
+        questie.load_store()
+        r = questie.row("Npc", npc)
+        sub = r and questie.field("Npc", npc, 14, r)
+        _npc_spec[npc] = SPEC_SUBNAMES.get(sub) if isinstance(sub, str) else None
+    return _npc_spec[npc]
+
+
 def favor_key(name):
     """Nombre para cruzar con merchants_favor.csv: en minúsculas y sin la "s" final de
     "Shoulders" (el cliente definitivo renombró "Mender's Mail Shoulder" a "...Shoulders")."""
@@ -300,6 +322,30 @@ def sold_by_vendor(item_id):
     return bool(r and questie.ids(questie.field("Item", item_id, questie.ITEM["vendors"], r)))
 
 
+_book_sold_any = None
+
+
+def vendor_only_gone(item_id):
+    """Pergamino que en Classic solo vendía un PNJ y en Forever no vende nadie (ni sale
+    de misiones ni de botín): no se consigue (Spitfire, Ironvine... de Aendel Windspear).
+    Cuenta cualquier vendedor de Forever, también los de mazmorra sin sitio en el mapa
+    (Lokhtos Darkbargainer, en Blackrock Depths)"""
+    global _book_sold_any
+    if _book_sold_any is None:
+        if not RECIPEBOOK_VENDORS.exists():
+            return False
+        with open(RECIPEBOOK_VENDORS, encoding="utf-8") as f:
+            _book_sold_any = {int(r["item"]) for r in csv.DictReader(l for l in f if not l.startswith("#"))}
+    if item_id in _book_sold_any:
+        return False
+    questie.load_store()
+    r = questie.row("Item", item_id)
+    if not r or not questie.ids(questie.field("Item", item_id, questie.ITEM["vendors"], r)):
+        return False
+    return not any(questie.ids(questie.field("Item", item_id, questie.ITEM[k], r))
+                   for k in ("questRewards", "npcDrops", "objectDrops"))
+
+
 def questie_sourced(scrolls):
     """Pergaminos con alguna fuente conocida en QuestieDB (vendedor, misión, botín u objeto)."""
     questie.load_store()
@@ -508,6 +554,10 @@ def main():
             bit = RANK_BIT[75] if train <= 75 else RANK_BIT[150] if train <= 150 else RANK_BIT[225] if train <= 225 else RANK_BIT[300]
             by_rank = {npc for npc, mask in trainers if mask & bit}
             who = c["teachers"].get(sid, set())
+            # Solo la enseñan instructores de una especialización (Goblin, Armorsmith...)
+            specs = {npc_spec(n) for n in who}
+            if who and len(specs) == 1 and None not in specs:
+                parts.append(f'spec = "{specs.pop()}"')
             if who and not (who & by_rank):
                 known = sorted(who & {npc for npc, _ in trainers}) or sorted(who)
                 parts.append("tr = { " + ", ".join(str(n) for n in known) + " }")
@@ -520,6 +570,8 @@ def main():
             req = c["item_skill"].get(scroll)
             train = req if req else forever_train(max(1, t[1] - 10 + shift.get(sid, 0)))
             parts.append(f"scroll = {scroll}, train = {train}")
+            if vendor_only_gone(scroll):
+                parts.append("gone = true")
             # Todo objeto trae precio de compra en el cliente, lo venda alguien o no: solo
             # vale si algún vendedor lo vende (QuestieDB) y no es de Merchant's Favor (fichas)
             scroll_buy = item_info.get(scroll, (None, 0, 0))[1]

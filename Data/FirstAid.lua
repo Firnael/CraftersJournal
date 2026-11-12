@@ -38,7 +38,7 @@ ES.Data.FirstAid = {
     [18630] = { name = "Heavy Runecloth Bandage", t = { 1, 290, 320, 350 }, gone = true, r = { { 14047, 2 } }, out = { 14530, 1 }, oq = 1 },
     [23787] = { name = "Powerful Anti-Venom", t = { 1, 300, 330, 360 }, scroll = 19442, train = 300, scrollPrice = 100000, rep = { 529, 5 }, sq = 1, r = { { 19441, 1 } }, out = { 19440, 3 }, oq = 1 },
     [30021] = { name = "Crystal Infused Bandage", t = { 1, 300, 330, 360 }, scroll = 23689, train = 290, sq = 1, r = { { 23567, 1 }, { 14047, 10 } }, out = { 23684, 4 }, oq = 1 },
-    [470349] = { name = "Dense Runecloth Bandage", t = { 1, 315, 327, 340 }, scroll = 232434, train = 300, sq = 1, r = { { 14530, 2 } }, out = { 232433, 1 }, oq = 1 },
+    [470349] = { name = "Dense Runecloth Bandage", t = { 1, 315, 327, 340 }, scroll = 232434, train = 300, gone = true, sq = 1, r = { { 14530, 2 } }, out = { 232433, 1 }, oq = 1 },
     [1230117] = { name = "First Aid Kit", t = { 1, 20, 22, 25 }, fee = 100, train = 20, r = { { 1251, 3 }, { 159, 1 } }, out = { 279968, 1 }, oq = 1 },
     [1244431] = { name = "Minor Healing Potion", t = { 1, 55, 75, 95 }, fee = 100, train = 1, r = { { 3371, 1 }, { 2678, 1 }, { 2447, 1 } }, out = { 118, 1 }, oq = 1 },
     [1244432] = { name = "Lesser Healing Potion", t = { 1, 85, 105, 125 }, fee = 150, train = 55, r = { { 3371, 1 }, { 2678, 2 }, { 2450, 1 } }, out = { 858, 1 }, oq = 1 },

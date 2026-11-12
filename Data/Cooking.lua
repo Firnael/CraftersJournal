@@ -106,7 +106,7 @@ ES.Data.Cooking = {
     [25659] = { name = "Dirge's Kickin' Chimaerok Chops", t = { 1, 325, 345, 365 }, scroll = 21025, train = 300, sq = 4, r = { { 2692, 1 }, { 9061, 1 }, { 8150, 1 }, { 21024, 1 } }, out = { 21023, 5 }, oq = 1 },
     [25704] = { name = "Smoked Sagefish", t = { 1, 120, 140, 160 }, scroll = 21099, train = 80, scrollPrice = 500, sq = 1, r = { { 21071, 1 }, { 2678, 1 } }, out = { 21072, 1 }, oq = 1 },
     [25954] = { name = "Sagefish Delight", t = { 1, 215, 235, 255 }, scroll = 21219, train = 175, scrollPrice = 5000, sq = 1, r = { { 21153, 1 }, { 2692, 1 } }, out = { 21217, 1 }, oq = 1 },
-    [470370] = { name = "Smoked Redgill", t = { 1, 325, 345, 365 }, scroll = 232443, train = 300, sq = 1, r = { { 13758, 1 } }, out = { 232438, 1 }, oq = 1 },
+    [470370] = { name = "Smoked Redgill", t = { 1, 325, 345, 365 }, scroll = 232443, train = 300, gone = true, sq = 1, r = { { 13758, 1 } }, out = { 232438, 1 }, oq = 1 },
     [1225758] = { name = "Prowler Steak", t = { 1, 260, 270, 280 }, scroll = 238645, train = 250, sq = 1, r = { { 12202, 2 }, { 239016, 1 } }, out = { 238637, 2 }, oq = 1 },
     [1225759] = { name = "Filet o' Flank", t = { 1, 260, 270, 280 }, scroll = 238646, train = 250, sq = 1, r = { { 12203, 2 }, { 239016, 1 } }, out = { 238638, 2 }, oq = 1 },
     [1225760] = { name = "Sunrise Omelette", t = { 1, 260, 270, 280 }, scroll = 238647, train = 250, sq = 1, r = { { 12207, 2 }, { 239016, 1 } }, out = { 238639, 2 }, oq = 1 },

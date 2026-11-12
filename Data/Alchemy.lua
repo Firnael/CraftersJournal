@@ -131,7 +131,7 @@ ES.Data.Alchemy = {
     [24368] = { name = "Major Troll's Blood Elixir", t = { 1, 305, 325, 345 }, scroll = 20014, train = 290, scrollPrice = 50000, rep = { 270, 5 }, sq = 1, r = { { 8846, 1 }, { 13466, 2 }, { 8925, 1 } }, out = { 20004, 1 }, oq = 1 },
     [25146] = { name = "Transmute: Elemental Fire", t = { 1, 301, 305, 310 }, scroll = 20761, train = 300, rep = { 59, 4 }, sq = 1, r = { { 7077, 1 } }, tool = 12, out = { 7068, 3 }, oq = 1 },
     [26277] = { name = "Elixir of Holy Power", t = { 1, 265, 285, 305 }, scroll = 21547, train = 250, sq = 2, r = { { 6371, 3 }, { 4625, 3 }, { 8925, 1 } }, out = { 21546, 1 }, oq = 1 },
-    [426607] = { name = "Elixir of Coalesced Regret", t = { 1, 90, 100, 110 }, scroll = 210709, train = 90, sq = 2, r = { { 3820, 5 }, { 3372, 1 }, { 3369, 5 }, { 11083, 1 } }, out = { 210708, 1 }, oq = 1 },
+    [426607] = { name = "Elixir of Coalesced Regret", t = { 1, 90, 100, 110 }, scroll = 210709, train = 90, gone = true, sq = 2, r = { { 3820, 5 }, { 3372, 1 }, { 3369, 5 }, { 11083, 1 } }, out = { 210708, 1 }, oq = 1 },
     [435969] = { name = "Insulating Gniodine", t = { 1, 200, 210, 220 }, scroll = 215434, train = 200, sq = 4, r = { { 3372, 1 }, { 213371, 5 } }, out = { 213372, 1 }, oq = 1 },
     [435971] = { name = "Mildly Irradiated Rejuvenation Potion", t = { 1, 225, 230, 235 }, scroll = 215163, train = 225, sq = 4, r = { { 213371, 1 }, { 2456, 1 }, { 215430, 3 }, { 8925, 5 } }, out = { 215162, 5 }, oq = 1 },
     [1213544] = { name = "Flask of Unyielding Sorrow", t = { 1, 315, 322, 330 }, scroll = 234252, train = 305, sq = 1, r = { { 16203, 1 }, { 234012, 1 }, { 13511, 1 }, { 8925, 1 } }, tool = 12, out = { 233966, 1 }, oq = 1 },

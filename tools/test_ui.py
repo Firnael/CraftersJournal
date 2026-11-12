@@ -1982,20 +1982,22 @@ step("máximo 300: el objetivo llega hasta 300", function()
   t.target, t.lock = 260, nil
   assert(ES:ProfessionTarget("Tailoring") == 260, "un objetivo entre 225 y 300 no debería recortarse")
   t.target = nil
-  -- Sin objetivo: tu nivel + 150, hasta el máximo (las rutas largas tardan mucho)
+  -- Sin objetivo: el final de tu tope (150, 225 o 300), no tu nivel + 150 (151, 152...)
   local savedSkill = ES.GetProfessionSkill
-  local rank = 60
+  local rank = 1
   ES.GetProfessionSkill = function(_, line) if line == ES.Data.Tailoring.skillLine then return rank, 150 end end
-  assert(ES:ProfessionTarget("Tailoring") == 210, "sin objetivo, tu nivel + 150: " .. ES:ProfessionTarget("Tailoring"))
-  rank = 200
-  assert(ES:ProfessionTarget("Tailoring") == 300, "sin objetivo, como mucho el máximo")
+  for _, c in ipairs({ { 1, 150 }, { 2, 150 }, { 149, 150 }, { 150, 225 }, { 224, 225 }, { 225, 300 }, { 299, 300 }, { 300, 300 } }) do
+    rank = c[1]
+    assert(ES:ProfessionTarget("Tailoring") == c[2], string.format("sin objetivo, con %d debería ser %d y es %d", c[1], c[2], ES:ProfessionTarget("Tailoring")))
+  end
+  rank = 60
   -- Calcular con el de por defecto no lo guarda (sube contigo); uno escrito, sí
   local page
   for _, p in ipairs(ES.professionPages) do if p.profKey == "Tailoring" then page = p end end
   if page and page.toBox then
     rank = 60
     ES:DetectSkill(page)
-    page.toBox._text = "210"
+    page.toBox._text = "150" -- (con 60, el de por defecto: el final del tope, 150)
     ES:CalculatePlan(page)
     assert(t.target == nil, "el objetivo por defecto no debería guardarse: " .. tostring(t.target))
     page.toBox._text = "250"
@@ -2163,6 +2165,27 @@ step("lista por tramos: en verde, por tandas", function()
   local _, later = P.PhaseNeed(plan, phase.batchTo)
   assert(later and (later.batchTo or later.to) > phase.batchTo, "al acabar una tanda debería venir la siguiente")
   log[#log+1] = string.format("     %s %d-%d: tanda hasta %d", st.recipe.name, phase.from, phase.to, phase.batchTo)
+end)
+step("recetas de especialización: solo si la tienes", function()
+  -- (Goblin, Gnomish, Armorsmith, Dragonscale: las enseña un instructor de esa
+  -- especialización; sin ella la ruta no puede usarlas)
+  local r
+  for id, x in pairs(ES.Data.Engineering.recipes) do if x.spec == "Goblin" then r = x break end end
+  assert(r, "faltan recetas marcadas con su especialización en los datos")
+  ES.Planner.Annotate(ES.Data.Engineering)
+  local saved = ES.HasSpecialization
+  ES.HasSpecialization = function() return false end
+  assert(ES.Planner.LearnSkill(r, {}) == nil, "sin la especialización, la ruta no debería poder usar " .. r.name)
+  ES.HasSpecialization = function(_, spec) return spec == "Goblin" end
+  assert(ES.Planner.LearnSkill(r, {}), "con la especialización, " .. r.name .. " debería poder usarse")
+  ES.HasSpecialization = saved
+  log[#log+1] = "     " .. r.name .. ": solo con " .. r.spec
+  -- Patrones que Forever no vende (Spitfire, de Aendel Windspear): no se consiguen
+  local spit
+  for _, x in pairs(ES.Data.Leatherworking.recipes) do if x.name == "Spitfire Bracers" then spit = x end end
+  assert(spit and spit.gone, "Spitfire Bracers debería estar marcada como que no se consigue en Forever")
+  ES.Planner.Annotate(ES.Data.Leatherworking)
+  assert(ES.Planner.LearnSkill(spit, { includeScrolls = true }) == nil, "la ruta no debería poder usar un patrón que no se consigue")
 end)
 step("comandos /es", function()
   SlashCmdList.CRAFTERSJOURNAL("") SlashCmdList.CRAFTERSJOURNAL("cancel")
