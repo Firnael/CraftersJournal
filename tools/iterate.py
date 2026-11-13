@@ -361,7 +361,7 @@ step("H. escaneo con API moderna", function()
   scan = CraftersJournalDB.scans[ES:RealmKey()]
   check(scan.total == #AUCTIONS, "API moderna por tandas: total %d ~= %d", scan.total, #AUCTIONS)
   log("      por tandas: %d de %d subastas", scan.total, #AUCTIONS)
-  -- Otro addon pide el escaneo completo: se aprovechan sus datos y cuenta la barrera
+  -- Otro addon pide el escaneo completo: solo cuenta la barrera, no se escanea por nuestra cuenta
   hooksecurefunc = hooksecurefunc or function(t, name, post)
     if type(t) == "string" then t, name, post = _G, t, name end
     local orig = t[name]
@@ -371,12 +371,10 @@ step("H. escaneo con API moderna", function()
   CraftersJournalDB.scans[ES:RealmKey()] = nil
   ES.Scanner:InstallHooks()
   C_AuctionHouse.ReplicateItems() -- como ForeverForge_Auction al abrir la AH
-  check(ES.Scanner:IsBusy() and ES.Scanner.piggyback, "no aprovechó el escaneo de otro addon")
+  check(not ES.Scanner:IsBusy(), "empezó a escanear por el escaneo de otro addon")
+  check(ES.Scanner:SecondsUntilNextScan() > 0, "el escaneo de otro addon no cuenta para la barrera")
   RunTimers()
-  scan = CraftersJournalDB.scans[ES:RealmKey()]
-  local sl = CraftersJournalDB.scanLog or {}
-  check(scan and scan.total == #AUCTIONS, "escaneo de otro addon: %s (%s · %s)", tostring(scan and scan.total),
-    tostring(ES.Scanner.state), table.concat(sl, " | ", math.max(1, #sl - 9)))
+  check(CraftersJournalDB.scans[ES:RealmKey()] == nil, "guardó el escaneo de otro addon")
   -- La barrera es de la cuenta: otro personaje no puede escanear hasta pasados 15 min
   CraftersJournalDB.lastFullScan = { ["Alt-Reino"] = NOW }
   check(ES.Scanner:SecondsUntilNextScan() > 0, "la barrera de otro personaje no cuenta")
