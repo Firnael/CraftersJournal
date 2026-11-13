@@ -1,5 +1,9 @@
 # Crafter's Journal
 
+## 0.42.1
+
+- **Crafter's Journal only scans when you press Scan.** When another addon (such as one that scans as soon as the Auction House opens) requested a full scan, Crafter's Journal used to read it along, so it looked like it had scanned on its own. Now it only notes the server's 15-minute wait so the countdown is right, and says that another addon used it.
+
 ## 0.42.0
 
 - **Buying from the Shopping list keeps the quantity.** The Auction House could reset it to 1 right after Crafter's Journal set it; it's now set again for a couple of seconds after the results arrive.
